@@ -103,7 +103,7 @@
     {
       "id": "version-form-definitions",
       "title": "Versioned form definitions / submission snapshot",
-      "status": "todo",
+      "status": "done",
       "priority": "high",
       "notes": "Old submissions become unreadable after edits; store definition version with submission."
     },
