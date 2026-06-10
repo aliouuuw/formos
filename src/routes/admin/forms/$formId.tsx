@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 
 import { PageHeader } from '#/components/page-header'
 import { Badge } from '#/components/ui/badge'
@@ -36,20 +37,36 @@ function FormEditorPage() {
   const [slug, setSlug] = useState('')
   const [definitionJson, setDefinitionJson] = useState('')
   const [jsonError, setJsonError] = useState<string | null>(null)
+  const isDirtyRef = useRef(false)
 
   useEffect(() => {
     if (formQuery.data) {
       setTitle(formQuery.data.title)
       setSlug(formQuery.data.slug)
       setDefinitionJson(JSON.stringify(formQuery.data.definition, null, 2))
+      isDirtyRef.current = false
     }
   }, [formQuery.data])
+
+  useEffect(() => {
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      if (!isDirtyRef.current) return
+      e.preventDefault()
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [])
 
   const updateMutation = useMutation(
     orpc.forms.update.mutationOptions({
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: orpc.forms.getById.key({ input: { id: formId } }) })
         await queryClient.invalidateQueries({ queryKey: orpc.forms.list.key() })
+        isDirtyRef.current = false
+        toast.success('Changes saved')
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : 'Failed to save changes')
       },
     }),
   )
@@ -59,6 +76,10 @@ function FormEditorPage() {
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: orpc.forms.getById.key({ input: { id: formId } }) })
         await queryClient.invalidateQueries({ queryKey: orpc.forms.list.key() })
+        toast.success('Form published')
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : 'Failed to publish form')
       },
     }),
   )
@@ -137,11 +158,11 @@ function FormEditorPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="title">Title</Label>
-                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+                <Input id="title" value={title} onChange={(e) => { setTitle(e.target.value); isDirtyRef.current = true }} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="slug">Slug</Label>
-                <Input id="slug" value={slug} onChange={(e) => setSlug(e.target.value)} />
+                <Input id="slug" value={slug} onChange={(e) => { setSlug(e.target.value); isDirtyRef.current = true }} />
               </div>
             </div>
             <div className="space-y-2">
@@ -149,7 +170,7 @@ function FormEditorPage() {
               <Textarea
                 id="definition"
                 value={definitionJson}
-                onChange={(e) => setDefinitionJson(e.target.value)}
+                onChange={(e) => { setDefinitionJson(e.target.value); isDirtyRef.current = true }}
                 rows={20}
                 className="font-mono text-xs"
               />

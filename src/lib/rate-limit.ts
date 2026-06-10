@@ -9,6 +9,11 @@ export function checkRateLimit(
   windowMs: number,
 ): { allowed: true } | { allowed: false; retryAfterSec: number } {
   const now = Date.now()
+
+  for (const [k, b] of buckets) {
+    if (now >= b.resetAt) buckets.delete(k)
+  }
+
   const bucket = buckets.get(key)
 
   if (!bucket || now >= bucket.resetAt) {

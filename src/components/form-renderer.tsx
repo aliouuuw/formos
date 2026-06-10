@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
@@ -22,16 +22,22 @@ function FieldInput({
   field,
   value,
   onChange,
+  onBlur,
+  onFocus,
 }: {
   field: FormField
   value: string
   onChange: (value: string) => void
+  onBlur?: () => void
+  onFocus?: () => void
 }) {
   const common = {
     id: field.id,
     value,
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       onChange(e.target.value),
+    onBlur,
+    onFocus,
     placeholder: field.placeholder,
     required: field.required,
   }
@@ -46,6 +52,8 @@ function FieldInput({
         id={field.id}
         value={value}
         onChange={common.onChange}
+        onBlur={onBlur}
+        onFocus={onFocus}
         required={field.required}
         className="flex h-10 w-full rounded-xl border border-mauve/15 bg-white px-3 py-2 text-sm text-night focus:border-mauve focus:outline-none focus:ring-2 focus:ring-mauve/10"
       >
@@ -56,6 +64,26 @@ function FieldInput({
           </option>
         ))}
       </select>
+    )
+  }
+
+  if (field.type === 'checkbox') {
+    return (
+      <div className="flex items-center gap-3">
+        <input
+          type="checkbox"
+          id={field.id}
+          checked={value === 'true'}
+          onChange={(e) => onChange(e.target.checked ? 'true' : 'false')}
+          onBlur={onBlur}
+          onFocus={onFocus}
+          required={field.required}
+          className="h-4 w-4 rounded border-mauve/30 accent-mauve"
+        />
+        <label htmlFor={field.id} className="text-sm text-night-60 select-none">
+          {field.placeholder ?? field.label}
+        </label>
+      </div>
     )
   }
 
@@ -98,28 +126,24 @@ export function FormRenderer({
   const page = definition.pages[pageIndex]
   const isLastPage = pageIndex === definition.pages.length - 1
   const progress = ((pageIndex + 1) / definition.pages.length) * 100
-  const initialTracked = useRef(false)
+
+  const viewedRef = useRef(false)
+  const startedRef = useRef(false)
+  const viewedFieldsRef = useRef(new Set<string>())
 
   useEffect(() => {
-    if (initialTracked.current) return
-    initialTracked.current = true
-
+    if (viewedRef.current) return
+    viewedRef.current = true
     void client.analytics.track({
       formId,
       sessionId,
       eventType: 'form_viewed',
       pageId: definition.pages[0]?.id,
     })
-    void client.analytics.track({
-      formId,
-      sessionId,
-      eventType: 'form_started',
-    })
   }, [definition.pages, formId, sessionId])
 
   useEffect(() => {
     if (pageIndex === 0 || !page?.id) return
-
     void client.analytics.track({
       formId,
       sessionId,
@@ -128,19 +152,60 @@ export function FormRenderer({
     })
   }, [formId, page?.id, pageIndex, sessionId])
 
+  const trackFieldViewed = useCallback(
+    (fieldId: string, pageId: string) => {
+      if (viewedFieldsRef.current.has(fieldId)) return
+      viewedFieldsRef.current.add(fieldId)
+      void client.analytics.track({ formId, sessionId, eventType: 'field_viewed', fieldId, pageId })
+    },
+    [formId, sessionId],
+  )
+
+  const trackFieldAnswered = useCallback(
+    (fieldId: string, pageId: string, value: string) => {
+      void client.analytics.track({
+        formId,
+        sessionId,
+        eventType: value.trim() ? 'field_answered' : 'field_skipped',
+        fieldId,
+        pageId,
+      })
+    },
+    [formId, sessionId],
+  )
+
   function validateCurrentPage(): string | null {
     if (!page) return null
 
     for (const field of page.fields) {
-      if (!field.required) continue
       const value = answers[field.id]?.trim() ?? ''
-      if (!value) return `${field.label} is required`
+
+      if (field.required && !value) return `${field.label} is required`
+      if (!value) continue
+
+      if (field.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        return `${field.label} must be a valid email`
+      }
+      if (field.type === 'number' && Number.isNaN(Number(value))) {
+        return `${field.label} must be a number`
+      }
+      if (field.type === 'date' && !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return `${field.label} must be a valid date (YYYY-MM-DD)`
+      }
+      if (field.type === 'select' && field.options && !field.options.includes(value)) {
+        return `${field.label} has an invalid option`
+      }
     }
 
     return null
   }
 
   async function handleNext() {
+    if (!startedRef.current) {
+      startedRef.current = true
+      void client.analytics.track({ formId, sessionId, eventType: 'form_started' })
+    }
+
     const validationError = validateCurrentPage()
     if (validationError) {
       setError(validationError)
@@ -221,22 +286,23 @@ export function FormRenderer({
       <PanelBody className="space-y-6">
         {page.fields.map((field) => (
           <div key={field.id} className="space-y-2">
-            <Label htmlFor={field.id}>
-              {field.label}
-              {field.required ? ' *' : ''}
-            </Label>
+            {field.type !== 'checkbox' ? (
+              <Label htmlFor={field.id}>
+                {field.label}
+                {field.required ? ' *' : ''}
+              </Label>
+            ) : null}
             <FieldInput
               field={field}
               value={answers[field.id] ?? ''}
               onChange={(value) => {
                 setAnswers((prev) => ({ ...prev, [field.id]: value }))
-                void client.analytics.track({
-                  formId,
-                  sessionId,
-                  eventType: value ? 'field_answered' : 'field_skipped',
-                  fieldId: field.id,
-                  pageId: page.id,
-                })
+              }}
+              onFocus={() => {
+                if (page.id) trackFieldViewed(field.id, page.id)
+              }}
+              onBlur={() => {
+                if (page.id) trackFieldAnswered(field.id, page.id, answers[field.id] ?? '')
               }}
             />
           </div>
