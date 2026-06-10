@@ -10,6 +10,7 @@ Formos — project progress log
 - Local Postgres database `formos` created (no Docker); schema pushed via drizzle-kit.
 - First admin account created manually; public sign-up removed from UI and API.
 - Code review (Bugbot + Security): 7 bug findings, 6 security findings recorded in context/review-findings.json.
+- Review remediation: server-side validation, rate limits, DB transactions, aggregated stats, slugify fallback, analytics dedup, leads query fix, env hardening, OpenAPI auth in prod.
 
 Stack
 -----
@@ -22,7 +23,6 @@ Jobs: Inngest (form/submission.completed)
 
 Next up (see context/backlog.json)
 ----------------------------------
-- Server-side submit validation + rate limits (from review)
 - Visual form builder
 - Embeds for marketing pages
 - Webhook integrations for leads

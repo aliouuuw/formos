@@ -83,10 +83,14 @@ export function createDefaultFormDefinition(title: string): FormDefinition {
 }
 
 export function slugify(value: string): string {
-  return value
+  const slug = value
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 64)
+
+  if (slug.length > 0) return slug
+
+  return `form-${crypto.randomUUID().slice(0, 8)}`
 }

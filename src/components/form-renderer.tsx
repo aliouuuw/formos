@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
@@ -95,24 +95,55 @@ export function FormRenderer({
 
   const page = definition.pages[pageIndex]
   const isLastPage = pageIndex === definition.pages.length - 1
+  const initialTracked = useRef(false)
 
   useEffect(() => {
+    if (initialTracked.current) return
+    initialTracked.current = true
+
     void client.analytics.track({
       formId,
       sessionId,
-      eventType: pageIndex === 0 ? 'form_viewed' : 'page_viewed',
-      pageId: page?.id,
+      eventType: 'form_viewed',
+      pageId: definition.pages[0]?.id,
     })
-    if (pageIndex === 0) {
-      void client.analytics.track({
-        formId,
-        sessionId,
-        eventType: 'form_started',
-      })
-    }
+    void client.analytics.track({
+      formId,
+      sessionId,
+      eventType: 'form_started',
+    })
+  }, [definition.pages, formId, sessionId])
+
+  useEffect(() => {
+    if (pageIndex === 0 || !page?.id) return
+
+    void client.analytics.track({
+      formId,
+      sessionId,
+      eventType: 'page_viewed',
+      pageId: page.id,
+    })
   }, [formId, page?.id, pageIndex, sessionId])
 
+  function validateCurrentPage(): string | null {
+    if (!page) return null
+
+    for (const field of page.fields) {
+      if (!field.required) continue
+      const value = answers[field.id]?.trim() ?? ''
+      if (!value) return `${field.label} is required`
+    }
+
+    return null
+  }
+
   async function handleNext() {
+    const validationError = validateCurrentPage()
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
     setError(null)
     setLoading(true)
     try {

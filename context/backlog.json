@@ -5,23 +5,23 @@
     {
       "id": "submit-validation",
       "title": "Server-side submission validation",
-      "status": "todo",
+      "status": "done",
       "priority": "high",
-      "notes": "Validate answers against form definition on submit (BUG-001). See context/review-findings.json."
+      "notes": "BUG-001 — validate-answers.ts + submissions router."
     },
     {
       "id": "public-rate-limits",
       "title": "Rate limit public endpoints",
-      "status": "todo",
+      "status": "done",
       "priority": "high",
-      "notes": "Throttle submitForm and trackEvent (SEC-001, SEC-002)."
+      "notes": "SEC-001, SEC-002 — in-memory rate-limit.ts on submit + track."
     },
     {
       "id": "submission-transaction",
       "title": "Transactional submission + lead insert",
-      "status": "todo",
+      "status": "done",
       "priority": "medium",
-      "notes": "Wrap submission and lead writes in a DB transaction (BUG-002)."
+      "notes": "BUG-002 — db.transaction in submissions router."
     },
     {
       "id": "builder-ui",

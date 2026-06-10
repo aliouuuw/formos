@@ -5,20 +5,44 @@ import { z } from 'zod'
 import { db } from '#/db/index'
 import { analyticsEvents, forms } from '#/db/schema'
 import { analyticsEventTypeSchema } from '#/lib/form-types'
+import { ANALYTICS_RATE_LIMIT, MAX_JSON_BYTES } from '#/lib/limits'
+import { checkRateLimit, getClientIp } from '#/lib/rate-limit'
+import { assertJsonPayloadSize } from '#/lib/validate-answers'
 import { authedContext, publicContext } from '#/orpc/context'
 
 export const trackEvent = publicContext
   .input(
     z.object({
       formId: z.string(),
-      sessionId: z.string().min(1),
+      sessionId: z.string().min(1).max(64),
       eventType: analyticsEventTypeSchema,
-      fieldId: z.string().optional(),
-      pageId: z.string().optional(),
+      fieldId: z.string().max(64).optional(),
+      pageId: z.string().max(64).optional(),
       metadata: z.record(z.string(), z.unknown()).optional(),
     }),
   )
-  .handler(async ({ input }) => {
+  .handler(async ({ input, context }) => {
+    const clientIp = getClientIp(context.headers)
+    const rate = checkRateLimit(
+      `analytics:${clientIp}:${input.formId}`,
+      ANALYTICS_RATE_LIMIT.limit,
+      ANALYTICS_RATE_LIMIT.windowMs,
+    )
+
+    if (!rate.allowed) {
+      throw new ORPCError('TOO_MANY_REQUESTS', {
+        message: `Too many events. Try again in ${rate.retryAfterSec}s.`,
+      })
+    }
+
+    try {
+      assertJsonPayloadSize(input.metadata, MAX_JSON_BYTES, 'Metadata')
+    } catch (error) {
+      throw new ORPCError('BAD_REQUEST', {
+        message: error instanceof Error ? error.message : 'Metadata too large',
+      })
+    }
+
     const form = await db.query.forms.findFirst({
       where: and(eq(forms.id, input.formId), eq(forms.status, 'published')),
     })

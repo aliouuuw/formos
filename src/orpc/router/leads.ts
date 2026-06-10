@@ -1,5 +1,5 @@
 import { ORPCError } from '@orpc/server'
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '#/db/index'
@@ -23,22 +23,23 @@ export const listLeads = authedContext
     const formIds = userForms.map((form) => form.id)
     if (formIds.length === 0) return []
 
-    const rows = await db.query.leads.findMany({
-      where: input.formId
-        ? and(eq(leads.formId, input.formId))
-        : undefined,
+    if (input.formId && !formIds.includes(input.formId)) {
+      return []
+    }
+
+    const conditions = [
+      inArray(leads.formId, formIds),
+      ...(input.formId ? [eq(leads.formId, input.formId)] : []),
+      ...(input.status ? [eq(leads.status, input.status)] : []),
+    ]
+
+    return db.query.leads.findMany({
+      where: and(...conditions),
       orderBy: [desc(leads.createdAt)],
       limit: 200,
       with: {
         form: { columns: { id: true, title: true, slug: true } },
       },
-    })
-
-    return rows.filter((row) => {
-      return (
-        formIds.includes(row.formId) &&
-        (!input.status || row.status === input.status)
-      )
     })
   })
 

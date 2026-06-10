@@ -1,9 +1,9 @@
 import { ORPCError } from '@orpc/server'
-import { and, desc, eq, ne } from 'drizzle-orm'
+import { and, desc, eq, ne, sql } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '#/db/index'
-import { forms } from '#/db/schema'
+import { analyticsEvents, formSubmissions, forms, leads } from '#/db/schema'
 import {
   createDefaultFormDefinition,
   formDefinitionSchema,
@@ -180,27 +180,37 @@ export const getFormStats = authedContext
   .handler(async ({ context, input }) => {
     const form = await db.query.forms.findFirst({
       where: and(eq(forms.id, input.id), eq(forms.createdBy, context.user.id)),
-      with: {
-        submissions: true,
-        leads: true,
-        analyticsEvents: true,
-      },
     })
 
     if (!form) {
       throw new ORPCError('NOT_FOUND', { message: 'Form not found' })
     }
 
-    const views = form.analyticsEvents.filter(
-      (event) => event.eventType === 'form_viewed',
-    ).length
-    const starts = form.analyticsEvents.filter(
-      (event) => event.eventType === 'form_started',
-    ).length
-    const completions = form.analyticsEvents.filter(
-      (event) => event.eventType === 'form_completed',
-    ).length
+    const [eventCounts, submissionCount, leadCount] = await Promise.all([
+      db
+        .select({
+          eventType: analyticsEvents.eventType,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(analyticsEvents)
+        .where(eq(analyticsEvents.formId, input.id))
+        .groupBy(analyticsEvents.eventType),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(formSubmissions)
+        .where(eq(formSubmissions.formId, input.id)),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(leads)
+        .where(eq(leads.formId, input.id)),
+    ])
 
+    const countByEvent = new Map(
+      eventCounts.map((row) => [row.eventType, row.count]),
+    )
+    const views = countByEvent.get('form_viewed') ?? 0
+    const starts = countByEvent.get('form_started') ?? 0
+    const completions = countByEvent.get('form_completed') ?? 0
     const completionRate = starts > 0 ? Math.round((completions / starts) * 100) : 0
 
     return {
@@ -208,7 +218,7 @@ export const getFormStats = authedContext
       starts,
       completions,
       completionRate,
-      submissions: form.submissions.length,
-      leads: form.leads.length,
+      submissions: submissionCount[0]?.count ?? 0,
+      leads: leadCount[0]?.count ?? 0,
     }
   })

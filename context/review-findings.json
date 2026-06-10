@@ -1,6 +1,7 @@
 {
   "project": "formos",
   "reviewed": "2026-06-10",
+  "remediated": "2026-06-10",
   "method": "Manual full-codebase review (Bugbot + Security subagents had no git diff on main)",
   "bugbot": [
     {
@@ -96,5 +97,20 @@
     "Server-side answer validation on submit",
     "Rate limiting on public submit and track endpoints",
     "DB transaction for submission + lead creation"
-  ]
+  ],
+  "remediation_status": {
+    "BUG-001": "fixed",
+    "BUG-002": "fixed",
+    "BUG-003": "fixed",
+    "BUG-004": "fixed",
+    "BUG-005": "fixed",
+    "BUG-006": "fixed",
+    "BUG-007": "fixed",
+    "SEC-001": "fixed",
+    "SEC-002": "fixed",
+    "SEC-003": "fixed",
+    "SEC-004": "fixed",
+    "SEC-005": "fixed",
+    "SEC-006": "fixed"
+  }
 }

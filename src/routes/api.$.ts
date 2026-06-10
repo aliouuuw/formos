@@ -9,6 +9,9 @@ import { OpenAPIReferencePlugin } from '@orpc/openapi/plugins'
 
 import { FormSchema } from '#/orpc/schema'
 import router from '#/orpc/router'
+import { auth } from '#/server/auth'
+
+const isProduction = process.env.NODE_ENV === 'production'
 
 const handler = new OpenAPIHandler(router, {
   interceptors: [
@@ -55,6 +58,13 @@ const handler = new OpenAPIHandler(router, {
 })
 
 async function handle({ request }: { request: Request }) {
+  if (isProduction) {
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user) {
+      return new Response('Not Found', { status: 404 })
+    }
+  }
+
   const { response } = await handler.handle(request, {
     prefix: '/api',
     context: {
