@@ -3,6 +3,27 @@
   "updated": "2026-06-10",
   "items": [
     {
+      "id": "submit-validation",
+      "title": "Server-side submission validation",
+      "status": "todo",
+      "priority": "high",
+      "notes": "Validate answers against form definition on submit (BUG-001). See context/review-findings.json."
+    },
+    {
+      "id": "public-rate-limits",
+      "title": "Rate limit public endpoints",
+      "status": "todo",
+      "priority": "high",
+      "notes": "Throttle submitForm and trackEvent (SEC-001, SEC-002)."
+    },
+    {
+      "id": "submission-transaction",
+      "title": "Transactional submission + lead insert",
+      "status": "todo",
+      "priority": "medium",
+      "notes": "Wrap submission and lead writes in a DB transaction (BUG-002)."
+    },
+    {
       "id": "builder-ui",
       "title": "Visual form builder",
       "status": "todo",

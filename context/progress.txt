@@ -9,6 +9,7 @@ Formos — project progress log
 - Public multi-step forms at /f/:slug with field-level event tracking.
 - Local Postgres database `formos` created (no Docker); schema pushed via drizzle-kit.
 - First admin account created manually; public sign-up removed from UI and API.
+- Code review (Bugbot + Security): 7 bug findings, 6 security findings recorded in context/review-findings.json.
 
 Stack
 -----
@@ -21,6 +22,7 @@ Jobs: Inngest (form/submission.completed)
 
 Next up (see context/backlog.json)
 ----------------------------------
+- Server-side submit validation + rate limits (from review)
 - Visual form builder
 - Embeds for marketing pages
 - Webhook integrations for leads

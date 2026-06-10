@@ -1,0 +1,100 @@
+{
+  "project": "formos",
+  "reviewed": "2026-06-10",
+  "method": "Manual full-codebase review (Bugbot + Security subagents had no git diff on main)",
+  "bugbot": [
+    {
+      "id": "BUG-001",
+      "severity": "high",
+      "location": "src/orpc/router/submissions.ts:30",
+      "finding": "submitForm accepts arbitrary answers with no server-side validation against the form definition (required fields, types)."
+    },
+    {
+      "id": "BUG-002",
+      "severity": "medium",
+      "location": "src/orpc/router/submissions.ts:43",
+      "finding": "Submission and lead inserts are not wrapped in a transaction; partial failure can leave orphaned rows."
+    },
+    {
+      "id": "BUG-003",
+      "severity": "medium",
+      "location": "src/orpc/router/forms.ts:181",
+      "finding": "getFormStats loads all submissions, leads, and analytics events via Drizzle with: — unbounded memory as forms grow."
+    },
+    {
+      "id": "BUG-004",
+      "severity": "medium",
+      "location": "src/lib/form-types.ts:85",
+      "finding": "slugify() can return an empty string for titles with only special characters."
+    },
+    {
+      "id": "BUG-005",
+      "severity": "low",
+      "location": "src/components/form-renderer.tsx:99",
+      "finding": "Analytics useEffect fires form_viewed / form_started on pageIndex changes, inflating funnel metrics."
+    },
+    {
+      "id": "BUG-006",
+      "severity": "low",
+      "location": "src/components/form-renderer.tsx:115",
+      "finding": "Multi-page forms do not validate required fields before advancing pages."
+    },
+    {
+      "id": "BUG-007",
+      "severity": "low",
+      "location": "src/orpc/router/leads.ts:26",
+      "finding": "listLeads without formId fetches latest 200 leads globally then filters in memory — can miss older user leads."
+    }
+  ],
+  "security": [
+    {
+      "id": "SEC-001",
+      "severity": "high",
+      "location": "src/orpc/router/submissions.ts:21",
+      "finding": "Public submitForm has no rate limiting or CAPTCHA — open to submission spam and DB flooding."
+    },
+    {
+      "id": "SEC-002",
+      "severity": "high",
+      "location": "src/orpc/router/analytics.ts:10",
+      "finding": "Public trackEvent has no rate limiting — easy to inflate analytics or bloat analytics_events."
+    },
+    {
+      "id": "SEC-003",
+      "severity": "medium",
+      "location": "src/env.ts:7",
+      "finding": "BETTER_AUTH_SECRET is optional in env schema; misconfigured deploy could run without a proper secret."
+    },
+    {
+      "id": "SEC-004",
+      "severity": "medium",
+      "location": "src/orpc/router/submissions.ts:26",
+      "finding": "No size limits on answers / metadata JSON blobs — large payloads enable storage abuse."
+    },
+    {
+      "id": "SEC-005",
+      "severity": "medium",
+      "location": "src/routes/api.$.ts:1",
+      "finding": "OpenAPI docs at /api are public — exposes full API surface if internet-facing."
+    },
+    {
+      "id": "SEC-006",
+      "severity": "low",
+      "location": "src/routes/api/inngest.ts:1",
+      "finding": "Inngest handler is public; ensure INNGEST_SIGNING_KEY is set in production."
+    }
+  ],
+  "positive": [
+    "Admin oRPC routes use authedContext with session checks",
+    "Form ownership verified on update, publish, and stats (createdBy)",
+    "Lead status updates check form ownership",
+    "Sign-up disabled server-side (disableSignUp: true)",
+    "Auth isolated in src/server/auth.ts (avoids pg leaking to client bundle)",
+    "Public forms only return published forms by slug"
+  ],
+  "priority_fixes": [
+    "Server-side answer validation on submit",
+    "Rate limiting on public submit and track endpoints",
+    "DB transaction for submission + lead creation"
+  ]
+}
