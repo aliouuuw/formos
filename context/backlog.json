@@ -82,21 +82,21 @@
     {
       "id": "fix-checkbox-rendering",
       "title": "Checkbox field renders as text input",
-      "status": "todo",
+      "status": "done",
       "priority": "high",
       "notes": "FieldInput has no checkbox branch; users must type 'true'/'false'."
     },
     {
       "id": "fix-analytics-spam",
       "title": "field_answered fires per keystroke",
-      "status": "todo",
+      "status": "done",
       "priority": "high",
       "notes": "Should fire on blur/debounce; inflates drop-off, hammers DB, risks rate-limit rejections."
     },
     {
       "id": "fix-form-started-trigger",
       "title": "form_started fires on mount instead of interaction",
-      "status": "todo",
+      "status": "done",
       "priority": "high",
       "notes": "Sent together with form_viewed on mount → starts≈views, completion rate meaningless."
     },
@@ -110,7 +110,7 @@
     {
       "id": "editor-save-feedback",
       "title": "Editor: save feedback, error surfacing, unsaved-changes guard",
-      "status": "todo",
+      "status": "done",
       "priority": "medium",
       "notes": "No toast on save success, mutation errors not surfaced, no beforeUnload guard."
     },
@@ -159,14 +159,14 @@
     {
       "id": "rate-limit-memory-leak",
       "title": "Rate limiter bucket memory leak",
-      "status": "todo",
+      "status": "done",
       "priority": "low",
       "notes": "Expired buckets never evicted from Map; grows unboundedly per-IP-per-form."
     },
     {
       "id": "per-page-format-validation",
       "title": "Client-side format validation per page",
-      "status": "todo",
+      "status": "done",
       "priority": "low",
       "notes": "validateCurrentPage only checks required; email/date errors surface on final submit."
     },
