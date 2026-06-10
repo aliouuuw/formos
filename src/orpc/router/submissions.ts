@@ -3,7 +3,7 @@ import { and, desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '#/db/index'
-import { formSubmissions, forms, leads } from '#/db/schema'
+import { formDefinitionSnapshots, formSubmissions, forms, leads } from '#/db/schema'
 import { inngest } from '#/inngest/client'
 import { extractLeadFields } from '#/lib/leads'
 import { MAX_JSON_BYTES, SUBMIT_RATE_LIMIT } from '#/lib/limits'
@@ -83,6 +83,13 @@ export const submitForm = publicContext
         metadata: input.metadata,
         completedAt: new Date(),
       })
+
+      await tx.insert(formDefinitionSnapshots).values({
+        id: crypto.randomUUID(),
+        formId: form.id,
+        version: form.version,
+        definition: form.definition,
+      }).onConflictDoNothing()
 
       await tx.insert(leads).values({
         id: leadId,

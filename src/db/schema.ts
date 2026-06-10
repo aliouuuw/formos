@@ -133,6 +133,23 @@ export const leads = pgTable(
   ],
 )
 
+export const formDefinitionSnapshots = pgTable(
+  'form_definition_snapshots',
+  {
+    id: text('id').primaryKey(),
+    formId: text('form_id')
+      .notNull()
+      .references(() => forms.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    definition: jsonb('definition').$type<FormDefinition>().notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('form_def_snapshots_form_version_idx').on(table.formId, table.version),
+    index('form_def_snapshots_form_id_idx').on(table.formId),
+  ],
+)
+
 export const analyticsEvents = pgTable(
   'analytics_events',
   {
@@ -173,6 +190,11 @@ export const formsRelations = relations(forms, ({ one, many }) => ({
   submissions: many(formSubmissions),
   leads: many(leads),
   analyticsEvents: many(analyticsEvents),
+  definitionSnapshots: many(formDefinitionSnapshots),
+}))
+
+export const formDefinitionSnapshotsRelations = relations(formDefinitionSnapshots, ({ one }) => ({
+  form: one(forms, { fields: [formDefinitionSnapshots.formId], references: [forms.id] }),
 }))
 
 export const formSubmissionsRelations = relations(formSubmissions, ({ one }) => ({

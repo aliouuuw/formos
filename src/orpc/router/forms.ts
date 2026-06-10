@@ -3,7 +3,7 @@ import { and, desc, eq, ne, sql } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '#/db/index'
-import { analyticsEvents, formSubmissions, forms, leads } from '#/db/schema'
+import { analyticsEvents, formDefinitionSnapshots, formSubmissions, forms, leads } from '#/db/schema'
 import {
   createDefaultFormDefinition,
   formDefinitionSchema,
@@ -113,17 +113,47 @@ export const updateForm = authedContext
       }
     }
 
-    const [updated] = await db
-      .update(forms)
-      .set({
-        title: input.title ?? existing.title,
-        slug: input.slug ? slugify(input.slug) : existing.slug,
-        definition: input.definition ?? existing.definition,
-        version: input.definition ? existing.version + 1 : existing.version,
-        updatedAt: new Date(),
+    const newVersion = input.definition ? existing.version + 1 : existing.version
+    const newDefinition = input.definition ?? existing.definition
+
+    let updated: typeof existing
+
+    if (input.definition) {
+      const result = await db.transaction(async (tx) => {
+        const [row] = await tx
+          .update(forms)
+          .set({
+            title: input.title ?? existing.title,
+            slug: input.slug ? slugify(input.slug) : existing.slug,
+            definition: newDefinition,
+            version: newVersion,
+            updatedAt: new Date(),
+          })
+          .where(eq(forms.id, input.id))
+          .returning()
+
+        await tx.insert(formDefinitionSnapshots).values({
+          id: crypto.randomUUID(),
+          formId: input.id,
+          version: newVersion,
+          definition: newDefinition,
+        }).onConflictDoNothing()
+
+        return row!
       })
-      .where(eq(forms.id, input.id))
-      .returning()
+      updated = result
+    } else {
+      const [row] = await db
+        .update(forms)
+        .set({
+          title: input.title ?? existing.title,
+          slug: input.slug ? slugify(input.slug) : existing.slug,
+          updatedAt: new Date(),
+        })
+        .where(eq(forms.id, input.id))
+        .returning()
+      updated = row!
+    }
 
     return updated
   })
