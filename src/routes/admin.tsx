@@ -1,6 +1,8 @@
-import { Outlet, createFileRoute } from '@tanstack/react-router'
+import { Outlet, createFileRoute, useRouter } from '@tanstack/react-router'
+import { useEffect } from 'react'
 
 import { AppShell } from '#/components/app-shell'
+import { authClient } from '#/lib/auth-client'
 import { requireSessionFn } from '#/server/session'
 
 export const Route = createFileRoute('/admin')({
@@ -12,6 +14,15 @@ export const Route = createFileRoute('/admin')({
 })
 
 function AdminLayout() {
+  const router = useRouter()
+  const { data: session, isPending } = authClient.useSession()
+
+  useEffect(() => {
+    if (!isPending && !session?.user) {
+      void router.navigate({ to: '/login' })
+    }
+  }, [isPending, router, session?.user])
+
   return (
     <AppShell variant="admin">
       <Outlet />

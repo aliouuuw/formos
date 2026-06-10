@@ -1,8 +1,11 @@
+import { useRouter } from '@tanstack/react-router'
+
 import { authClient } from '#/lib/auth-client'
 
 import { Button } from '#/components/ui/button'
 
 export default function BetterAuthHeader({ stacked = false }: { stacked?: boolean }) {
+  const router = useRouter()
   const { data: session, isPending } = authClient.useSession()
 
   if (isPending) {
@@ -30,7 +33,14 @@ export default function BetterAuthHeader({ stacked = false }: { stacked?: boolea
           size="sm"
           className={stacked ? 'w-full' : undefined}
           onClick={() => {
-            void authClient.signOut()
+            void authClient.signOut({
+              fetchOptions: {
+                onSuccess: async () => {
+                  await router.invalidate()
+                  await router.navigate({ to: '/login' })
+                },
+              },
+            })
           }}
         >
           Sign out
