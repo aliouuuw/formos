@@ -4,44 +4,40 @@ import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { FormBuilder } from '#/components/form-builder'
-import { PageHeader } from '#/components/page-header'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
-import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
-import { Panel, PanelBody, PanelHeader } from '#/components/ui/panel'
 import { Textarea } from '#/components/ui/textarea'
 import { formDefinitionSchema } from '#/lib/form-types'
 import type { FormDefinition } from '#/lib/form-types'
+import { cn } from '#/lib/utils'
 import { orpc } from '#/orpc/client'
 
 export const Route = createFileRoute('/admin/forms/$formId')({ component: FormEditorPage })
 
-function StatItem({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="min-w-[7rem] flex-1 border-r border-mauve-10 px-5 py-4 last:border-r-0">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-mauve-60">{label}</p>
-      <p className="mt-2 text-2xl font-semibold tabular-nums text-night-80">{value}</p>
-    </div>
-  )
-}
+type Tab = 'build' | 'results'
 
 function FormEditorPage() {
   const { formId } = Route.useParams()
   const queryClient = useQueryClient()
   const formQuery = useQuery(orpc.forms.getById.queryOptions({ input: { id: formId } }))
   const statsQuery = useQuery(orpc.forms.stats.queryOptions({ input: { id: formId } }))
-  const analyticsQuery = useQuery(
-    orpc.analytics.getByForm.queryOptions({ input: { formId } }),
-  )
+  const analyticsQuery = useQuery(orpc.analytics.getByForm.queryOptions({ input: { formId } }))
 
+  const [tab, setTab] = useState<Tab>('build')
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
   const [definition, setDefinition] = useState<FormDefinition | null>(null)
   const [definitionJson, setDefinitionJson] = useState('')
   const [jsonError, setJsonError] = useState<string | null>(null)
   const [mode, setMode] = useState<'builder' | 'json'>('builder')
-  const isDirtyRef = useRef(false)
+  const [dirty, setDirty] = useState(false)
+  const dirtyRef = useRef(false)
+
+  function markDirty() {
+    dirtyRef.current = true
+    setDirty(true)
+  }
 
   useEffect(() => {
     if (formQuery.data) {
@@ -49,9 +45,19 @@ function FormEditorPage() {
       setSlug(formQuery.data.slug)
       setDefinition(formQuery.data.definition)
       setDefinitionJson(JSON.stringify(formQuery.data.definition, null, 2))
-      isDirtyRef.current = false
+      dirtyRef.current = false
+      setDirty(false)
     }
   }, [formQuery.data])
+
+  useEffect(() => {
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      if (!dirtyRef.current) return
+      e.preventDefault()
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [])
 
   function switchMode(next: 'builder' | 'json') {
     if (next === mode) return
@@ -66,26 +72,18 @@ function FormEditorPage() {
         setMode('builder')
       } catch {
         setJsonError('Fix the JSON before switching back to the builder.')
-        toast.error('Invalid JSON — fix it before switching to the builder.')
+        toast.error('Invalid JSON. Fix it before switching to the builder.')
       }
     }
   }
-
-  useEffect(() => {
-    function onBeforeUnload(e: BeforeUnloadEvent) {
-      if (!isDirtyRef.current) return
-      e.preventDefault()
-    }
-    window.addEventListener('beforeunload', onBeforeUnload)
-    return () => window.removeEventListener('beforeunload', onBeforeUnload)
-  }, [])
 
   const updateMutation = useMutation(
     orpc.forms.update.mutationOptions({
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: orpc.forms.getById.key({ input: { id: formId } }) })
         await queryClient.invalidateQueries({ queryKey: orpc.forms.list.key() })
-        isDirtyRef.current = false
+        dirtyRef.current = false
+        setDirty(false)
         toast.success('Changes saved')
       },
       onError: (err) => {
@@ -107,7 +105,7 @@ function FormEditorPage() {
     }),
   )
 
-  async function handleSave() {
+  function handleSave() {
     let toSave: FormDefinition
 
     if (mode === 'json') {
@@ -132,144 +130,205 @@ function FormEditorPage() {
   }
 
   if (formQuery.isLoading) {
-    return <p className="text-sm text-night-60">Loading form...</p>
+    return <p className="text-sm text-night-60">Loading form…</p>
   }
 
   if (!formQuery.data) {
     return <p className="text-sm text-red-700">Form not found.</p>
   }
 
+  const form = formQuery.data
+  const published = form.status === 'published'
+
   return (
-    <div className="space-y-10">
-      <PageHeader
-        kicker="Editor"
-        title={formQuery.data.title}
-        badge={
-          <Badge variant={formQuery.data.status === 'published' ? 'everest' : 'mauve'}>
-            {formQuery.data.status}
-          </Badge>
-        }
-        description={`Public URL: /f/${formQuery.data.slug}`}
-        actions={
-          <>
-            <Link to="/admin/forms/$formId/submissions" params={{ formId }}>
-              <Button variant="ghost" size="sm">
-                Submissions
-              </Button>
-            </Link>
-            <Button variant="outline" onClick={() => void handleSave()} disabled={updateMutation.isPending}>
-              Save changes
+    <div className="space-y-8">
+      {/* Editor top bar */}
+      <header className="space-y-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+          <Link
+            to="/admin"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-night-60 transition-colors duration-150 hover:bg-mauve-05 hover:text-mauve"
+            aria-label="Back to forms"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+              <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+
+          <div className="min-w-0 flex-1">
+            <input
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value)
+                markDirty()
+              }}
+              placeholder="Untitled form"
+              aria-label="Form title"
+              className="w-full max-w-xl truncate rounded-lg border border-transparent bg-transparent px-2 py-1 text-2xl font-semibold tracking-tight text-night-80 transition-colors duration-150 hover:border-mauve-10 focus:border-mauve/30 focus:outline-none"
+            />
+            <div className="mt-0.5 flex items-center gap-2 px-2">
+              <Badge variant={published ? 'everest' : 'mauve'}>{form.status}</Badge>
+              <span className="flex items-center font-mono text-xs text-night-60">
+                /f/
+                <input
+                  value={slug}
+                  onChange={(e) => {
+                    setSlug(e.target.value)
+                    markDirty()
+                  }}
+                  aria-label="Form slug"
+                  size={Math.max(slug.length, 4)}
+                  className="rounded border border-transparent bg-transparent px-0.5 font-mono text-xs text-everest-green transition-colors duration-150 hover:border-mauve-10 focus:border-mauve/30 focus:outline-none"
+                />
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSave}
+              disabled={updateMutation.isPending || !dirty}
+            >
+              {dirty ? (
+                <span className="mr-0.5 h-1.5 w-1.5 rounded-full bg-gold" aria-hidden />
+              ) : null}
+              {updateMutation.isPending ? 'Saving…' : dirty ? 'Save' : 'Saved'}
             </Button>
-            {formQuery.data.status !== 'published' ? (
+            {published ? (
+              <Link to="/f/$slug" params={{ slug: form.slug }} target="_blank">
+                <Button variant="secondary" size="sm">
+                  View live ↗
+                </Button>
+              </Link>
+            ) : (
               <Button
                 variant="mauve"
-                showArrow
+                size="sm"
                 onClick={() => publishMutation.mutate({ id: formId })}
                 disabled={publishMutation.isPending}
               >
                 Publish
               </Button>
-            ) : (
-              <Link to="/f/$slug" params={{ slug: formQuery.data.slug }} target="_blank">
-                <Button variant="secondary">Preview live</Button>
-              </Link>
             )}
-          </>
-        }
-      />
-
-      <Panel>
-        <PanelBody className="flex flex-col overflow-hidden p-0 sm:flex-row">
-          <StatItem label="Views" value={statsQuery.data?.views ?? 0} />
-          <StatItem label="Starts" value={statsQuery.data?.starts ?? 0} />
-          <StatItem label="Completions" value={statsQuery.data?.completions ?? 0} />
-          <StatItem label="Rate" value={`${statsQuery.data?.completionRate ?? 0}%`} />
-        </PanelBody>
-      </Panel>
-
-      <Panel>
-        <PanelHeader>
-          <h2 className="text-base font-semibold text-night-80">Form settings</h2>
-        </PanelHeader>
-        <PanelBody>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input id="title" value={title} onChange={(e) => { setTitle(e.target.value); isDirtyRef.current = true }} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="slug">Slug</Label>
-              <Input id="slug" value={slug} onChange={(e) => { setSlug(e.target.value); isDirtyRef.current = true }} />
-            </div>
           </div>
-        </PanelBody>
-      </Panel>
-
-      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant={mode === 'builder' ? 'mauve' : 'ghost'}
-              onClick={() => switchMode('builder')}
-            >
-              Builder
-            </Button>
-            <Button
-              size="sm"
-              variant={mode === 'json' ? 'mauve' : 'ghost'}
-              onClick={() => switchMode('json')}
-            >
-              JSON
-            </Button>
-          </div>
-
-          {mode === 'builder' && definition ? (
-            <FormBuilder
-              definition={definition}
-              onChange={(next) => {
-                setDefinition(next)
-                isDirtyRef.current = true
-              }}
-            />
-          ) : (
-            <Panel>
-              <PanelBody className="space-y-2">
-                <Label htmlFor="definition">Definition JSON</Label>
-                <Textarea
-                  id="definition"
-                  value={definitionJson}
-                  onChange={(e) => { setDefinitionJson(e.target.value); isDirtyRef.current = true }}
-                  rows={24}
-                  className="font-mono text-xs"
-                />
-                {jsonError ? <p className="text-sm text-red-700">{jsonError}</p> : null}
-              </PanelBody>
-            </Panel>
-          )}
         </div>
 
-        <Panel>
-          <PanelHeader>
-            <h2 className="text-base font-semibold text-night-80">Funnel events</h2>
-            <p className="mt-1 text-sm text-night-60">Counts grouped by analytics event type.</p>
-          </PanelHeader>
-          <PanelBody className="space-y-0 p-0">
-            {analyticsQuery.data?.funnel.map((row) => (
-              <div
-                key={row.eventType}
-                className="flex items-center justify-between border-b border-mauve-10 px-6 py-3 text-sm last:border-b-0 sm:px-8"
-              >
-                <span className="text-night-60">{row.eventType}</span>
-                <span className="font-semibold tabular-nums text-mauve">{row.count}</span>
+        {/* Tabs */}
+        <nav className="flex items-center gap-6 border-b border-mauve-10" aria-label="Editor sections">
+          {(
+            [
+              { id: 'build', label: 'Build' },
+              { id: 'results', label: 'Results' },
+            ] as const
+          ).map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              className={cn(
+                '-mb-px border-b-2 pb-2.5 text-sm font-medium transition-colors duration-150',
+                tab === id
+                  ? 'border-mauve text-night-80'
+                  : 'border-transparent text-night-60 hover:text-night-80',
+              )}
+            >
+              {label}
+            </button>
+          ))}
+          {tab === 'build' ? (
+            <button
+              type="button"
+              onClick={() => switchMode(mode === 'builder' ? 'json' : 'builder')}
+              className="-mb-px ml-auto pb-2.5 font-mono text-xs text-night-60 transition-colors duration-150 hover:text-mauve"
+            >
+              {mode === 'builder' ? '{ } Edit JSON' : '← Back to builder'}
+            </button>
+          ) : null}
+        </nav>
+      </header>
+
+      {/* Build tab */}
+      {tab === 'build' ? (
+        mode === 'builder' && definition ? (
+          <FormBuilder
+            definition={definition}
+            onChange={(next) => {
+              setDefinition(next)
+              markDirty()
+            }}
+          />
+        ) : (
+          <div className="max-w-3xl space-y-2">
+            <Label htmlFor="definition">Definition JSON</Label>
+            <Textarea
+              id="definition"
+              value={definitionJson}
+              onChange={(e) => {
+                setDefinitionJson(e.target.value)
+                markDirty()
+              }}
+              rows={24}
+              className="font-mono text-xs"
+            />
+            {jsonError ? <p className="text-sm text-red-700">{jsonError}</p> : null}
+          </div>
+        )
+      ) : null}
+
+      {/* Results tab */}
+      {tab === 'results' ? (
+        <div className="max-w-3xl space-y-10">
+          <dl className="flex flex-wrap gap-x-12 gap-y-6">
+            {(
+              [
+                { label: 'Views', value: statsQuery.data?.views ?? 0 },
+                { label: 'Starts', value: statsQuery.data?.starts ?? 0 },
+                { label: 'Completions', value: statsQuery.data?.completions ?? 0 },
+                { label: 'Completion rate', value: `${statsQuery.data?.completionRate ?? 0}%` },
+              ] as const
+            ).map(({ label, value }) => (
+              <div key={label}>
+                <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-mauve-60">
+                  {label}
+                </dt>
+                <dd className="mt-1 text-3xl font-semibold tabular-nums text-night-80">{value}</dd>
               </div>
             ))}
-            {analyticsQuery.data?.funnel.length === 0 ? (
-              <p className="px-6 py-8 text-sm text-night-60 sm:px-8">No analytics events yet.</p>
-            ) : null}
-          </PanelBody>
-        </Panel>
-      </div>
+          </dl>
+
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-mauve-60">
+                Funnel
+              </h2>
+              <Link to="/admin/forms/$formId/submissions" params={{ formId }}>
+                <Button variant="outline" size="sm">
+                  Browse submissions →
+                </Button>
+              </Link>
+            </div>
+
+            {analyticsQuery.data?.funnel.length ? (
+              <div className="divide-y divide-mauve-10 border-y border-mauve-10">
+                {analyticsQuery.data.funnel.map((row) => (
+                  <div key={row.eventType} className="flex items-center justify-between py-3 text-sm">
+                    <span className="text-night-60">{row.eventType.replace(/_/g, ' ')}</span>
+                    <span className="font-semibold tabular-nums text-night-80">{row.count}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="border-y border-mauve-10 py-8 text-sm text-night-60">
+                No activity yet. {published ? 'Share' : 'Publish the form and share'}{' '}
+                <span className="font-mono text-everest-green">/f/{form.slug}</span> to start
+                collecting data.
+              </p>
+            )}
+          </section>
+        </div>
+      ) : null}
     </div>
   )
 }
