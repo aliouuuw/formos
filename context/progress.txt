@@ -11,6 +11,8 @@ Formos — project progress log
 - First admin account created manually; public sign-up removed from UI and API.
 - Code review (Bugbot + Security): 7 bug findings, 6 security findings recorded in context/review-findings.json.
 - Review remediation: server-side validation, rate limits, DB transactions, aggregated stats, slugify fallback, analytics dedup, leads query fix, env hardening, OpenAPI auth in prod.
+- Design system aligned with Everest Finance tokens (new_lp feat/pm-storytelling-refonte): mauve (#461D4C) + everest-green + gold; semantic token split fixed.
+- UI revamp: admin sidebar, double-bezel Panel components, PageHeader/EmptyState, leads pipeline filters, form editor stat strip, public form hero + progress bar.
 
 Stack
 -----

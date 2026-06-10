@@ -27,7 +27,11 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'Formos',
+        title: 'Formos — Everest Finance',
+      },
+      {
+        name: 'theme-color',
+        content: '#012d2a',
       },
     ],
     links: [

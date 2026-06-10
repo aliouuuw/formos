@@ -24,6 +24,13 @@
       "notes": "BUG-002 — db.transaction in submissions router."
     },
     {
+      "id": "design-system-revamp",
+      "title": "Everest design system + UI revamp",
+      "status": "done",
+      "priority": "high",
+      "notes": "Mauve/everest-green/gold tokens, Panel/PageHeader/EmptyState, admin sidebar, public form hero."
+    },
+    {
       "id": "builder-ui",
       "title": "Visual form builder",
       "status": "todo",

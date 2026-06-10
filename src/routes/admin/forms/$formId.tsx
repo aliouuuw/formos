@@ -2,16 +2,26 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 
+import { PageHeader } from '#/components/page-header'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#/components/ui/card'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
+import { Panel, PanelBody, PanelHeader } from '#/components/ui/panel'
 import { Textarea } from '#/components/ui/textarea'
 import type { FormDefinition } from '#/lib/form-types'
 import { orpc } from '#/orpc/client'
 
 export const Route = createFileRoute('/admin/forms/$formId')({ component: FormEditorPage })
+
+function StatItem({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="min-w-[7rem] flex-1 border-r border-mauve-10 px-5 py-4 last:border-r-0">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-mauve-60">{label}</p>
+      <p className="mt-2 text-2xl font-semibold tabular-nums text-night-80">{value}</p>
+    </div>
+  )
+}
 
 function FormEditorPage() {
   const { formId } = Route.useParams()
@@ -25,6 +35,7 @@ function FormEditorPage() {
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
   const [definitionJson, setDefinitionJson] = useState('')
+  const [jsonError, setJsonError] = useState<string | null>(null)
 
   useEffect(() => {
     if (formQuery.data) {
@@ -56,127 +67,118 @@ function FormEditorPage() {
     let definition: FormDefinition
     try {
       definition = JSON.parse(definitionJson) as FormDefinition
+      setJsonError(null)
     } catch {
-      alert('Invalid JSON definition')
+      setJsonError('Definition must be valid JSON.')
       return
     }
 
-    updateMutation.mutate({
-      id: formId,
-      title,
-      slug,
-      definition,
-    })
+    updateMutation.mutate({ id: formId, title, slug, definition })
   }
 
   if (formQuery.isLoading) {
-    return <p className="text-sm text-[var(--sea-ink-soft)]">Loading form...</p>
+    return <p className="text-sm text-night-60">Loading form...</p>
   }
 
   if (!formQuery.data) {
-    return <p className="text-sm text-red-600">Form not found.</p>
+    return <p className="text-sm text-red-700">Form not found.</p>
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-[Fraunces] text-4xl font-bold">{formQuery.data.title}</h1>
-            <Badge variant={formQuery.data.status === 'published' ? 'success' : 'secondary'}>
-              {formQuery.data.status}
-            </Badge>
-          </div>
-          <p className="mt-2 text-[var(--sea-ink-soft)]">Public URL: /f/{formQuery.data.slug}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => void handleSave()} disabled={updateMutation.isPending}>
-            Save
-          </Button>
-          {formQuery.data.status !== 'published' ? (
-            <Button onClick={() => publishMutation.mutate({ id: formId })} disabled={publishMutation.isPending}>
-              Publish
+    <div className="space-y-10">
+      <PageHeader
+        kicker="Editor"
+        title={formQuery.data.title}
+        badge={
+          <Badge variant={formQuery.data.status === 'published' ? 'everest' : 'mauve'}>
+            {formQuery.data.status}
+          </Badge>
+        }
+        description={`Public URL: /f/${formQuery.data.slug}`}
+        actions={
+          <>
+            <Button variant="outline" onClick={() => void handleSave()} disabled={updateMutation.isPending}>
+              Save changes
             </Button>
-          ) : (
-            <Link to="/f/$slug" params={{ slug: formQuery.data.slug }} target="_blank">
-              <Button variant="secondary">Preview live</Button>
-            </Link>
-          )}
-        </div>
-      </div>
+            {formQuery.data.status !== 'published' ? (
+              <Button
+                variant="mauve"
+                showArrow
+                onClick={() => publishMutation.mutate({ id: formId })}
+                disabled={publishMutation.isPending}
+              >
+                Publish
+              </Button>
+            ) : (
+              <Link to="/f/$slug" params={{ slug: formQuery.data.slug }} target="_blank">
+                <Button variant="secondary">Preview live</Button>
+              </Link>
+            )}
+          </>
+        }
+      />
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader>
-            <CardDescription>Views</CardDescription>
-            <CardTitle>{statsQuery.data?.views ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Starts</CardDescription>
-            <CardTitle>{statsQuery.data?.starts ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Completions</CardDescription>
-            <CardTitle>{statsQuery.data?.completions ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Completion rate</CardDescription>
-            <CardTitle>{statsQuery.data?.completionRate ?? 0}%</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      <Panel>
+        <PanelBody className="flex flex-col overflow-hidden p-0 sm:flex-row">
+          <StatItem label="Views" value={statsQuery.data?.views ?? 0} />
+          <StatItem label="Starts" value={statsQuery.data?.starts ?? 0} />
+          <StatItem label="Completions" value={statsQuery.data?.completions ?? 0} />
+          <StatItem label="Rate" value={`${statsQuery.data?.completionRate ?? 0}%`} />
+        </PanelBody>
+      </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Form settings</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <Panel>
+          <PanelHeader>
+            <h2 className="text-base font-semibold text-night-80">Form settings</h2>
+            <p className="mt-1 text-sm text-night-60">Title, slug, and JSON definition.</p>
+          </PanelHeader>
+          <PanelBody className="space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="title">Title</Label>
+                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="slug">Slug</Label>
+                <Input id="slug" value={slug} onChange={(e) => setSlug(e.target.value)} />
+              </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="slug">Slug</Label>
-              <Input id="slug" value={slug} onChange={(e) => setSlug(e.target.value)} />
+              <Label htmlFor="definition">Definition JSON</Label>
+              <Textarea
+                id="definition"
+                value={definitionJson}
+                onChange={(e) => setDefinitionJson(e.target.value)}
+                rows={20}
+                className="font-mono text-xs"
+              />
+              {jsonError ? <p className="text-sm text-red-700">{jsonError}</p> : null}
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="definition">Definition JSON</Label>
-            <Textarea
-              id="definition"
-              value={definitionJson}
-              onChange={(e) => setDefinitionJson(e.target.value)}
-              rows={18}
-              className="font-mono text-xs"
-            />
-          </div>
-        </CardContent>
-      </Card>
+          </PanelBody>
+        </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Analytics funnel</CardTitle>
-          <CardDescription>Event counts grouped by type.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {analyticsQuery.data?.funnel.map((row) => (
-            <div key={row.eventType} className="flex items-center justify-between text-sm">
-              <span>{row.eventType}</span>
-              <span className="font-semibold">{row.count}</span>
-            </div>
-          ))}
-          {analyticsQuery.data?.funnel.length === 0 ? (
-            <p className="text-sm text-[var(--sea-ink-soft)]">No analytics events yet.</p>
-          ) : null}
-        </CardContent>
-      </Card>
+        <Panel>
+          <PanelHeader>
+            <h2 className="text-base font-semibold text-night-80">Funnel events</h2>
+            <p className="mt-1 text-sm text-night-60">Counts grouped by analytics event type.</p>
+          </PanelHeader>
+          <PanelBody className="space-y-0 p-0">
+            {analyticsQuery.data?.funnel.map((row) => (
+              <div
+                key={row.eventType}
+                className="flex items-center justify-between border-b border-mauve-10 px-6 py-3 text-sm last:border-b-0 sm:px-8"
+              >
+                <span className="text-night-60">{row.eventType}</span>
+                <span className="font-semibold tabular-nums text-mauve">{row.count}</span>
+              </div>
+            ))}
+            {analyticsQuery.data?.funnel.length === 0 ? (
+              <p className="px-6 py-8 text-sm text-night-60 sm:px-8">No analytics events yet.</p>
+            ) : null}
+          </PanelBody>
+        </Panel>
+      </div>
     </div>
   )
 }

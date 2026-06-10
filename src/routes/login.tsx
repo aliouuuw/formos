@@ -2,10 +2,11 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { AppShell } from '#/components/app-shell'
+import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#/components/ui/card'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
+import { Panel, PanelBody, PanelHeader } from '#/components/ui/panel'
 import { authClient } from '#/lib/auth-client'
 
 export const Route = createFileRoute('/login')({ component: LoginPage })
@@ -35,43 +36,54 @@ function LoginPage() {
 
   return (
     <AppShell variant="marketing">
-      <Card className="mx-auto max-w-md">
-        <CardHeader>
-          <CardTitle>Sign in</CardTitle>
-          <CardDescription>Access the Formos admin for Everest Finance.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={8}
-                autoComplete="current-password"
-              />
-            </div>
-            {error ? <p className="text-sm text-red-600">{error}</p> : null}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Please wait...' : 'Sign in'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      <section className="page-container flex min-h-[calc(100dvh-12rem)] items-center py-16">
+        <Panel className="mx-auto w-full max-w-md">
+          <PanelHeader>
+            <Badge variant="mauve" className="mb-3 normal-case tracking-[0.2em]">
+              Admin access
+            </Badge>
+            <h1 className="text-2xl font-semibold text-night-80">Sign in to Formos</h1>
+            <p className="mt-2 text-sm text-night-60">
+              Everest Finance staff only. Public sign-up is disabled.
+            </p>
+          </PanelHeader>
+          <PanelBody>
+            <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  autoComplete="current-password"
+                />
+              </div>
+              {error ? (
+                <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {error}
+                </p>
+              ) : null}
+              <Button type="submit" variant="mauve" className="w-full" disabled={loading} showArrow>
+                {loading ? 'Signing in...' : 'Continue'}
+              </Button>
+            </form>
+          </PanelBody>
+        </Panel>
+      </section>
     </AppShell>
   )
 }
