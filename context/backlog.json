@@ -71,6 +71,111 @@
       "status": "todo",
       "priority": "low",
       "notes": "CLI or internal flow to invite Everest staff (sign-up disabled)."
+    },
+    {
+      "id": "auth-session-guard",
+      "title": "Client-side auth redirect guard",
+      "status": "done",
+      "priority": "high",
+      "notes": "Fixed: sign-out + router.invalidate() to /login; admin layout useEffect watches session."
+    },
+    {
+      "id": "fix-checkbox-rendering",
+      "title": "Checkbox field renders as text input",
+      "status": "todo",
+      "priority": "high",
+      "notes": "FieldInput has no checkbox branch; users must type 'true'/'false'."
+    },
+    {
+      "id": "fix-analytics-spam",
+      "title": "field_answered fires per keystroke",
+      "status": "todo",
+      "priority": "high",
+      "notes": "Should fire on blur/debounce; inflates drop-off, hammers DB, risks rate-limit rejections."
+    },
+    {
+      "id": "fix-form-started-trigger",
+      "title": "form_started fires on mount instead of interaction",
+      "status": "todo",
+      "priority": "high",
+      "notes": "Sent together with form_viewed on mount → starts≈views, completion rate meaningless."
+    },
+    {
+      "id": "version-form-definitions",
+      "title": "Versioned form definitions / submission snapshot",
+      "status": "todo",
+      "priority": "high",
+      "notes": "Old submissions become unreadable after edits; store definition version with submission."
+    },
+    {
+      "id": "editor-save-feedback",
+      "title": "Editor: save feedback, error surfacing, unsaved-changes guard",
+      "status": "todo",
+      "priority": "medium",
+      "notes": "No toast on save success, mutation errors not surfaced, no beforeUnload guard."
+    },
+    {
+      "id": "slug-change-redirect",
+      "title": "Slug change breaks live links",
+      "status": "todo",
+      "priority": "medium",
+      "notes": "Editing published slug 404s shared links; needs redirect table or warning."
+    },
+    {
+      "id": "duplicate-submission-guard",
+      "title": "Duplicate submission protection",
+      "status": "todo",
+      "priority": "medium",
+      "notes": "No uniqueness on (formId, sessionId); back-button or retry creates dupes."
+    },
+    {
+      "id": "spam-honeypot",
+      "title": "Spam protection (honeypot / captcha)",
+      "status": "todo",
+      "priority": "medium",
+      "notes": "Rate limit alone won't stop bots filling lead pipelines."
+    },
+    {
+      "id": "partial-submissions",
+      "title": "Partial submissions capture",
+      "status": "todo",
+      "priority": "medium",
+      "notes": "Track field events but discard answers on abandon; high-value for lead gen."
+    },
+    {
+      "id": "submission-export-detail",
+      "title": "Submission detail view + CSV export",
+      "status": "todo",
+      "priority": "medium",
+      "notes": "listSubmissions capped at 100, no pagination; no UI to browse answers or export."
+    },
+    {
+      "id": "lead-detail-notes",
+      "title": "Lead detail view, notes, assignment",
+      "status": "todo",
+      "priority": "low",
+      "notes": "Leads list capped at 200 with no pagination/search; no notes or owner assignment."
+    },
+    {
+      "id": "rate-limit-memory-leak",
+      "title": "Rate limiter bucket memory leak",
+      "status": "todo",
+      "priority": "low",
+      "notes": "Expired buckets never evicted from Map; grows unboundedly per-IP-per-form."
+    },
+    {
+      "id": "per-page-format-validation",
+      "title": "Client-side format validation per page",
+      "status": "todo",
+      "priority": "low",
+      "notes": "validateCurrentPage only checks required; email/date errors surface on final submit."
+    },
+    {
+      "id": "gdpr-consent",
+      "title": "GDPR/consent checkbox + privacy notice",
+      "status": "todo",
+      "priority": "low",
+      "notes": "Collecting PII with UTM tracking; no consent field in definition schema."
     }
   ]
 }

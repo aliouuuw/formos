@@ -23,6 +23,9 @@ DB: PostgreSQL (local / Neon-ready)
 Auth: Better Auth (email/password, sign-up disabled)
 Jobs: Inngest (form/submission.completed)
 
+- Auth redirect fix: sign-out now navigates to /login and invalidates router state; admin layout watches session reactively for loss/expiry.
+- Audit pass: identified 11 bugs, 8 UX gaps, and 5 missing features (see backlog additions).
+
 Next up (see context/backlog.json)
 ----------------------------------
 - Visual form builder
