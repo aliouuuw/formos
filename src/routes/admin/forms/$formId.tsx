@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+import { FormBuilder } from '#/components/form-builder'
 import { PageHeader } from '#/components/page-header'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
@@ -10,6 +11,7 @@ import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { Panel, PanelBody, PanelHeader } from '#/components/ui/panel'
 import { Textarea } from '#/components/ui/textarea'
+import { formDefinitionSchema } from '#/lib/form-types'
 import type { FormDefinition } from '#/lib/form-types'
 import { orpc } from '#/orpc/client'
 
@@ -35,18 +37,39 @@ function FormEditorPage() {
 
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
+  const [definition, setDefinition] = useState<FormDefinition | null>(null)
   const [definitionJson, setDefinitionJson] = useState('')
   const [jsonError, setJsonError] = useState<string | null>(null)
+  const [mode, setMode] = useState<'builder' | 'json'>('builder')
   const isDirtyRef = useRef(false)
 
   useEffect(() => {
     if (formQuery.data) {
       setTitle(formQuery.data.title)
       setSlug(formQuery.data.slug)
+      setDefinition(formQuery.data.definition)
       setDefinitionJson(JSON.stringify(formQuery.data.definition, null, 2))
       isDirtyRef.current = false
     }
   }, [formQuery.data])
+
+  function switchMode(next: 'builder' | 'json') {
+    if (next === mode) return
+    if (next === 'json') {
+      if (definition) setDefinitionJson(JSON.stringify(definition, null, 2))
+      setMode('json')
+    } else {
+      try {
+        const parsed = formDefinitionSchema.parse(JSON.parse(definitionJson))
+        setDefinition(parsed)
+        setJsonError(null)
+        setMode('builder')
+      } catch {
+        setJsonError('Fix the JSON before switching back to the builder.')
+        toast.error('Invalid JSON — fix it before switching to the builder.')
+      }
+    }
+  }
 
   useEffect(() => {
     function onBeforeUnload(e: BeforeUnloadEvent) {
@@ -85,16 +108,27 @@ function FormEditorPage() {
   )
 
   async function handleSave() {
-    let definition: FormDefinition
-    try {
-      definition = JSON.parse(definitionJson) as FormDefinition
-      setJsonError(null)
-    } catch {
-      setJsonError('Definition must be valid JSON.')
-      return
+    let toSave: FormDefinition
+
+    if (mode === 'json') {
+      try {
+        toSave = formDefinitionSchema.parse(JSON.parse(definitionJson))
+        setJsonError(null)
+      } catch {
+        setJsonError('Definition must be valid JSON matching the form schema.')
+        return
+      }
+    } else {
+      if (!definition) return
+      const result = formDefinitionSchema.safeParse(definition)
+      if (!result.success) {
+        toast.error(result.error.issues[0]?.message ?? 'Invalid form definition')
+        return
+      }
+      toSave = result.data
     }
 
-    updateMutation.mutate({ id: formId, title, slug, definition })
+    updateMutation.mutate({ id: formId, title, slug, definition: toSave })
   }
 
   if (formQuery.isLoading) {
@@ -153,36 +187,67 @@ function FormEditorPage() {
         </PanelBody>
       </Panel>
 
-      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <Panel>
-          <PanelHeader>
-            <h2 className="text-base font-semibold text-night-80">Form settings</h2>
-            <p className="mt-1 text-sm text-night-60">Title, slug, and JSON definition.</p>
-          </PanelHeader>
-          <PanelBody className="space-y-5">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
-                <Input id="title" value={title} onChange={(e) => { setTitle(e.target.value); isDirtyRef.current = true }} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="slug">Slug</Label>
-                <Input id="slug" value={slug} onChange={(e) => { setSlug(e.target.value); isDirtyRef.current = true }} />
-              </div>
+      <Panel>
+        <PanelHeader>
+          <h2 className="text-base font-semibold text-night-80">Form settings</h2>
+        </PanelHeader>
+        <PanelBody>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input id="title" value={title} onChange={(e) => { setTitle(e.target.value); isDirtyRef.current = true }} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="definition">Definition JSON</Label>
-              <Textarea
-                id="definition"
-                value={definitionJson}
-                onChange={(e) => { setDefinitionJson(e.target.value); isDirtyRef.current = true }}
-                rows={20}
-                className="font-mono text-xs"
-              />
-              {jsonError ? <p className="text-sm text-red-700">{jsonError}</p> : null}
+              <Label htmlFor="slug">Slug</Label>
+              <Input id="slug" value={slug} onChange={(e) => { setSlug(e.target.value); isDirtyRef.current = true }} />
             </div>
-          </PanelBody>
-        </Panel>
+          </div>
+        </PanelBody>
+      </Panel>
+
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant={mode === 'builder' ? 'mauve' : 'ghost'}
+              onClick={() => switchMode('builder')}
+            >
+              Builder
+            </Button>
+            <Button
+              size="sm"
+              variant={mode === 'json' ? 'mauve' : 'ghost'}
+              onClick={() => switchMode('json')}
+            >
+              JSON
+            </Button>
+          </div>
+
+          {mode === 'builder' && definition ? (
+            <FormBuilder
+              definition={definition}
+              onChange={(next) => {
+                setDefinition(next)
+                isDirtyRef.current = true
+              }}
+            />
+          ) : (
+            <Panel>
+              <PanelBody className="space-y-2">
+                <Label htmlFor="definition">Definition JSON</Label>
+                <Textarea
+                  id="definition"
+                  value={definitionJson}
+                  onChange={(e) => { setDefinitionJson(e.target.value); isDirtyRef.current = true }}
+                  rows={24}
+                  className="font-mono text-xs"
+                />
+                {jsonError ? <p className="text-sm text-red-700">{jsonError}</p> : null}
+              </PanelBody>
+            </Panel>
+          )}
+        </div>
 
         <Panel>
           <PanelHeader>
