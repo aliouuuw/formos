@@ -1,0 +1,48 @@
+{
+  "project": "formos",
+  "updated": "2026-06-10",
+  "items": [
+    {
+      "id": "builder-ui",
+      "title": "Visual form builder",
+      "status": "todo",
+      "priority": "high",
+      "notes": "Replace JSON editor with drag-and-drop field blocks (@dnd-kit)."
+    },
+    {
+      "id": "embed-mode",
+      "title": "Embeddable forms",
+      "status": "todo",
+      "priority": "medium",
+      "notes": "iframe / script embed for landing pages."
+    },
+    {
+      "id": "crm-webhooks",
+      "title": "CRM & Slack webhooks",
+      "status": "todo",
+      "priority": "medium",
+      "notes": "Extend Inngest handler to notify external systems on new leads."
+    },
+    {
+      "id": "conditional-logic",
+      "title": "Conditional field logic",
+      "status": "todo",
+      "priority": "medium",
+      "notes": "Show/skip fields based on prior answers."
+    },
+    {
+      "id": "analytics-dashboard",
+      "title": "Analytics charts",
+      "status": "todo",
+      "priority": "low",
+      "notes": "Funnel visualization and drop-off heatmap in admin."
+    },
+    {
+      "id": "user-provisioning",
+      "title": "Admin user provisioning",
+      "status": "todo",
+      "priority": "low",
+      "notes": "CLI or internal flow to invite Everest staff (sign-up disabled)."
+    }
+  ]
+}

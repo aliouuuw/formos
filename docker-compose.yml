@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:16
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: formos
+      POSTGRES_PASSWORD: formos
+      POSTGRES_DB: formos
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U formos -d formos']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  neon-local:
+    profiles: ['neon']
+    image: neondatabase/neon_local:latest
+    ports:
+      - '5432:5432'
+    environment:
+      NEON_API_KEY: ${NEON_API_KEY}
+      NEON_PROJECT_ID: ${NEON_PROJECT_ID}
+      PARENT_BRANCH_ID: ${PARENT_BRANCH_ID:-}
+
+volumes:
+  postgres_data:

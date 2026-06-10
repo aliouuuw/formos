@@ -1,0 +1,2 @@
+-- Optional seed file used by Neon Launchpad / vite-plugin-neon-new.
+-- Schema is managed by Drizzle migrations (`bun run db:push`).

@@ -1,0 +1,26 @@
+Formos — project progress log
+==============================
+
+2026-06-10
+----------
+- Scaffolded TanStack Start + oRPC + Drizzle + Better Auth + Inngest.
+- Postgres schema: forms, submissions, leads, analytics_events, auth tables.
+- Admin: form list/create, JSON editor, publish, leads pipeline, basic analytics.
+- Public multi-step forms at /f/:slug with field-level event tracking.
+- Local Postgres database `formos` created (no Docker); schema pushed via drizzle-kit.
+- First admin account created manually; public sign-up removed from UI and API.
+
+Stack
+-----
+Runtime: Bun
+Framework: TanStack Start 1.x
+API: oRPC (/api/rpc, OpenAPI at /api)
+DB: PostgreSQL (local / Neon-ready)
+Auth: Better Auth (email/password, sign-up disabled)
+Jobs: Inngest (form/submission.completed)
+
+Next up (see context/backlog.json)
+----------------------------------
+- Visual form builder
+- Embeds for marketing pages
+- Webhook integrations for leads
