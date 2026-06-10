@@ -33,7 +33,7 @@
     {
       "id": "builder-ui",
       "title": "Visual form builder",
-      "status": "todo",
+      "status": "done",
       "priority": "high",
       "notes": "Replace JSON editor with drag-and-drop field blocks (@dnd-kit)."
     },
