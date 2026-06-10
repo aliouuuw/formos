@@ -17,6 +17,8 @@ export default {
   submissions: {
     submit: submissions.submitForm,
     list: submissions.listSubmissions,
+    get: submissions.getSubmission,
+    exportCsv: submissions.exportSubmissionsCsv,
   },
   analytics: {
     track: analytics.trackEvent,

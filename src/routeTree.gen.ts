@@ -20,6 +20,8 @@ import { Route as AdminLeadsRouteImport } from './routes/admin/leads'
 import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AdminFormsFormIdRouteImport } from './routes/admin/forms/$formId'
+import { Route as AdminFormsFormIdSubmissionsRouteImport } from './routes/admin/forms/$formId.submissions'
+import { Route as AdminFormsFormIdSubmissionsSubmissionIdRouteImport } from './routes/admin/forms/$formId.submissions.$submissionId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -76,6 +78,18 @@ const AdminFormsFormIdRoute = AdminFormsFormIdRouteImport.update({
   path: '/forms/$formId',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminFormsFormIdSubmissionsRoute =
+  AdminFormsFormIdSubmissionsRouteImport.update({
+    id: '/submissions',
+    path: '/submissions',
+    getParentRoute: () => AdminFormsFormIdRoute,
+  } as any)
+const AdminFormsFormIdSubmissionsSubmissionIdRoute =
+  AdminFormsFormIdSubmissionsSubmissionIdRouteImport.update({
+    id: '/$submissionId',
+    path: '/$submissionId',
+    getParentRoute: () => AdminFormsFormIdSubmissionsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -86,9 +100,11 @@ export interface FileRoutesByFullPath {
   '/api/inngest': typeof ApiInngestRoute
   '/f/$slug': typeof FSlugRoute
   '/admin/': typeof AdminIndexRoute
-  '/admin/forms/$formId': typeof AdminFormsFormIdRoute
+  '/admin/forms/$formId': typeof AdminFormsFormIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/admin/forms/$formId/submissions': typeof AdminFormsFormIdSubmissionsRouteWithChildren
+  '/admin/forms/$formId/submissions/$submissionId': typeof AdminFormsFormIdSubmissionsSubmissionIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -98,9 +114,11 @@ export interface FileRoutesByTo {
   '/api/inngest': typeof ApiInngestRoute
   '/f/$slug': typeof FSlugRoute
   '/admin': typeof AdminIndexRoute
-  '/admin/forms/$formId': typeof AdminFormsFormIdRoute
+  '/admin/forms/$formId': typeof AdminFormsFormIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/admin/forms/$formId/submissions': typeof AdminFormsFormIdSubmissionsRouteWithChildren
+  '/admin/forms/$formId/submissions/$submissionId': typeof AdminFormsFormIdSubmissionsSubmissionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -112,9 +130,11 @@ export interface FileRoutesById {
   '/api/inngest': typeof ApiInngestRoute
   '/f/$slug': typeof FSlugRoute
   '/admin/': typeof AdminIndexRoute
-  '/admin/forms/$formId': typeof AdminFormsFormIdRoute
+  '/admin/forms/$formId': typeof AdminFormsFormIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/admin/forms/$formId/submissions': typeof AdminFormsFormIdSubmissionsRouteWithChildren
+  '/admin/forms/$formId/submissions/$submissionId': typeof AdminFormsFormIdSubmissionsSubmissionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -130,6 +150,8 @@ export interface FileRouteTypes {
     | '/admin/forms/$formId'
     | '/api/auth/$'
     | '/api/rpc/$'
+    | '/admin/forms/$formId/submissions'
+    | '/admin/forms/$formId/submissions/$submissionId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -142,6 +164,8 @@ export interface FileRouteTypes {
     | '/admin/forms/$formId'
     | '/api/auth/$'
     | '/api/rpc/$'
+    | '/admin/forms/$formId/submissions'
+    | '/admin/forms/$formId/submissions/$submissionId'
   id:
     | '__root__'
     | '/'
@@ -155,6 +179,8 @@ export interface FileRouteTypes {
     | '/admin/forms/$formId'
     | '/api/auth/$'
     | '/api/rpc/$'
+    | '/admin/forms/$formId/submissions'
+    | '/admin/forms/$formId/submissions/$submissionId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -247,19 +273,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminFormsFormIdRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/forms/$formId/submissions': {
+      id: '/admin/forms/$formId/submissions'
+      path: '/submissions'
+      fullPath: '/admin/forms/$formId/submissions'
+      preLoaderRoute: typeof AdminFormsFormIdSubmissionsRouteImport
+      parentRoute: typeof AdminFormsFormIdRoute
+    }
+    '/admin/forms/$formId/submissions/$submissionId': {
+      id: '/admin/forms/$formId/submissions/$submissionId'
+      path: '/$submissionId'
+      fullPath: '/admin/forms/$formId/submissions/$submissionId'
+      preLoaderRoute: typeof AdminFormsFormIdSubmissionsSubmissionIdRouteImport
+      parentRoute: typeof AdminFormsFormIdSubmissionsRoute
+    }
   }
 }
+
+interface AdminFormsFormIdSubmissionsRouteChildren {
+  AdminFormsFormIdSubmissionsSubmissionIdRoute: typeof AdminFormsFormIdSubmissionsSubmissionIdRoute
+}
+
+const AdminFormsFormIdSubmissionsRouteChildren: AdminFormsFormIdSubmissionsRouteChildren =
+  {
+    AdminFormsFormIdSubmissionsSubmissionIdRoute:
+      AdminFormsFormIdSubmissionsSubmissionIdRoute,
+  }
+
+const AdminFormsFormIdSubmissionsRouteWithChildren =
+  AdminFormsFormIdSubmissionsRoute._addFileChildren(
+    AdminFormsFormIdSubmissionsRouteChildren,
+  )
+
+interface AdminFormsFormIdRouteChildren {
+  AdminFormsFormIdSubmissionsRoute: typeof AdminFormsFormIdSubmissionsRouteWithChildren
+}
+
+const AdminFormsFormIdRouteChildren: AdminFormsFormIdRouteChildren = {
+  AdminFormsFormIdSubmissionsRoute:
+    AdminFormsFormIdSubmissionsRouteWithChildren,
+}
+
+const AdminFormsFormIdRouteWithChildren =
+  AdminFormsFormIdRoute._addFileChildren(AdminFormsFormIdRouteChildren)
 
 interface AdminRouteChildren {
   AdminLeadsRoute: typeof AdminLeadsRoute
   AdminIndexRoute: typeof AdminIndexRoute
-  AdminFormsFormIdRoute: typeof AdminFormsFormIdRoute
+  AdminFormsFormIdRoute: typeof AdminFormsFormIdRouteWithChildren
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminLeadsRoute: AdminLeadsRoute,
   AdminIndexRoute: AdminIndexRoute,
-  AdminFormsFormIdRoute: AdminFormsFormIdRoute,
+  AdminFormsFormIdRoute: AdminFormsFormIdRouteWithChildren,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
@@ -277,12 +344,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

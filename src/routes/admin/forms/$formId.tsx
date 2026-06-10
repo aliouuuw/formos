@@ -118,6 +118,11 @@ function FormEditorPage() {
         description={`Public URL: /f/${formQuery.data.slug}`}
         actions={
           <>
+            <Link to="/admin/forms/$formId/submissions" params={{ formId }}>
+              <Button variant="ghost" size="sm">
+                Submissions
+              </Button>
+            </Link>
             <Button variant="outline" onClick={() => void handleSave()} disabled={updateMutation.isPending}>
               Save changes
             </Button>

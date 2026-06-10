@@ -1,5 +1,5 @@
 import { ORPCError } from '@orpc/server'
-import { and, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '#/db/index'
@@ -137,6 +137,81 @@ export const listSubmissions = authedContext
     return db.query.formSubmissions.findMany({
       where: eq(formSubmissions.formId, input.formId),
       orderBy: [desc(formSubmissions.createdAt)],
-      limit: 100,
+      limit: 500,
     })
+  })
+
+export const getSubmission = authedContext
+  .input(z.object({ formId: z.string(), submissionId: z.string() }))
+  .handler(async ({ context, input }) => {
+    const form = await db.query.forms.findFirst({
+      where: and(eq(forms.id, input.formId), eq(forms.createdBy, context.user.id)),
+    })
+
+    if (!form) {
+      throw new ORPCError('NOT_FOUND', { message: 'Form not found' })
+    }
+
+    const submission = await db.query.formSubmissions.findFirst({
+      where: and(
+        eq(formSubmissions.id, input.submissionId),
+        eq(formSubmissions.formId, input.formId),
+      ),
+      with: { lead: true },
+    })
+
+    if (!submission) {
+      throw new ORPCError('NOT_FOUND', { message: 'Submission not found' })
+    }
+
+    const snapshot = await db.query.formDefinitionSnapshots.findFirst({
+      where: and(
+        eq(formDefinitionSnapshots.formId, input.formId),
+        eq(formDefinitionSnapshots.version, submission.formVersion),
+      ),
+    })
+
+    const definition = snapshot?.definition ?? form.definition
+
+    return { submission, definition }
+  })
+
+export const exportSubmissionsCsv = authedContext
+  .input(z.object({ formId: z.string() }))
+  .handler(async ({ context, input }) => {
+    const form = await db.query.forms.findFirst({
+      where: and(eq(forms.id, input.formId), eq(forms.createdBy, context.user.id)),
+    })
+
+    if (!form) {
+      throw new ORPCError('NOT_FOUND', { message: 'Form not found' })
+    }
+
+    const rows = await db.query.formSubmissions.findMany({
+      where: eq(formSubmissions.formId, input.formId),
+      orderBy: [asc(formSubmissions.createdAt)],
+    })
+
+    const fields = form.definition.pages.flatMap((p) => p.fields)
+
+    const header = [
+      'submission_id',
+      'session_id',
+      'submitted_at',
+      ...fields.map((f) => f.label),
+    ]
+
+    const escape = (v: string) => `"${v.replace(/"/g, '""')}"`
+
+    const lines = rows.map((row) => {
+      const answers = row.answers as Record<string, string>
+      return [
+        escape(row.id),
+        escape(row.sessionId),
+        escape(row.createdAt.toISOString()),
+        ...fields.map((f) => escape(answers[f.id] ?? '')),
+      ].join(',')
+    })
+
+    return { csv: [header.map(escape).join(','), ...lines].join('\n') }
   })
