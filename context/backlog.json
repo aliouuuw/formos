@@ -145,7 +145,7 @@
     {
       "id": "submission-export-detail",
       "title": "Submission detail view + CSV export",
-      "status": "todo",
+      "status": "done",
       "priority": "medium",
       "notes": "listSubmissions capped at 100, no pagination; no UI to browse answers or export."
     },
