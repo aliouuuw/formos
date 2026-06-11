@@ -285,15 +285,15 @@ function Preview({
   const progress = formProgressPercent(pageIndex, definition.pages.length, ending)
 
   return (
-    <div className="flex min-h-[480px] items-start justify-center rounded-2xl border border-border-subtle bg-[radial-gradient(ellipse_at_top,rgba(70,29,76,0.04),transparent_60%)] px-4 py-10 sm:px-8">
-      <div className="w-full max-w-md">
+    <div className="flex min-h-[480px] items-start justify-center bg-[var(--summit-ivory)] px-4 py-10 sm:px-8">
+      <div className="w-full max-w-md rounded-2xl border border-mauve-10 bg-white p-8 shadow-[0_1px_0_rgba(0,0,0,0.04),0_12px_32px_rgba(70,29,76,0.06)]">
         <div className="mb-7 space-y-2">
           <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.14em] text-text-label">
             <span>{formStepLabel(pageIndex, definition.pages.length, ending)}</span>
             {progress !== null ? <span className="tabular-nums">{progress}%</span> : null}
           </div>
           {progress !== null ? (
-            <div className="h-1 overflow-hidden rounded-full bg-mauve-05">
+            <div className="h-1 overflow-hidden rounded-full bg-mauve-10">
               <div
                 className="h-full rounded-full bg-mauve transition-[width] duration-300 ease-out"
                 style={{ width: `${progress}%` }}
@@ -594,9 +594,6 @@ export function FormBuilder({
           </div>
         ) : selection.kind === 'page' && activePage ? (
           <div className="space-y-4 border-t border-mauve-10 pt-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-label">
-              Step settings
-            </p>
             <div className="space-y-1.5">
               <Label htmlFor="page-title">Step title</Label>
               <Input
