@@ -17,6 +17,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import type { DragEndEvent } from '@dnd-kit/core'
 
+import { FormRenderer } from '#/components/form-renderer'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { Textarea } from '#/components/ui/textarea'
@@ -206,158 +207,17 @@ function FieldInspector({
 }
 
 /* ------------------------------------------------------------------ */
-/* Live preview                                                         */
-/* ------------------------------------------------------------------ */
-
-function PreviewField({
-  field,
-  selected,
-  onSelect,
-}: {
-  field: FormField
-  selected: boolean
-  onSelect: () => void
-}) {
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') onSelect()
-      }}
-      className={cn(
-        'group relative -mx-8 cursor-pointer rounded-2xl p-8 transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
-        selected
-          ? 'bg-white shadow-[0_8px_30px_rgba(70,29,76,0.06)] ring-1 ring-mauve-10'
-          : 'hover:bg-black/[0.02]',
-      )}
-    >
-      <div className="mb-6 flex items-baseline gap-2">
-        <p className="text-2xl font-medium tracking-tight text-night-80">
-          {field.label || '...'}
-          {field.required ? <span className="ml-1 text-mauve">*</span> : null}
-        </p>
-      </div>
-
-      {field.type === 'long_text' ? (
-        <div className="pointer-events-none w-full border-b-2 border-mauve-20 pb-2 text-xl text-night-40 opacity-60">
-          {field.placeholder ?? 'Type your answer here...'}
-        </div>
-      ) : field.type === 'select' ? (
-        <div className="pointer-events-none flex w-full max-w-sm items-center justify-between rounded-xl border-2 border-mauve-10 bg-white/50 px-4 py-3 text-lg text-night-60">
-          <span>{field.options?.[0] ?? 'Select…'}</span>
-          <span aria-hidden className="text-mauve-40">▾</span>
-        </div>
-      ) : field.type === 'checkbox' ? (
-        <div className="pointer-events-none flex items-center gap-4 py-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded border-2 border-mauve-20 bg-white" />
-          <span className="text-xl text-night-60">
-            {field.placeholder ?? field.label}
-          </span>
-        </div>
-      ) : (
-        <div className="pointer-events-none w-full max-w-md border-b-2 border-mauve-20 pb-2 text-xl text-night-40 opacity-60">
-          {field.placeholder ?? 'Type your answer here...'}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function Preview({
-  definition,
-  pageIndex,
-  selection,
-  onSelectField,
-  ending,
-}: {
-  definition: FormDefinition
-  pageIndex: number
-  selection: Selection
-  onSelectField: (pageId: string, fieldId: string) => void
-  ending: boolean
-}) {
-  const page = definition.pages[pageIndex]
-  const progress = ending ? 100 : ((pageIndex + 1) / definition.pages.length) * 100
-
-  return (
-    <div className="relative flex h-full flex-col items-center overflow-y-auto px-12 py-16">
-      <div className="w-full max-w-2xl shrink-0 space-y-12">
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.14em] text-mauve-40">
-            <span>{ending ? 'Done' : `Step ${pageIndex + 1} of ${definition.pages.length}`}</span>
-            <span className="tabular-nums">{Math.round(progress)}%</span>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-mauve-10">
-            <div
-              className="h-full rounded-full bg-mauve transition-[width] duration-500 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
-
-        {ending ? (
-          <div className="space-y-6 py-20 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-everest-green-10 text-everest-green">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </div>
-            <p className="text-3xl font-medium tracking-tight text-night-80">
-              {definition.theme?.thankYouMessage?.trim() || 'Thanks for your submission!'}
-            </p>
-          </div>
-        ) : page ? (
-          <div className="space-y-8">
-            {page.title ? (
-              <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-mauve-60">
-                {page.title}
-              </h2>
-            ) : null}
-            
-            <div className="space-y-6">
-              {page.fields.length === 0 ? (
-                <div className="rounded-2xl border-2 border-dashed border-mauve-10 px-8 py-20 text-center">
-                  <p className="text-lg text-night-40">This step is empty.</p>
-                  <p className="mt-1 text-sm text-night-40">Add a field from the left sidebar.</p>
-                </div>
-              ) : (
-                page.fields.map((field) => (
-                  <PreviewField
-                    key={field.id}
-                    field={field}
-                    selected={selection.kind === 'field' && selection.fieldId === field.id}
-                    onSelect={() => onSelectField(page.id, field.id)}
-                  />
-                ))
-              )}
-            </div>
-            
-            {page.fields.length > 0 ? (
-              <div className="pointer-events-none mt-12">
-                <div className="inline-flex h-12 items-center rounded-full bg-mauve px-8 text-base font-medium text-white shadow-[0_8px_20px_rgba(70,29,76,0.2)]">
-                  {pageIndex === definition.pages.length - 1 ? 'Submit' : 'Continue'}
-                </div>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-    </div>
-  )
-}
-
-/* ------------------------------------------------------------------ */
 /* Builder                                                              */
 /* ------------------------------------------------------------------ */
 
 export function FormBuilder({
   definition,
   onChange,
+  previewTitle = 'Preview',
 }: {
   definition: FormDefinition
   onChange: (definition: FormDefinition) => void
+  previewTitle?: string
 }) {
   const firstPage = definition.pages[0]
   const [selection, setSelection] = useState<Selection>(
@@ -593,18 +453,26 @@ export function FormBuilder({
         </div>
       </div>
 
-      {/* 2. Center Pane: Live Preview */}
-      <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[#F2F1EF]">
-        {/* Top subtle fade to indicate scrolling */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-gradient-to-b from-[#F2F1EF] to-transparent" />
-        <Preview
+      {/* 2. Center Pane: Live preview (same FormRenderer as public /f/:slug) */}
+      <div className="relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-[#F2F1EF] px-6 py-10">
+        <FormRenderer
+          formId="preview"
+          slug="preview"
+          title={previewTitle}
           definition={definition}
-          pageIndex={activePageIndex}
-          selection={selection}
-          ending={selection.kind === 'ending'}
-          onSelectField={(pageId, fieldId) => setSelection({ kind: 'field', pageId, fieldId })}
+          preview={{
+            pageIndex: activePageIndex,
+            showEnding: selection.kind === 'ending',
+            selectedFieldId: selection.kind === 'field' ? selection.fieldId : undefined,
+            onSelectField: (pageId, fieldId) =>
+              setSelection({ kind: 'field', pageId, fieldId }),
+            onPageIndexChange: (index) => {
+              const page = definition.pages[index]
+              if (page) setSelection({ kind: 'page', pageId: page.id })
+            },
+            onShowEnding: () => setSelection({ kind: 'ending' }),
+          }}
         />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-8 bg-gradient-to-t from-[#F2F1EF] to-transparent" />
       </div>
 
       {/* 3. Right Pane: Inspector Settings */}

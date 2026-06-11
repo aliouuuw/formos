@@ -281,6 +281,7 @@ function FormEditorPage() {
         mode === 'builder' && definition ? (
           <FormBuilder
             definition={definition}
+            previewTitle={title.trim() || 'Preview'}
             onChange={(next) => {
               setDefinition(next)
               markDirty()

@@ -12,7 +12,7 @@ Formos — project progress log
 
 Next up (priority order)
 -------------------------
-1. Builder preview ↔ FormRenderer alignment (UX-001, UX-034) — staff still can't trust WYSIWYG.
+1. ~~Builder preview ↔ FormRenderer alignment (UX-001, UX-034)~~ — done.
 2. Slug change redirect / warning (backlog slug-change-redirect, UX-033 partial).
 3. Duplicate submission guard + spam honeypot (lead pipeline hygiene).
 4. Embeddable forms (backlog embed-mode).

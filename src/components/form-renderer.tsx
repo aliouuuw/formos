@@ -8,6 +8,7 @@ import { Panel, PanelBody, PanelHeader } from '#/components/ui/panel'
 import { Textarea } from '#/components/ui/textarea'
 import { formProgressPercent } from '#/lib/form-progress'
 import type { FormDefinition, FormField } from '#/lib/form-types'
+import { cn } from '#/lib/utils'
 import { client } from '#/orpc/client'
 
 function getSessionId() {
@@ -106,19 +107,36 @@ function FieldInput({
   )
 }
 
+export type FormRendererPreviewProps = {
+  pageIndex: number
+  showEnding: boolean
+  selectedFieldId?: string
+  onSelectField?: (pageId: string, fieldId: string) => void
+  onPageIndexChange?: (index: number) => void
+  onShowEnding?: () => void
+}
+
 export function FormRenderer({
   formId,
   slug,
   title,
   definition,
+  preview,
 }: {
   formId: string
   slug: string
   title: string
   definition: FormDefinition
+  preview?: FormRendererPreviewProps
 }) {
-  const sessionId = useMemo(() => getSessionId(), [])
-  const [pageIndex, setPageIndex] = useState(0)
+  const isPreview = Boolean(preview)
+  const sessionId = useMemo(() => (isPreview ? 'preview' : getSessionId()), [isPreview])
+  const [internalPageIndex, setInternalPageIndex] = useState(0)
+  const pageIndex = preview ? preview.pageIndex : internalPageIndex
+  const setPageIndex = (index: number) => {
+    if (preview?.onPageIndexChange) preview.onPageIndexChange(index)
+    else setInternalPageIndex(index)
+  }
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [submitted, setSubmitted] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -126,13 +144,18 @@ export function FormRenderer({
 
   const page = definition.pages[pageIndex]
   const isLastPage = pageIndex === definition.pages.length - 1
-  const progress = formProgressPercent(pageIndex, definition.pages.length, false)
+  const progress = formProgressPercent(pageIndex, definition.pages.length, preview?.showEnding ?? false)
+
+  useEffect(() => {
+    if (!preview?.showEnding) setSubmitted(null)
+  }, [preview?.showEnding])
 
   const viewedRef = useRef(false)
   const startedRef = useRef(false)
   const viewedFieldsRef = useRef(new Set<string>())
 
   useEffect(() => {
+    if (isPreview) return
     if (viewedRef.current) return
     viewedRef.current = true
     void client.analytics.track({
@@ -141,9 +164,10 @@ export function FormRenderer({
       eventType: 'form_viewed',
       pageId: definition.pages[0]?.id,
     })
-  }, [definition.pages, formId, sessionId])
+  }, [definition.pages, formId, isPreview, sessionId])
 
   useEffect(() => {
+    if (isPreview) return
     if (pageIndex === 0 || !page?.id) return
     void client.analytics.track({
       formId,
@@ -151,7 +175,7 @@ export function FormRenderer({
       eventType: 'page_viewed',
       pageId: page.id,
     })
-  }, [formId, page?.id, pageIndex, sessionId])
+  }, [formId, isPreview, page?.id, pageIndex, sessionId])
 
   const trackFieldViewed = useCallback(
     (fieldId: string, pageId: string) => {
@@ -209,7 +233,7 @@ export function FormRenderer({
   }
 
   async function handleNext() {
-    if (!startedRef.current) {
+    if (!isPreview && !startedRef.current) {
       startedRef.current = true
       void client.analytics.track({ formId, sessionId, eventType: 'form_started' })
     }
@@ -221,6 +245,19 @@ export function FormRenderer({
     }
 
     setError(null)
+
+    if (isPreview) {
+      if (isLastPage) {
+        const message =
+          definition.theme?.thankYouMessage?.trim() || 'Thanks for your submission!'
+        setSubmitted(message)
+        preview?.onShowEnding?.()
+      } else {
+        setPageIndex(pageIndex + 1)
+      }
+      return
+    }
+
     setLoading(true)
     try {
       if (isLastPage) {
@@ -244,7 +281,7 @@ export function FormRenderer({
         })
         setSubmitted(result.thankYouMessage)
       } else {
-        setPageIndex((i) => i + 1)
+        setPageIndex(pageIndex + 1)
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Submission failed')
@@ -253,7 +290,13 @@ export function FormRenderer({
     }
   }
 
-  if (submitted) {
+  const thankYouMessage =
+    submitted ??
+    (preview?.showEnding
+      ? definition.theme?.thankYouMessage?.trim() || 'Thanks for your submission!'
+      : null)
+
+  if (thankYouMessage) {
     return (
       <Panel className="mx-auto max-w-xl">
         <PanelBody className="space-y-4 py-12 text-center">
@@ -261,7 +304,7 @@ export function FormRenderer({
             Submitted
           </Badge>
           <h2 className="font-display text-3xl text-night-80">Thank you</h2>
-          <p className="mx-auto max-w-sm text-base leading-relaxed text-night-60">{submitted}</p>
+          <p className="mx-auto max-w-sm text-base leading-relaxed text-night-60">{thankYouMessage}</p>
         </PanelBody>
       </Panel>
     )
@@ -294,29 +337,47 @@ export function FormRenderer({
       </PanelHeader>
 
       <PanelBody className="space-y-6">
-        {page.fields.map((field) => (
-          <div key={field.id} className="space-y-2">
-            {field.type !== 'checkbox' ? (
-              <Label htmlFor={field.id}>
-                {field.label}
-                {field.required ? ' *' : ''}
-              </Label>
-            ) : null}
-            <FieldInput
-              field={field}
-              value={answers[field.id] ?? ''}
-              onChange={(value) => {
-                setAnswers((prev) => ({ ...prev, [field.id]: value }))
-              }}
-              onFocus={() => {
-                if (page.id) trackFieldViewed(field.id, page.id)
-              }}
-              onBlur={() => {
-                if (page.id) trackFieldAnswered(field.id, page.id, answers[field.id] ?? '')
-              }}
-            />
+        {page.fields.length === 0 ? (
+          <div className="rounded-xl border-2 border-dashed border-mauve-10 px-6 py-12 text-center">
+            <p className="text-sm text-night-60">This step has no fields yet.</p>
           </div>
-        ))}
+        ) : (
+          page.fields.map((field) => (
+            <div
+              key={field.id}
+              className={cn(
+                'space-y-2 rounded-xl transition-colors',
+                preview?.selectedFieldId === field.id && 'bg-mauve-05/60 ring-1 ring-mauve-10 p-3 -mx-3',
+              )}
+            >
+              {field.type !== 'checkbox' ? (
+                <Label htmlFor={field.id}>
+                  {field.label}
+                  {field.required ? ' *' : ''}
+                </Label>
+              ) : null}
+              <FieldInput
+                field={field}
+                value={answers[field.id] ?? ''}
+                onChange={(value) => {
+                  setAnswers((prev) => ({ ...prev, [field.id]: value }))
+                }}
+                onFocus={() => {
+                  if (preview?.onSelectField && page.id) {
+                    preview.onSelectField(page.id, field.id)
+                  } else if (page.id) {
+                    trackFieldViewed(field.id, page.id)
+                  }
+                }}
+                onBlur={() => {
+                  if (!preview && page.id) {
+                    trackFieldAnswered(field.id, page.id, answers[field.id] ?? '')
+                  }
+                }}
+              />
+            </div>
+          ))
+        )}
 
         {error ? (
           <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -330,7 +391,7 @@ export function FormRenderer({
             variant="ghost"
             size="sm"
             disabled={pageIndex === 0 || loading}
-            onClick={() => setPageIndex((i) => Math.max(0, i - 1))}
+            onClick={() => setPageIndex(Math.max(0, pageIndex - 1))}
           >
             Back
           </Button>
