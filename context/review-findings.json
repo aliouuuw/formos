@@ -1,8 +1,9 @@
 {
   "project": "formos",
   "reviewed": "2026-06-10",
+  "ux_reviewed": "2026-06-11",
   "remediated": "2026-06-10",
-  "method": "Manual full-codebase review (Bugbot + Security subagents had no git diff on main)",
+  "method": "Manual full-codebase review (Bugbot + Security subagents had no git diff on main); UX/UI + color audit via admin screenshots and component/token review (2026-06-11)",
   "bugbot": [
     {
       "id": "BUG-001",
@@ -85,18 +86,436 @@
       "finding": "Inngest handler is public; ensure INNGEST_SIGNING_KEY is set in production."
     }
   ],
+  "ux": [
+    {
+      "id": "UX-001",
+      "severity": "critical",
+      "category": "builder",
+      "location": "src/components/form-builder.tsx (Preview vs src/components/form-renderer.tsx)",
+      "finding": "Builder live preview is a separate static Preview component (pointer-events-none fake inputs), not FormRenderer — diverges on progress bar, validation, page transitions, and field chrome. Staff cannot trust WYSIWYG."
+    },
+    {
+      "id": "UX-002",
+      "severity": "critical",
+      "category": "builder",
+      "location": "src/components/form-builder.tsx:281, src/components/form-renderer.tsx:128",
+      "finding": "Progress bar uses page index only (e.g. single-step forms show Step 1 of 1 and 100% before any answers). Misleading for lead-capture and funnel analytics."
+    },
+    {
+      "id": "UX-003",
+      "severity": "high",
+      "category": "builder",
+      "location": "src/components/form-builder.tsx (FieldInspector, PreviewField), src/components/form-renderer.tsx:183",
+      "finding": "Checkbox fields use Question + Placeholder in inspector but render placeholder ?? label in preview/renderer; validation errors reference field.label. Confusing for builders (e.g. label 'valid?' vs type 'Checkbox')."
+    },
+    {
+      "id": "UX-004",
+      "severity": "high",
+      "category": "editor",
+      "location": "src/routes/admin/forms/$formId.tsx:199-203",
+      "finding": "View live link uses server form.slug while editor allows unsaved local slug edits — opens wrong URL if user changed slug without saving."
+    },
+    {
+      "id": "UX-005",
+      "severity": "high",
+      "category": "editor",
+      "location": "src/routes/admin/forms/$formId.tsx:53-60",
+      "finding": "Unsaved changes guarded only via beforeunload — no in-app blocker when navigating sidebar, back link, or Build/Results tabs. Risk of silent data loss."
+    },
+    {
+      "id": "UX-006",
+      "severity": "high",
+      "category": "workspace",
+      "location": "src/routes/admin/index.tsx (createMutation)",
+      "finding": "Create form mutation has no onError / toast — duplicate slug and server errors fail silently (unlike editor save/publish)."
+    },
+    {
+      "id": "UX-007",
+      "severity": "medium",
+      "category": "workspace",
+      "location": "src/routes/admin/index.tsx",
+      "finding": "Each form row wrapped in full double-bezel Panel — heavy visual weight; list feels flat and card-heavy on ivory canvas."
+    },
+    {
+      "id": "UX-008",
+      "severity": "medium",
+      "category": "workspace",
+      "location": "src/routes/admin/index.tsx",
+      "finding": "Form rows only offer Edit and Open live — no duplicate, archive, delete, or copy-link actions."
+    },
+    {
+      "id": "UX-009",
+      "severity": "medium",
+      "category": "workspace",
+      "location": "src/routes/admin/index.tsx",
+      "finding": "Draft forms have no Open live or share preview from list; only builder preview exists until publish."
+    },
+    {
+      "id": "UX-010",
+      "severity": "medium",
+      "category": "workspace",
+      "location": "src/routes/admin/index.tsx, src/routes/admin/leads.tsx, submissions routes",
+      "finding": "Loading states are plain text strings only — no skeletons; layout shifts when data arrives."
+    },
+    {
+      "id": "UX-011",
+      "severity": "medium",
+      "category": "workspace",
+      "location": "src/routes/admin/index.tsx, src/routes/admin/leads.tsx",
+      "finding": "No search or sort on forms list or leads list — will not scale beyond small datasets (leads capped at 200 server-side)."
+    },
+    {
+      "id": "UX-012",
+      "severity": "medium",
+      "category": "shell",
+      "location": "src/components/app-shell.tsx:61",
+      "finding": "Sidebar brand link targets marketing home (/) instead of admin workspace (/admin) for logged-in staff."
+    },
+    {
+      "id": "UX-013",
+      "severity": "low",
+      "category": "shell",
+      "location": "src/integrations/better-auth/header-user.tsx",
+      "finding": "Sidebar account area shows avatar + Sign out only — no display name or email for identity on shared machines."
+    },
+    {
+      "id": "UX-014",
+      "severity": "medium",
+      "category": "builder",
+      "location": "src/components/form-builder.tsx (FieldRow)",
+      "finding": "Drag handle and delete control opacity-0 until group-hover — poor discoverability for non-power users."
+    },
+    {
+      "id": "UX-015",
+      "severity": "medium",
+      "category": "builder",
+      "location": "src/components/form-builder.tsx",
+      "finding": "Field inspector and step settings live below structure rail in one scroll column — settings scroll out of view as forms grow."
+    },
+    {
+      "id": "UX-016",
+      "severity": "medium",
+      "category": "editor",
+      "location": "src/routes/admin/forms/$formId.tsx:188-198",
+      "finding": "Save control shows disabled outline 'Saved' when clean — reads as broken/inactive rather than success state (see also COLOR-011)."
+    },
+    {
+      "id": "UX-017",
+      "severity": "low",
+      "category": "editor",
+      "location": "src/routes/admin/forms/$formId.tsx:240-247",
+      "finding": "Edit JSON toggle sits in tab row without advanced affordance or warning — easy mis-click for non-technical builders."
+    },
+    {
+      "id": "UX-018",
+      "severity": "medium",
+      "category": "editor",
+      "location": "src/routes/admin/forms/$formId.tsx (publishMutation)",
+      "finding": "Publish allowed without inline summary of prerequisites (empty steps, missing required fields, etc.)."
+    },
+    {
+      "id": "UX-019",
+      "severity": "medium",
+      "category": "analytics",
+      "location": "src/routes/admin/forms/$formId.tsx:315-319",
+      "finding": "Results funnel lists raw event_type strings (form_viewed, field_answered) — not human-readable for marketing/sales staff."
+    },
+    {
+      "id": "UX-020",
+      "severity": "medium",
+      "category": "analytics",
+      "location": "src/routes/admin/forms/$formId.tsx:283-298",
+      "finding": "Results tab uses large hero metric row (Views/Starts/Completions) — contradicts PRODUCT.md anti-reference for generic SaaS dashboard patterns."
+    },
+    {
+      "id": "UX-021",
+      "severity": "medium",
+      "category": "leads",
+      "location": "src/routes/admin/leads.tsx (updateMutation)",
+      "finding": "Lead status updates have no success/error toast — failures are silent."
+    },
+    {
+      "id": "UX-022",
+      "severity": "low",
+      "category": "leads",
+      "location": "src/routes/admin/leads.tsx:106-125",
+      "finding": "Native HTML select for lead status breaks rounded Input/Button design language."
+    },
+    {
+      "id": "UX-023",
+      "severity": "medium",
+      "category": "leads",
+      "location": "src/routes/admin/leads.tsx",
+      "finding": "Leads list only — no detail view, notes, owner assignment, or drill-down (see backlog lead-detail-notes)."
+    },
+    {
+      "id": "UX-024",
+      "severity": "medium",
+      "category": "submissions",
+      "location": "src/routes/admin/forms/$formId.submissions.tsx",
+      "finding": "Submissions table shows at most 4 field columns plus '+N more'; no pagination UI despite list cap."
+    },
+    {
+      "id": "UX-025",
+      "severity": "low",
+      "category": "public",
+      "location": "src/routes/f/$slug.tsx",
+      "finding": "Unpublished/missing forms show generic Unavailable message — no staff-facing preview URL for drafts."
+    },
+    {
+      "id": "UX-026",
+      "severity": "medium",
+      "category": "public",
+      "location": "src/components/form-renderer.tsx, src/lib/form-types.ts",
+      "finding": "No GDPR/consent checkbox or privacy notice in form definition or public renderer despite PII + UTM collection."
+    },
+    {
+      "id": "UX-027",
+      "severity": "low",
+      "category": "public",
+      "location": "src/components/form-renderer.tsx:255 vs form-builder ending preview",
+      "finding": "Thank-you screen uses font-display (Fraunces); builder ending preview uses system sans — another preview mismatch."
+    },
+    {
+      "id": "UX-028",
+      "severity": "high",
+      "category": "a11y",
+      "location": "src/components/form-builder.tsx (FieldRow drag handle)",
+      "finding": "Field reorder drag handle has tabIndex={-1} — not keyboard accessible for inclusive admin use."
+    },
+    {
+      "id": "UX-029",
+      "severity": "medium",
+      "category": "ia",
+      "location": "src/routes/admin/forms/$formId.tsx, src/routes/admin/leads.tsx",
+      "finding": "Leads pipeline disconnected from per-form Results — no 'view leads for this form' from editor; submissions only linked from Results tab."
+    },
+    {
+      "id": "UX-030",
+      "severity": "low",
+      "category": "brand",
+      "location": "PRODUCT.md vs src/styles.css",
+      "finding": "PRODUCT.md documents bone background and one sans family; code uses summit-ivory and Fraunces + Plus Jakarta — doc/code drift."
+    },
+    {
+      "id": "UX-031",
+      "severity": "low",
+      "category": "dev",
+      "location": "src/routes/__root.tsx:57-68",
+      "finding": "TanStack devtools render bottom-right in development — clutters screenshots and local demos (not production)."
+    },
+    {
+      "id": "UX-032",
+      "severity": "medium",
+      "category": "brand",
+      "location": "src/components/ui/button.tsx, admin routes",
+      "finding": "Three competing primary accents (mauve, everest-green, gold) with no documented hierarchy — Create, Submit, Publish, Continue use different colors per screen."
+    },
+    {
+      "id": "UX-033",
+      "severity": "high",
+      "category": "editor",
+      "location": "src/routes/admin/forms/$formId.tsx (slug input)",
+      "finding": "No warning when editing slug on published form — breaks shared /f/old-slug links (see backlog slug-change-redirect)."
+    },
+    {
+      "id": "UX-034",
+      "severity": "medium",
+      "category": "builder",
+      "location": "HANDOVER.md known issues #5",
+      "finding": "Builder preview select always shows first option; no interactive validation or page transitions — documented gap still open."
+    },
+    {
+      "id": "UX-035",
+      "severity": "low",
+      "category": "a11y",
+      "location": "src/components/form-builder.tsx (PreviewField)",
+      "finding": "Selected field in preview lacks aria-selected; preview fields use role=button wrappers only."
+    }
+  ],
+  "color": [
+    {
+      "id": "COLOR-001",
+      "severity": "high",
+      "category": "sidebar",
+      "location": "src/components/app-shell.tsx:41 (inactive NavItem dot)",
+      "finding": "Inactive nav indicator uses bg-mauve-20 — ~1.48:1 contrast on white, effectively invisible.",
+      "contrast_ratio": "1.48:1",
+      "wcag": "fail"
+    },
+    {
+      "id": "COLOR-002",
+      "severity": "high",
+      "category": "sidebar",
+      "location": "src/components/app-shell.tsx:63",
+      "finding": "Brand sublabel 'EVEREST FINANCE' uses text-everest-green-60 at 10px uppercase — ~4.18:1 on white, fails WCAG AA normal text (needs 4.5:1).",
+      "contrast_ratio": "4.18:1",
+      "wcag": "fail_normal_text"
+    },
+    {
+      "id": "COLOR-003",
+      "severity": "high",
+      "category": "sidebar",
+      "location": "src/components/app-shell.tsx:33-35",
+      "finding": "Active nav uses full mauve pill + white text + shadow; inactive uses text-night-60 only (~5.25:1). Passes AA numerically but inactive items read as disabled, not available — strong perceptual contrast imbalance.",
+      "contrast_ratio": "5.25:1 inactive text",
+      "wcag": "pass_aa_marginal"
+    },
+    {
+      "id": "COLOR-004",
+      "severity": "high",
+      "category": "sidebar",
+      "location": "src/components/app-shell.tsx:78-94",
+      "finding": "Mobile admin header uses ghost buttons only — no active-state pill or underline; users cannot see current section.",
+      "wcag": "n/a"
+    },
+    {
+      "id": "COLOR-005",
+      "severity": "medium",
+      "category": "tokens",
+      "location": "src/styles.css:132-139 vs src/components/app-shell.tsx",
+      "finding": "--sidebar-primary, --sidebar-accent, etc. are defined in CSS but AppShell nav uses ad-hoc mauve classes — semantic sidebar tokens unused.",
+      "wcag": "n/a"
+    },
+    {
+      "id": "COLOR-006",
+      "severity": "medium",
+      "category": "tokens",
+      "location": "src/styles.css:134, src/components/app-shell.tsx:34",
+      "finding": "CSS sets --sidebar-primary to everest-green but active nav fill is mauve — primary color role inconsistent across admin shell and actions (links, slugs, outline buttons use green).",
+      "wcag": "n/a"
+    },
+    {
+      "id": "COLOR-007",
+      "severity": "high",
+      "category": "typography",
+      "location": "src/components/ui/label.tsx:9",
+      "finding": "Label component uses text-mauve-60 at 11px uppercase — ~4.0:1 on white, fails WCAG AA normal text. Affects builder inspector, table headers, leads labels.",
+      "contrast_ratio": "4.00:1",
+      "wcag": "fail_normal_text"
+    },
+    {
+      "id": "COLOR-008",
+      "severity": "high",
+      "category": "forms",
+      "location": "src/components/ui/input.tsx:10",
+      "finding": "Input placeholders use text-night-40 — ~2.71:1 on white, fails WCAG.",
+      "contrast_ratio": "2.71:1",
+      "wcag": "fail"
+    },
+    {
+      "id": "COLOR-009",
+      "severity": "medium",
+      "category": "builder",
+      "location": "src/components/form-builder.tsx (step move/delete icons)",
+      "finding": "Builder chrome icons use text-mauve-40 — ~2.33:1 on white, fails WCAG.",
+      "contrast_ratio": "2.33:1",
+      "wcag": "fail"
+    },
+    {
+      "id": "COLOR-010",
+      "severity": "medium",
+      "category": "borders",
+      "location": "src/components/ui/panel.tsx, app-shell, inputs (border-mauve/10, /15)",
+      "finding": "Structural hairline borders at mauve 10–15% alpha are ~1.2–1.3:1 vs white — boundaries barely visible; fields and panels blend into ivory canvas.",
+      "contrast_ratio": "1.21:1 (mauve/10)",
+      "wcag": "fail_non_text"
+    },
+    {
+      "id": "COLOR-011",
+      "severity": "high",
+      "category": "buttons",
+      "location": "src/components/ui/button.tsx:7, src/routes/admin/forms/$formId.tsx:188-198",
+      "finding": "Disabled button variant applies opacity-50 — 'Saved' state at ~2:1 effective contrast reads as broken UI, not success.",
+      "contrast_ratio": "~2.03:1 effective",
+      "wcag": "fail"
+    },
+    {
+      "id": "COLOR-012",
+      "severity": "medium",
+      "category": "surfaces",
+      "location": "src/components/ui/panel.tsx:14-16",
+      "finding": "Panel double-bezel outer shell (bg-mauve-05 + ring-mauve-10) has very low separation on summit-ivory — forms list lacks depth hierarchy.",
+      "wcag": "n/a"
+    },
+    {
+      "id": "COLOR-013",
+      "severity": "medium",
+      "category": "typography",
+      "location": "src/components/form-builder.tsx:287, src/components/page-header.tsx, admin section headers",
+      "finding": "11px uppercase kickers and progress labels use text-mauve-60 — borderline or failing at ~4.0:1 on white/ivory.",
+      "contrast_ratio": "3.89-4.00:1",
+      "wcag": "fail_normal_text"
+    },
+    {
+      "id": "COLOR-014",
+      "severity": "low",
+      "category": "sidebar",
+      "location": "src/components/app-shell.tsx:41",
+      "finding": "Active nav gold dot on mauve pill is ~5.23:1 — passes AA for UI components but marginal at 6px; white/ivory dot would be clearer.",
+      "contrast_ratio": "5.23:1",
+      "wcag": "pass_aa_marginal"
+    },
+    {
+      "id": "COLOR-015",
+      "severity": "medium",
+      "category": "tokens",
+      "location": "src/styles.css (--night-60, --mauve-60, --everest-green-60)",
+      "finding": "Muted text relies on rgba opacity on white rather than solid verified hex tokens — same -60 steps used at sizes requiring 4.5:1 across admin UI.",
+      "wcag": "systemic"
+    },
+    {
+      "id": "COLOR-016",
+      "severity": "medium",
+      "category": "builder",
+      "location": "src/components/form-builder.tsx:221,315",
+      "finding": "Preview placeholder and empty-state copy use text-night-40 — fails contrast (~2.71:1).",
+      "contrast_ratio": "2.71:1",
+      "wcag": "fail"
+    },
+    {
+      "id": "COLOR-017",
+      "severity": "low",
+      "category": "builder",
+      "location": "src/components/form-builder.tsx:117,528",
+      "finding": "Unselected field type glyphs use text-mauve-60 on bg-mauve-05 — ~3.65:1, fails normal text AA.",
+      "contrast_ratio": "3.65:1",
+      "wcag": "fail_normal_text"
+    },
+    {
+      "id": "COLOR-018",
+      "severity": "low",
+      "category": "builder",
+      "location": "src/components/form-builder.tsx:447-448",
+      "finding": "Selected vs unselected rows in structure rail both use subtle mauve-05 washes — selection state easy to miss (luminance too close).",
+      "wcag": "n/a"
+    }
+  ],
   "positive": [
     "Admin oRPC routes use authedContext with session checks",
     "Form ownership verified on update, publish, and stats (createdBy)",
     "Lead status updates check form ownership",
     "Sign-up disabled server-side (disableSignUp: true)",
     "Auth isolated in src/server/auth.ts (avoids pg leaking to client bundle)",
-    "Public forms only return published forms by slug"
+    "Public forms only return published forms by slug",
+    "Admin shell layout is coherent: sidebar + workspace, warm ivory canvas, mauve accent",
+    "Build vs Results tab separation matches PRODUCT.md strategic principles",
+    "Editor dirty state (gold dot), save toasts, and beforeunload guard implemented",
+    "Form slug in mono everest-green is strong wayfinding (~14:1 on ivory)",
+    "Active nav white-on-mauve and outline everest-green buttons pass AAA contrast",
+    "Badge text on tinted backgrounds (mauve/everest at 10% alpha) passes contrast"
   ],
   "priority_fixes": [
     "Server-side answer validation on submit",
     "Rate limiting on public submit and track endpoints",
-    "DB transaction for submission + lead creation"
+    "DB transaction for submission + lead creation",
+    "Align builder preview with FormRenderer (UX-001)",
+    "Fix progress bar semantics for single- and multi-step forms (UX-002)",
+    "In-app unsaved-changes navigation guard (UX-005)",
+    "Sidebar nav contrast: inactive dot, sublabel, hover surfaces, mobile active state (COLOR-001–004)",
+    "Replace failing muted tokens: labels, placeholders, borders (COLOR-007–011)",
+    "Document and unify primary action color (mauve vs everest-green) (COLOR-006, UX-032)",
+    "View live + slug edit consistency and published slug warning (UX-004, UX-033)"
   ],
   "remediation_status": {
     "BUG-001": "fixed",
@@ -111,6 +530,59 @@
     "SEC-003": "fixed",
     "SEC-004": "fixed",
     "SEC-005": "fixed",
-    "SEC-006": "fixed"
+    "SEC-006": "fixed",
+    "UX-001": "open",
+    "UX-002": "open",
+    "UX-003": "open",
+    "UX-004": "open",
+    "UX-005": "open",
+    "UX-006": "open",
+    "UX-007": "open",
+    "UX-008": "open",
+    "UX-009": "open",
+    "UX-010": "open",
+    "UX-011": "open",
+    "UX-012": "open",
+    "UX-013": "open",
+    "UX-014": "open",
+    "UX-015": "open",
+    "UX-016": "open",
+    "UX-017": "open",
+    "UX-018": "open",
+    "UX-019": "open",
+    "UX-020": "open",
+    "UX-021": "open",
+    "UX-022": "open",
+    "UX-023": "open",
+    "UX-024": "open",
+    "UX-025": "open",
+    "UX-026": "open",
+    "UX-027": "open",
+    "UX-028": "open",
+    "UX-029": "open",
+    "UX-030": "open",
+    "UX-031": "open",
+    "UX-032": "open",
+    "UX-033": "open",
+    "UX-034": "open",
+    "UX-035": "open",
+    "COLOR-001": "open",
+    "COLOR-002": "open",
+    "COLOR-003": "open",
+    "COLOR-004": "open",
+    "COLOR-005": "open",
+    "COLOR-006": "open",
+    "COLOR-007": "open",
+    "COLOR-008": "open",
+    "COLOR-009": "open",
+    "COLOR-010": "open",
+    "COLOR-011": "open",
+    "COLOR-012": "open",
+    "COLOR-013": "open",
+    "COLOR-014": "open",
+    "COLOR-015": "open",
+    "COLOR-016": "open",
+    "COLOR-017": "open",
+    "COLOR-018": "open"
   }
 }
