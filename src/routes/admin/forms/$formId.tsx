@@ -10,6 +10,10 @@ import { Label } from '#/components/ui/label'
 import { Textarea } from '#/components/ui/textarea'
 import { formatAnalyticsEvent } from '#/lib/analytics-labels'
 import { formDefinitionSchema, slugify } from '#/lib/form-types'
+import {
+  describeSlugRedirectTtl,
+  getClientSlugRedirectTtlDays,
+} from '#/lib/slug-redirect-config.shared'
 import type { FormDefinition } from '#/lib/form-types'
 import { cn } from '#/lib/utils'
 import { orpc } from '#/orpc/client'
@@ -145,6 +149,7 @@ function FormEditorPage() {
   const published = form.status === 'published'
   const normalizedSlug = slugify(slug)
   const slugChanged = normalizedSlug !== savedSlugRef.current
+  const slugRedirectTtlDays = getClientSlugRedirectTtlDays()
 
   return (
     <div className="space-y-8">
@@ -198,8 +203,16 @@ function FormEditorPage() {
                 <span className="font-medium text-night-80">Slug change on a live form.</span>{' '}
                 After you save,{' '}
                 <span className="font-mono text-everest-green">/f/{savedSlugRef.current}</span> will
-                keep working and show this form. New visitors should use{' '}
+                keep working {describeSlugRedirectTtl(slugRedirectTtlDays)} and show this form.
+                New visitors should use{' '}
                 <span className="font-mono text-everest-green">/f/{normalizedSlug}</span>.
+                {slugRedirectTtlDays > 0 ? (
+                  <>
+                    {' '}
+                    Set <span className="font-mono">SLUG_REDIRECT_TTL_DAYS=0</span> for permanent
+                    redirects.
+                  </>
+                ) : null}
               </p>
             ) : null}
           </div>

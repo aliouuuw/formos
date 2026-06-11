@@ -119,7 +119,7 @@
       "title": "Slug change breaks live links",
       "status": "done",
       "priority": "medium",
-      "notes": "form_slug_redirects table + resolvePublishedFormBySlug; inline editor warning on published slug edits."
+      "notes": "form_slug_redirects + resolvePublishedFormBySlug; TTL via SLUG_REDIRECT_TTL_DAYS (default 90, 0=permanent)."
     },
     {
       "id": "duplicate-submission-guard",

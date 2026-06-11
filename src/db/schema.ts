@@ -95,10 +95,12 @@ export const formSlugRedirects = pgTable(
       .references(() => forms.id, { onDelete: 'cascade' }),
     slug: text('slug').notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
+    expiresAt: timestamp('expires_at'),
   },
   (table) => [
     uniqueIndex('form_slug_redirects_slug_idx').on(table.slug),
     index('form_slug_redirects_form_id_idx').on(table.formId),
+    index('form_slug_redirects_expires_at_idx').on(table.expiresAt),
   ],
 )
 

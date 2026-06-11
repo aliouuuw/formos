@@ -15,10 +15,14 @@ export const env = createEnv({
     INNGEST_SIGNING_KEY: isProduction
       ? z.string().min(1)
       : z.string().optional(),
+    /** Legacy slug redirect TTL in days. 0 = never expire. Default 90. */
+    SLUG_REDIRECT_TTL_DAYS: z.coerce.number().int().min(0).max(3650).optional(),
   },
   clientPrefix: 'VITE_',
   client: {
     VITE_APP_NAME: z.string().default('Formos'),
+    /** Mirror SLUG_REDIRECT_TTL_DAYS for editor UI copy. */
+    VITE_SLUG_REDIRECT_TTL_DAYS: z.coerce.number().int().min(0).max(3650).optional(),
   },
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
@@ -27,7 +31,9 @@ export const env = createEnv({
     ALLOWED_EMAIL_DOMAIN: process.env.ALLOWED_EMAIL_DOMAIN,
     INNGEST_EVENT_KEY: process.env.INNGEST_EVENT_KEY,
     INNGEST_SIGNING_KEY: process.env.INNGEST_SIGNING_KEY,
+    SLUG_REDIRECT_TTL_DAYS: process.env.SLUG_REDIRECT_TTL_DAYS,
     VITE_APP_NAME: import.meta.env.VITE_APP_NAME,
+    VITE_SLUG_REDIRECT_TTL_DAYS: import.meta.env.VITE_SLUG_REDIRECT_TTL_DAYS,
   },
   emptyStringAsUndefined: true,
 })
