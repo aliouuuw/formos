@@ -19,10 +19,10 @@ function useNavActive(match: string) {
 
 const navLinkClass = (active: boolean) =>
   cn(
-    'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-200',
+    'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors duration-200',
     active
-      ? 'bg-mauve text-white shadow-[0_8px_20px_rgba(70,29,76,0.22)]'
-      : 'text-night-80 hover:bg-mauve-05 hover:text-mauve',
+      ? 'bg-mauve-05 text-mauve font-medium'
+      : 'text-night-60 hover:bg-mauve-05/50 hover:text-night-80 font-medium',
   )
 
 function NavItem({
@@ -41,7 +41,7 @@ function NavItem({
       <span
         className={cn(
           'h-1.5 w-1.5 shrink-0 rounded-full',
-          active ? 'bg-white' : 'bg-mauve-40',
+          active ? 'bg-mauve' : 'bg-transparent',
         )}
         aria-hidden
       />
@@ -63,7 +63,7 @@ function MobileNavItem({
 
   return (
     <Link to={to} aria-current={active ? 'page' : undefined}>
-      <Button variant={active ? 'mauve' : 'ghost'} size="sm">
+      <Button variant={active ? 'everest' : 'ghost'} size="sm">
         {label}
       </Button>
     </Link>
