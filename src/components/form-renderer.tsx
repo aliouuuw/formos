@@ -5,6 +5,13 @@ import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { Panel, PanelBody, PanelHeader } from '#/components/ui/panel'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#/components/ui/select'
 import { Textarea } from '#/components/ui/textarea'
 import { formProgressPercent } from '#/lib/form-progress'
 import type { FormDefinition, FormField } from '#/lib/form-types'
@@ -50,22 +57,25 @@ function FieldInput({
 
   if (field.type === 'select') {
     return (
-      <select
-        id={field.id}
-        value={value}
-        onChange={common.onChange}
-        onBlur={onBlur}
-        onFocus={onFocus}
+      <Select
+        value={value || undefined}
+        onValueChange={onChange}
+        onOpenChange={(open) => {
+          if (!open) onBlur?.()
+        }}
         required={field.required}
-        className="flex h-10 w-full rounded-xl border border-border-subtle bg-white px-3 py-2 text-sm text-night focus:border-mauve focus:outline-none focus:ring-2 focus:ring-mauve/10"
       >
-        <option value="">Select...</option>
-        {field.options?.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
+        <SelectTrigger id={field.id} onFocus={onFocus}>
+          <SelectValue placeholder={field.placeholder ?? 'Select...'} />
+        </SelectTrigger>
+        <SelectContent position="popper" className="w-[var(--radix-select-trigger-width)]">
+          {field.options?.map((option) => (
+            <SelectItem key={option} value={option}>
+              {option}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     )
   }
 
@@ -122,12 +132,14 @@ export function FormRenderer({
   title,
   definition,
   preview,
+  panelClassName,
 }: {
   formId: string
   slug: string
   title: string
   definition: FormDefinition
   preview?: FormRendererPreviewProps
+  panelClassName?: string
 }) {
   const isPreview = Boolean(preview)
   const sessionId = useMemo(() => (isPreview ? 'preview' : getSessionId()), [isPreview])
@@ -298,7 +310,7 @@ export function FormRenderer({
 
   if (thankYouMessage) {
     return (
-      <Panel className="mx-auto max-w-xl">
+      <Panel className={cn('mx-auto max-w-xl', panelClassName)}>
         <PanelBody className="space-y-4 py-12 text-center">
           <Badge variant="mauve" className="mx-auto normal-case tracking-[0.18em]">
             Submitted
@@ -313,7 +325,7 @@ export function FormRenderer({
   if (!page) return null
 
   return (
-    <Panel className="mx-auto max-w-xl">
+    <Panel className={cn('mx-auto max-w-xl', panelClassName)}>
       <PanelHeader className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <Badge variant="mauve" className="normal-case tracking-[0.18em]">

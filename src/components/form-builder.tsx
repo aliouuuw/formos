@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   DndContext,
   KeyboardSensor,
@@ -83,9 +83,9 @@ function FieldRow({
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        'group flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors duration-150',
-        selected ? 'bg-mauve-05' : 'hover:bg-mauve-05/50',
-        isDragging && 'z-10 opacity-70 bg-white shadow-sm ring-1 ring-mauve-10',
+        'group flex items-center gap-2 rounded-lg bg-white px-2 py-1.5 transition-colors duration-150',
+        selected ? 'bg-mauve-05' : 'hover:bg-mauve-05',
+        isDragging && 'z-10 opacity-70 shadow-sm ring-1 ring-mauve-10',
       )}
     >
       <button
@@ -141,6 +141,78 @@ function FieldRow({
           <path d="M3.5 3.5l7 7m0-7l-7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       </button>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Field type picker (add field popover)                                  */
+/* ------------------------------------------------------------------ */
+
+function FieldTypePicker({
+  onPick,
+  onClose,
+}: {
+  onPick: (type: FieldType) => void
+  onClose: () => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function onPointerDown(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        onClose()
+      }
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose()
+    }
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [onClose])
+
+  return (
+    <div
+      ref={ref}
+      className="overflow-hidden rounded-xl border border-border-subtle bg-white text-night shadow-lg"
+    >
+      <div className="flex items-center justify-between border-b border-border-subtle bg-white px-3 py-2">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-mauve-60">
+          Field type
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-lg p-1 text-night-40 transition-colors hover:bg-mauve-05 hover:text-night-80"
+          aria-label="Close"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-0.5 bg-white p-1">
+        {fieldTypes.map(({ type, label, glyph }) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => onPick(type)}
+            className="flex flex-col items-center justify-center gap-1.5 rounded-lg bg-white px-2 py-2.5 text-night-60 transition-colors duration-150 hover:bg-mauve-05 hover:text-night-80"
+          >
+            <span
+              className="flex h-6 w-6 items-center justify-center rounded-md bg-mauve-05 text-[11px] font-semibold text-mauve"
+              aria-hidden
+            >
+              {glyph}
+            </span>
+            <span className="text-[10px] font-medium">{label}</span>
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -315,7 +387,7 @@ export function FormBuilder({
           {definition.pages.map((page, pi) => {
             const isActivePage = activePageId === page.id
             return (
-              <section key={page.id} className="relative">
+              <section key={page.id}>
                 <div
                   className={cn(
                     'group mb-2 flex items-center justify-between rounded-lg px-2 py-1.5 transition-colors',
@@ -365,8 +437,7 @@ export function FormBuilder({
                   </div>
                 </div>
 
-                <div className="space-y-0.5 pl-3">
-                  <div className="absolute bottom-6 left-[19px] top-10 w-px bg-mauve-10" aria-hidden />
+                <div className="ml-5 space-y-0.5 border-l border-mauve-10 pl-3">
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -392,29 +463,15 @@ export function FormBuilder({
 
                   <div className="pt-1">
                     {addingTo === page.id ? (
-                      <div className="grid grid-cols-2 gap-1 rounded-xl bg-white p-2 shadow-sm ring-1 ring-mauve-10">
-                        {fieldTypes.map(({ type, label, glyph }) => (
-                          <button
-                            key={type}
-                            type="button"
-                            onClick={() => addField(page.id, type)}
-                            className="flex flex-col items-center justify-center gap-1.5 rounded-lg p-2 text-night-60 transition-colors duration-150 hover:bg-mauve-05 hover:text-mauve"
-                          >
-                            <span
-                              className="flex h-6 w-6 items-center justify-center rounded-md bg-mauve-05 text-[11px] font-semibold text-mauve"
-                              aria-hidden
-                            >
-                              {glyph}
-                            </span>
-                            <span className="text-[10px] font-medium">{label}</span>
-                          </button>
-                        ))}
-                      </div>
+                      <FieldTypePicker
+                        onPick={(type) => addField(page.id, type)}
+                        onClose={() => setAddingTo(null)}
+                      />
                     ) : (
                       <button
                         type="button"
                         onClick={() => setAddingTo(page.id)}
-                        className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-[13px] text-mauve-40 transition-colors duration-150 hover:bg-white hover:text-mauve"
+                        className="flex w-full items-center gap-2.5 rounded-lg bg-white px-2 py-1.5 text-[13px] text-mauve-40 transition-colors duration-150 hover:bg-mauve-05 hover:text-mauve"
                       >
                         <span className="flex h-6 w-6 items-center justify-center rounded-md border border-dashed border-mauve-20 bg-transparent text-xs">
                           +
@@ -454,12 +511,13 @@ export function FormBuilder({
       </div>
 
       {/* 2. Center Pane: Live preview (same FormRenderer as public /f/:slug) */}
-      <div className="relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-[#F2F1EF] px-6 py-10">
+      <div className="relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-[#F2F1EF] px-2 py-4 sm:px-4">
         <FormRenderer
           formId="preview"
           slug="preview"
           title={previewTitle}
           definition={definition}
+          panelClassName="max-w-2xl w-full"
           preview={{
             pageIndex: activePageIndex,
             showEnding: selection.kind === 'ending',
