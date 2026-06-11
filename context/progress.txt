@@ -1,6 +1,23 @@
 Formos — project progress log
 ==============================
 
+2026-06-11 (checkpoint)
+-----------------------
+- Visual form builder shipped: drag-and-drop fields (@dnd-kit), Typeform-style 3-pane editor (structure / canvas / inspector).
+- Editor polish: sidebar nav, inspector layout, live preview refinements, contrast pass (COLOR-* fixes).
+- UX fixes: progress bar semantics, unsaved-changes guard, save feedback, slug/view-live consistency, analytics dedup.
+- Backlog: builder-ui + many bug/UX items marked done; 9 todo items remain (embeds, webhooks, conditional logic, etc.).
+- Git: main @ 664db8f, working tree clean.
+- Review (Bugbot + Security): no branch diff on main — subagents could not run; prior findings in context/review-findings.json (all BUG/SEC items remediated).
+
+Next up (priority order)
+-------------------------
+1. Builder preview ↔ FormRenderer alignment (UX-001, UX-034) — staff still can't trust WYSIWYG.
+2. Slug change redirect / warning (backlog slug-change-redirect, UX-033 partial).
+3. Duplicate submission guard + spam honeypot (lead pipeline hygiene).
+4. Embeddable forms (backlog embed-mode).
+5. CRM/Slack webhooks via Inngest (backlog crm-webhooks).
+
 2026-06-10
 ----------
 - Scaffolded TanStack Start + oRPC + Drizzle + Better Auth + Inngest.
