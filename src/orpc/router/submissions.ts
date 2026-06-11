@@ -8,6 +8,7 @@ import { inngest } from '#/inngest/client'
 import { extractLeadFields } from '#/lib/leads'
 import { MAX_JSON_BYTES, SUBMIT_RATE_LIMIT } from '#/lib/limits'
 import { checkRateLimit, getClientIp } from '#/lib/rate-limit'
+import { resolvePublishedFormBySlug } from '#/lib/resolve-form-slug'
 import {
   assertJsonPayloadSize,
   validateSubmissionAnswers,
@@ -56,9 +57,7 @@ export const submitForm = publicContext
       })
     }
 
-    const form = await db.query.forms.findFirst({
-      where: and(eq(forms.slug, input.slug), eq(forms.status, 'published')),
-    })
+    const form = await resolvePublishedFormBySlug(input.slug)
 
     if (!form) {
       throw new ORPCError('NOT_FOUND', { message: 'Form not found' })

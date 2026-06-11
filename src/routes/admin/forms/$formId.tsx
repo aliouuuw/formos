@@ -9,7 +9,7 @@ import { Button } from '#/components/ui/button'
 import { Label } from '#/components/ui/label'
 import { Textarea } from '#/components/ui/textarea'
 import { formatAnalyticsEvent } from '#/lib/analytics-labels'
-import { formDefinitionSchema } from '#/lib/form-types'
+import { formDefinitionSchema, slugify } from '#/lib/form-types'
 import type { FormDefinition } from '#/lib/form-types'
 import { cn } from '#/lib/utils'
 import { orpc } from '#/orpc/client'
@@ -81,9 +81,11 @@ function FormEditorPage() {
 
   const updateMutation = useMutation(
     orpc.forms.update.mutationOptions({
-      onSuccess: async () => {
+      onSuccess: async (updated) => {
         await queryClient.invalidateQueries({ queryKey: orpc.forms.getById.key({ input: { id: formId } }) })
         await queryClient.invalidateQueries({ queryKey: orpc.forms.list.key() })
+        setSlug(updated.slug)
+        savedSlugRef.current = updated.slug
         dirtyRef.current = false
         setDirty(false)
         toast.success('Changes saved')
@@ -141,6 +143,8 @@ function FormEditorPage() {
 
   const form = formQuery.data
   const published = form.status === 'published'
+  const normalizedSlug = slugify(slug)
+  const slugChanged = normalizedSlug !== savedSlugRef.current
 
   return (
     <div className="space-y-8">
@@ -178,22 +182,26 @@ function FormEditorPage() {
                     setSlug(e.target.value)
                     markDirty()
                   }}
-                  onBlur={() => {
-                    if (
-                      formQuery.data?.status === 'published' &&
-                      slug.trim() !== savedSlugRef.current
-                    ) {
-                      toast.warning(
-                        'Saving a new slug breaks existing shared links. Consider redirects for old URLs.',
-                      )
-                    }
-                  }}
                   aria-label="Form slug"
                   size={Math.max(slug.length, 4)}
-                  className="rounded border border-transparent bg-transparent px-0.5 font-mono text-xs text-everest-green transition-colors duration-150 hover:border-border-subtle focus:border-mauve/30 focus:outline-none"
+                  className={cn(
+                    'rounded border bg-transparent px-0.5 font-mono text-xs text-everest-green transition-colors duration-150 hover:border-border-subtle focus:border-mauve/30 focus:outline-none',
+                    published && slugChanged
+                      ? 'border-gold-20 bg-gold-10/40'
+                      : 'border-transparent',
+                  )}
                 />
               </span>
             </div>
+            {published && slugChanged ? (
+              <p className="mt-2 rounded-xl border border-gold-20 bg-gold-10/50 px-3 py-2 text-xs leading-relaxed text-night-80">
+                <span className="font-medium text-night-80">Slug change on a live form.</span>{' '}
+                After you save,{' '}
+                <span className="font-mono text-everest-green">/f/{savedSlugRef.current}</span> will
+                keep working and show this form. New visitors should use{' '}
+                <span className="font-mono text-everest-green">/f/{normalizedSlug}</span>.
+              </p>
+            ) : null}
           </div>
 
           <div className="flex items-center gap-2">

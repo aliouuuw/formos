@@ -1,5 +1,5 @@
 import { ORPCError } from '@orpc/server'
-import { and, desc, eq, ne, sql } from 'drizzle-orm'
+import { and, desc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '#/db/index'
@@ -9,6 +9,8 @@ import {
   formDefinitionSchema,
   slugify,
 } from '#/lib/form-types'
+import { resolvePublishedFormBySlug } from '#/lib/resolve-form-slug'
+import { applySlugChange, assertSlugAvailable } from '#/lib/slug-redirects'
 import { authedContext, publicContext } from '#/orpc/context'
 
 export const listForms = authedContext.input(z.object({})).handler(async ({ context }) => {
@@ -35,9 +37,7 @@ export const getFormById = authedContext
 export const getFormBySlug = publicContext
   .input(z.object({ slug: z.string() }))
   .handler(async ({ input }) => {
-    const form = await db.query.forms.findFirst({
-      where: and(eq(forms.slug, input.slug), eq(forms.status, 'published')),
-    })
+    const form = await resolvePublishedFormBySlug(input.slug)
 
     if (!form) {
       throw new ORPCError('NOT_FOUND', { message: 'Form not found' })
@@ -61,13 +61,7 @@ export const createForm = authedContext
   )
   .handler(async ({ context, input }) => {
     const slug = input.slug ? slugify(input.slug) : slugify(input.title)
-    const existing = await db.query.forms.findFirst({
-      where: eq(forms.slug, slug),
-    })
-
-    if (existing) {
-      throw new ORPCError('CONFLICT', { message: 'Slug already in use' })
-    }
+    await assertSlugAvailable(slug)
 
     const [form] = await db
       .insert(forms)
@@ -103,14 +97,9 @@ export const updateForm = authedContext
       throw new ORPCError('NOT_FOUND', { message: 'Form not found' })
     }
 
-    if (input.slug) {
-      const slug = slugify(input.slug)
-      const conflict = await db.query.forms.findFirst({
-        where: and(eq(forms.slug, slug), ne(forms.id, input.id)),
-      })
-      if (conflict) {
-        throw new ORPCError('CONFLICT', { message: 'Slug already in use' })
-      }
+    const nextSlug = input.slug ? slugify(input.slug) : existing.slug
+    if (nextSlug !== existing.slug) {
+      await assertSlugAvailable(nextSlug, input.id)
     }
 
     const newVersion = input.definition ? existing.version + 1 : existing.version
@@ -124,7 +113,7 @@ export const updateForm = authedContext
           .update(forms)
           .set({
             title: input.title ?? existing.title,
-            slug: input.slug ? slugify(input.slug) : existing.slug,
+            slug: nextSlug,
             definition: newDefinition,
             version: newVersion,
             updatedAt: new Date(),
@@ -139,20 +128,32 @@ export const updateForm = authedContext
           definition: newDefinition,
         }).onConflictDoNothing()
 
+        if (nextSlug !== existing.slug) {
+          await applySlugChange(tx, input.id, existing.slug, nextSlug)
+        }
+
         return row!
       })
       updated = result
     } else {
-      const [row] = await db
-        .update(forms)
-        .set({
-          title: input.title ?? existing.title,
-          slug: input.slug ? slugify(input.slug) : existing.slug,
-          updatedAt: new Date(),
-        })
-        .where(eq(forms.id, input.id))
-        .returning()
-      updated = row!
+      const result = await db.transaction(async (tx) => {
+        const [row] = await tx
+          .update(forms)
+          .set({
+            title: input.title ?? existing.title,
+            slug: nextSlug,
+            updatedAt: new Date(),
+          })
+          .where(eq(forms.id, input.id))
+          .returning()
+
+        if (nextSlug !== existing.slug) {
+          await applySlugChange(tx, input.id, existing.slug, nextSlug)
+        }
+
+        return row!
+      })
+      updated = result!
     }
 
     return updated

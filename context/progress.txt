@@ -13,7 +13,7 @@ Formos — project progress log
 Next up (priority order)
 -------------------------
 1. ~~Builder preview ↔ FormRenderer alignment (UX-001, UX-034)~~ — done.
-2. Slug change redirect / warning (backlog slug-change-redirect, UX-033 partial).
+2. ~~Slug change redirect / warning~~ — done (form_slug_redirects + editor banner).
 3. Duplicate submission guard + spam honeypot (lead pipeline hygiene).
 4. Embeddable forms (backlog embed-mode).
 5. CRM/Slack webhooks via Inngest (backlog crm-webhooks).

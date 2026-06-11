@@ -117,9 +117,9 @@
     {
       "id": "slug-change-redirect",
       "title": "Slug change breaks live links",
-      "status": "todo",
+      "status": "done",
       "priority": "medium",
-      "notes": "Editing published slug 404s shared links; needs redirect table or warning."
+      "notes": "form_slug_redirects table + resolvePublishedFormBySlug; inline editor warning on published slug edits."
     },
     {
       "id": "duplicate-submission-guard",

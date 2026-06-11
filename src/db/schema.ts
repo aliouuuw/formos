@@ -86,6 +86,22 @@ export const forms = pgTable(
   ],
 )
 
+export const formSlugRedirects = pgTable(
+  'form_slug_redirects',
+  {
+    id: text('id').primaryKey(),
+    formId: text('form_id')
+      .notNull()
+      .references(() => forms.id, { onDelete: 'cascade' }),
+    slug: text('slug').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('form_slug_redirects_slug_idx').on(table.slug),
+    index('form_slug_redirects_form_id_idx').on(table.formId),
+  ],
+)
+
 export const formSubmissions = pgTable(
   'form_submissions',
   {
@@ -191,6 +207,11 @@ export const formsRelations = relations(forms, ({ one, many }) => ({
   leads: many(leads),
   analyticsEvents: many(analyticsEvents),
   definitionSnapshots: many(formDefinitionSnapshots),
+  slugRedirects: many(formSlugRedirects),
+}))
+
+export const formSlugRedirectsRelations = relations(formSlugRedirects, ({ one }) => ({
+  form: one(forms, { fields: [formSlugRedirects.formId], references: [forms.id] }),
 }))
 
 export const formDefinitionSnapshotsRelations = relations(formDefinitionSnapshots, ({ one }) => ({
