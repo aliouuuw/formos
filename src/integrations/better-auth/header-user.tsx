@@ -15,19 +15,31 @@ export default function BetterAuthHeader({ stacked = false }: { stacked?: boolea
   if (session?.user) {
     return (
       <div className={stacked ? 'space-y-3' : 'flex items-center gap-2'}>
-        {session.user.image ? (
-          <img
-            src={session.user.image}
-            alt=""
-            className="h-8 w-8 rounded-full ring-2 ring-everest-green/10"
-          />
-        ) : (
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-everest-green-10 ring-2 ring-everest-green/10">
-            <span className="text-xs font-medium text-everest-green">
-              {session.user.name?.charAt(0).toUpperCase() || 'U'}
-            </span>
-          </div>
-        )}
+        <div className={stacked ? 'flex items-center gap-3' : 'flex items-center gap-2'}>
+          {session.user.image ? (
+            <img
+              src={session.user.image}
+              alt=""
+              className="h-8 w-8 shrink-0 rounded-full ring-2 ring-everest-green/10"
+            />
+          ) : (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-everest-green-10 ring-2 ring-everest-green/10">
+              <span className="text-xs font-medium text-everest-green">
+                {session.user.name?.charAt(0).toUpperCase() || 'U'}
+              </span>
+            </div>
+          )}
+          {stacked ? (
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-night-80">
+                {session.user.name ?? 'Signed in'}
+              </p>
+              {session.user.email ? (
+                <p className="truncate text-xs text-text-secondary">{session.user.email}</p>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
         <Button
           variant="outline"
           size="sm"

@@ -12,7 +12,7 @@ export function Panel({
   return (
     <div
       className={cn(
-        'rounded-[1.75rem] bg-mauve-05 p-1.5 ring-1 ring-mauve-10',
+        'rounded-[1.75rem] bg-mauve-05 p-1.5 ring-1 ring-border-subtle',
         className,
       )}
       {...props}
@@ -35,7 +35,7 @@ export function PanelHeader({
 }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('border-b border-mauve-10 px-6 py-5 sm:px-8', className)}
+      className={cn('border-b border-border-subtle px-6 py-5 sm:px-8', className)}
       {...props}
     />
   )

@@ -6,6 +6,7 @@ import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { Panel, PanelBody, PanelHeader } from '#/components/ui/panel'
 import { Textarea } from '#/components/ui/textarea'
+import { formProgressPercent } from '#/lib/form-progress'
 import type { FormDefinition, FormField } from '#/lib/form-types'
 import { client } from '#/orpc/client'
 
@@ -55,7 +56,7 @@ function FieldInput({
         onBlur={onBlur}
         onFocus={onFocus}
         required={field.required}
-        className="flex h-10 w-full rounded-xl border border-mauve/15 bg-white px-3 py-2 text-sm text-night focus:border-mauve focus:outline-none focus:ring-2 focus:ring-mauve/10"
+        className="flex h-10 w-full rounded-xl border border-border-subtle bg-white px-3 py-2 text-sm text-night focus:border-mauve focus:outline-none focus:ring-2 focus:ring-mauve/10"
       >
         <option value="">Select...</option>
         {field.options?.map((option) => (
@@ -80,8 +81,8 @@ function FieldInput({
           required={field.required}
           className="h-4 w-4 rounded border-mauve/30 accent-mauve"
         />
-        <label htmlFor={field.id} className="text-sm text-night-60 select-none">
-          {field.placeholder ?? field.label}
+        <label htmlFor={field.id} className="text-sm text-night-80 select-none">
+          {field.label}
         </label>
       </div>
     )
@@ -125,7 +126,7 @@ export function FormRenderer({
 
   const page = definition.pages[pageIndex]
   const isLastPage = pageIndex === definition.pages.length - 1
-  const progress = ((pageIndex + 1) / definition.pages.length) * 100
+  const progress = formProgressPercent(pageIndex, definition.pages.length, false)
 
   const viewedRef = useRef(false)
   const startedRef = useRef(false)
@@ -180,7 +181,14 @@ export function FormRenderer({
     for (const field of page.fields) {
       const value = answers[field.id]?.trim() ?? ''
 
-      if (field.required && !value) return `${field.label} is required`
+      if (field.required) {
+        if (field.type === 'checkbox' && value !== 'true') {
+          return `${field.label} is required`
+        }
+        if (field.type !== 'checkbox' && !value) {
+          return `${field.label} is required`
+        }
+      }
       if (!value) continue
 
       if (field.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
@@ -272,12 +280,14 @@ export function FormRenderer({
             {pageIndex + 1} / {definition.pages.length}
           </span>
         </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-mauve-10">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-mauve via-everest-green to-gold transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
+        {progress !== null ? (
+          <div className="h-1.5 overflow-hidden rounded-full bg-mauve-10">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-mauve via-everest-green to-gold transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        ) : null}
         <h1 className="text-2xl font-semibold tracking-tight text-night-80 sm:text-3xl">
           {page.title ?? `Step ${pageIndex + 1}`}
         </h1>

@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 import { EmptyState } from '#/components/empty-state'
 import { PageHeader } from '#/components/page-header'
@@ -22,6 +23,9 @@ function AdminDashboard() {
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: orpc.forms.list.key() })
         setTitle('')
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : 'Failed to create form')
       },
     }),
   )
@@ -59,7 +63,7 @@ function AdminDashboard() {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-mauve-60">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-text-label">
             Your forms
           </h2>
           {formsQuery.data ? (

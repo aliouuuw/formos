@@ -21,6 +21,7 @@ import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { Textarea } from '#/components/ui/textarea'
+import { formProgressPercent, formStepLabel } from '#/lib/form-progress'
 import type { FieldType, FormDefinition, FormField, FormPage } from '#/lib/form-types'
 import { cn } from '#/lib/utils'
 
@@ -84,7 +85,7 @@ function FieldRow({
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
         'group flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors duration-150',
-        selected ? 'bg-mauve-05' : 'hover:bg-mauve-05/60',
+        selected ? 'bg-mauve-10 ring-1 ring-mauve-20' : 'hover:bg-mauve-05/60',
         isDragging && 'z-10 opacity-70',
       )}
     >
@@ -92,7 +93,7 @@ function FieldRow({
         type="button"
         {...attributes}
         {...listeners}
-        className="cursor-grab touch-none rounded p-0.5 text-mauve-20 opacity-0 transition-opacity duration-150 hover:text-mauve group-hover:opacity-100 active:cursor-grabbing"
+        className="cursor-grab touch-none rounded p-0.5 text-mauve-60 opacity-60 transition-opacity duration-150 hover:text-mauve group-hover:opacity-100 active:cursor-grabbing"
         aria-label="Drag to reorder"
         tabIndex={-1}
       >
@@ -114,7 +115,7 @@ function FieldRow({
         <span
           className={cn(
             'flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-semibold',
-            selected ? 'bg-mauve text-white' : 'bg-mauve-05 text-mauve-60',
+            selected ? 'bg-mauve text-white' : 'bg-mauve-05 text-mauve',
           )}
           aria-hidden
         >
@@ -134,7 +135,7 @@ function FieldRow({
       <button
         type="button"
         onClick={onRemove}
-        className="rounded p-1 text-mauve-20 opacity-0 transition-opacity duration-150 hover:text-red-600 group-hover:opacity-100"
+        className="rounded p-1 text-mauve-60 opacity-60 transition-opacity duration-150 hover:text-red-600 group-hover:opacity-100"
         aria-label={`Remove ${field.label}`}
       >
         <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden>
@@ -159,22 +160,25 @@ function FieldInspector({
   return (
     <div className="space-y-4">
       <div className="space-y-1.5">
-        <Label htmlFor="insp-label">Question</Label>
+        <Label htmlFor="insp-label">{field.type === 'checkbox' ? 'Label' : 'Question'}</Label>
         <Input
           id="insp-label"
           value={field.label}
+          placeholder={field.type === 'checkbox' ? 'Shown beside the checkbox' : undefined}
           onChange={(e) => onChange({ ...field, label: e.target.value })}
         />
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="insp-placeholder">Placeholder</Label>
-        <Input
-          id="insp-placeholder"
-          value={field.placeholder ?? ''}
-          placeholder={field.type === 'checkbox' ? 'Checkbox text' : 'Shown inside the input'}
-          onChange={(e) => onChange({ ...field, placeholder: e.target.value || undefined })}
-        />
-      </div>
+      {field.type !== 'checkbox' ? (
+        <div className="space-y-1.5">
+          <Label htmlFor="insp-placeholder">Placeholder</Label>
+          <Input
+            id="insp-placeholder"
+            value={field.placeholder ?? ''}
+            placeholder="Shown inside the input"
+            onChange={(e) => onChange({ ...field, placeholder: e.target.value || undefined })}
+          />
+        </div>
+      ) : null}
       {field.type === 'select' ? (
         <div className="space-y-1.5">
           <Label htmlFor="insp-options">Choices, one per line</Label>
@@ -218,7 +222,7 @@ function PreviewField({
   onSelect: () => void
 }) {
   const inputClass =
-    'pointer-events-none flex h-10 w-full items-center rounded-xl border border-mauve/15 bg-white px-3 text-sm text-night-40'
+    'pointer-events-none flex h-10 w-full items-center rounded-xl border border-border-subtle bg-white px-3 text-sm text-text-placeholder'
 
   return (
     <div
@@ -252,8 +256,8 @@ function PreviewField({
       ) : field.type === 'checkbox' ? (
         <div className="pointer-events-none flex items-center gap-3 py-1">
           <span className="h-4 w-4 rounded border border-mauve/30 bg-white" />
-          <span className="text-sm text-night-60">
-            {field.placeholder ?? field.label}
+          <span className="text-sm text-night-80">
+            {field.label}
             {field.required ? <span className="text-mauve"> *</span> : null}
           </span>
         </div>
@@ -278,22 +282,24 @@ function Preview({
   ending: boolean
 }) {
   const page = definition.pages[pageIndex]
-  const progress = ending ? 100 : ((pageIndex + 1) / definition.pages.length) * 100
+  const progress = formProgressPercent(pageIndex, definition.pages.length, ending)
 
   return (
-    <div className="flex min-h-[480px] items-start justify-center rounded-2xl border border-mauve-10 bg-[radial-gradient(ellipse_at_top,rgba(70,29,76,0.04),transparent_60%)] px-4 py-10 sm:px-8">
+    <div className="flex min-h-[480px] items-start justify-center rounded-2xl border border-border-subtle bg-[radial-gradient(ellipse_at_top,rgba(70,29,76,0.04),transparent_60%)] px-4 py-10 sm:px-8">
       <div className="w-full max-w-md">
         <div className="mb-7 space-y-2">
-          <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.14em] text-mauve-60">
-            <span>{ending ? 'Done' : `Step ${pageIndex + 1} of ${definition.pages.length}`}</span>
-            <span className="tabular-nums">{Math.round(progress)}%</span>
+          <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.14em] text-text-label">
+            <span>{formStepLabel(pageIndex, definition.pages.length, ending)}</span>
+            {progress !== null ? <span className="tabular-nums">{progress}%</span> : null}
           </div>
-          <div className="h-1 overflow-hidden rounded-full bg-mauve-05">
-            <div
-              className="h-full rounded-full bg-mauve transition-[width] duration-300 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+          {progress !== null ? (
+            <div className="h-1 overflow-hidden rounded-full bg-mauve-05">
+              <div
+                className="h-full rounded-full bg-mauve transition-[width] duration-300 ease-out"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          ) : null}
         </div>
 
         {ending ? (
@@ -312,7 +318,7 @@ function Preview({
             </h2>
             <div className="space-y-4">
               {page.fields.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-mauve-20 px-4 py-10 text-center text-sm text-night-40">
+                <p className="rounded-xl border border-dashed border-mauve-20 px-4 py-10 text-center text-sm text-text-secondary">
                   This step is empty. Add a field from the left.
                 </p>
               ) : (
@@ -445,7 +451,7 @@ export function FormBuilder({
                 <div
                   className={cn(
                     'group flex items-center gap-2 rounded-lg px-2 py-1.5',
-                    isActivePage && selection.kind === 'page' && 'bg-mauve-05',
+                    isActivePage && selection.kind === 'page' && 'bg-mauve-10 ring-1 ring-mauve-20',
                   )}
                 >
                   <button
@@ -453,7 +459,7 @@ export function FormBuilder({
                     onClick={() => setSelection({ kind: 'page', pageId: page.id })}
                     className="flex min-w-0 flex-1 items-baseline gap-2 text-left"
                   >
-                    <span className="text-[11px] font-semibold tabular-nums text-mauve-60">
+                    <span className="text-[11px] font-semibold tabular-nums text-text-label">
                       {pi + 1}
                     </span>
                     <span className="truncate text-sm font-semibold text-night-80">
@@ -465,7 +471,7 @@ export function FormBuilder({
                       type="button"
                       onClick={() => movePage(page.id, -1)}
                       disabled={pi === 0}
-                      className="rounded p-1 text-mauve-40 hover:text-mauve disabled:opacity-30"
+                      className="rounded p-1 text-mauve-60 hover:text-mauve disabled:opacity-30"
                       aria-label="Move step up"
                     >
                       ↑
@@ -474,7 +480,7 @@ export function FormBuilder({
                       type="button"
                       onClick={() => movePage(page.id, 1)}
                       disabled={pi === definition.pages.length - 1}
-                      className="rounded p-1 text-mauve-40 hover:text-mauve disabled:opacity-30"
+                      className="rounded p-1 text-mauve-60 hover:text-mauve disabled:opacity-30"
                       aria-label="Move step down"
                     >
                       ↓
@@ -483,7 +489,7 @@ export function FormBuilder({
                       type="button"
                       onClick={() => removePage(page.id)}
                       disabled={definition.pages.length <= 1}
-                      className="rounded p-1 text-mauve-40 hover:text-red-600 disabled:opacity-30"
+                      className="rounded p-1 text-mauve-60 hover:text-red-600 disabled:opacity-30"
                       aria-label="Delete step"
                     >
                       ✕
@@ -525,7 +531,7 @@ export function FormBuilder({
                           className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-night-60 transition-colors duration-150 hover:bg-mauve-05 hover:text-night-80"
                         >
                           <span
-                            className="flex h-6 w-6 items-center justify-center rounded-md bg-mauve-05 text-[11px] font-semibold text-mauve-60"
+                            className="flex h-6 w-6 items-center justify-center rounded-md bg-mauve-05 text-[11px] font-semibold text-mauve"
                             aria-hidden
                           >
                             {glyph}
@@ -538,7 +544,7 @@ export function FormBuilder({
                     <button
                       type="button"
                       onClick={() => setAddingTo(page.id)}
-                      className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-mauve-60 transition-colors duration-150 hover:bg-mauve-05 hover:text-mauve"
+                      className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-mauve transition-colors duration-150 hover:bg-mauve-05"
                     >
                       <span className="flex h-6 w-6 items-center justify-center rounded-md border border-dashed border-mauve-20 text-xs">
                         +
@@ -573,7 +579,7 @@ export function FormBuilder({
         {/* Inspector */}
         {selectedField && selection.kind === 'field' ? (
           <div className="space-y-4 border-t border-mauve-10 pt-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-mauve-60">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-label">
               {typeMeta[selectedField.type].label} settings
             </p>
             <FieldInspector
@@ -588,7 +594,7 @@ export function FormBuilder({
           </div>
         ) : selection.kind === 'page' && activePage ? (
           <div className="space-y-4 border-t border-mauve-10 pt-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-mauve-60">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-label">
               Step settings
             </p>
             <div className="space-y-1.5">
@@ -608,7 +614,7 @@ export function FormBuilder({
           </div>
         ) : selection.kind === 'ending' ? (
           <div className="space-y-4 border-t border-mauve-10 pt-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-mauve-60">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-label">
               Ending
             </p>
             <div className="space-y-1.5">

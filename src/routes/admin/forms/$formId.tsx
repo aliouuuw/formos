@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useBlocker } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -8,6 +8,7 @@ import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Label } from '#/components/ui/label'
 import { Textarea } from '#/components/ui/textarea'
+import { formatAnalyticsEvent } from '#/lib/analytics-labels'
 import { formDefinitionSchema } from '#/lib/form-types'
 import type { FormDefinition } from '#/lib/form-types'
 import { cn } from '#/lib/utils'
@@ -33,6 +34,7 @@ function FormEditorPage() {
   const [mode, setMode] = useState<'builder' | 'json'>('builder')
   const [dirty, setDirty] = useState(false)
   const dirtyRef = useRef(false)
+  const savedSlugRef = useRef('')
 
   function markDirty() {
     dirtyRef.current = true
@@ -45,19 +47,19 @@ function FormEditorPage() {
       setSlug(formQuery.data.slug)
       setDefinition(formQuery.data.definition)
       setDefinitionJson(JSON.stringify(formQuery.data.definition, null, 2))
+      savedSlugRef.current = formQuery.data.slug
       dirtyRef.current = false
       setDirty(false)
     }
   }, [formQuery.data])
 
-  useEffect(() => {
-    function onBeforeUnload(e: BeforeUnloadEvent) {
-      if (!dirtyRef.current) return
-      e.preventDefault()
-    }
-    window.addEventListener('beforeunload', onBeforeUnload)
-    return () => window.removeEventListener('beforeunload', onBeforeUnload)
-  }, [])
+  useBlocker({
+    shouldBlockFn: () => {
+      if (!dirtyRef.current) return false
+      return !window.confirm('You have unsaved changes. Leave without saving?')
+    },
+    enableBeforeUnload: () => dirtyRef.current,
+  })
 
   function switchMode(next: 'builder' | 'json') {
     if (next === mode) return
@@ -176,32 +178,57 @@ function FormEditorPage() {
                     setSlug(e.target.value)
                     markDirty()
                   }}
+                  onBlur={() => {
+                    if (
+                      formQuery.data?.status === 'published' &&
+                      slug.trim() !== savedSlugRef.current
+                    ) {
+                      toast.warning(
+                        'Saving a new slug breaks existing shared links. Consider redirects for old URLs.',
+                      )
+                    }
+                  }}
                   aria-label="Form slug"
                   size={Math.max(slug.length, 4)}
-                  className="rounded border border-transparent bg-transparent px-0.5 font-mono text-xs text-everest-green transition-colors duration-150 hover:border-mauve-10 focus:border-mauve/30 focus:outline-none"
+                  className="rounded border border-transparent bg-transparent px-0.5 font-mono text-xs text-everest-green transition-colors duration-150 hover:border-border-subtle focus:border-mauve/30 focus:outline-none"
                 />
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSave}
-              disabled={updateMutation.isPending || !dirty}
-            >
-              {dirty ? (
+            {dirty || updateMutation.isPending ? (
+              <Button
+                variant="everest"
+                size="sm"
+                onClick={handleSave}
+                disabled={updateMutation.isPending}
+              >
                 <span className="mr-0.5 h-1.5 w-1.5 rounded-full bg-gold" aria-hidden />
-              ) : null}
-              {updateMutation.isPending ? 'Saving…' : dirty ? 'Save' : 'Saved'}
-            </Button>
+                {updateMutation.isPending ? 'Saving…' : 'Save'}
+              </Button>
+            ) : (
+              <span className="inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-xs font-medium text-everest-green">
+                <span className="h-1.5 w-1.5 rounded-full bg-everest-green" aria-hidden />
+                Saved
+              </span>
+            )}
             {published ? (
-              <Link to="/f/$slug" params={{ slug: form.slug }} target="_blank">
-                <Button variant="secondary" size="sm">
+              dirty ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => toast.message('Save your changes before opening the live form.')}
+                >
                   View live ↗
                 </Button>
-              </Link>
+              ) : (
+                <Link to="/f/$slug" params={{ slug }} target="_blank">
+                  <Button variant="secondary" size="sm">
+                    View live ↗
+                  </Button>
+                </Link>
+              )
             ) : (
               <Button
                 variant="mauve"
@@ -216,7 +243,7 @@ function FormEditorPage() {
         </div>
 
         {/* Tabs */}
-        <nav className="flex items-center gap-6 border-b border-mauve-10" aria-label="Editor sections">
+        <nav className="flex items-center gap-6 border-b border-border-subtle" aria-label="Editor sections">
           {(
             [
               { id: 'build', label: 'Build' },
@@ -290,7 +317,7 @@ function FormEditorPage() {
               ] as const
             ).map(({ label, value }) => (
               <div key={label}>
-                <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-mauve-60">
+                <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-label">
                   {label}
                 </dt>
                 <dd className="mt-1 text-3xl font-semibold tabular-nums text-night-80">{value}</dd>
@@ -300,7 +327,7 @@ function FormEditorPage() {
 
           <section className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-mauve-60">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-text-label">
                 Funnel
               </h2>
               <Link to="/admin/forms/$formId/submissions" params={{ formId }}>
@@ -311,10 +338,10 @@ function FormEditorPage() {
             </div>
 
             {analyticsQuery.data?.funnel.length ? (
-              <div className="divide-y divide-mauve-10 border-y border-mauve-10">
+              <div className="divide-y divide-border-subtle border-y border-border-subtle">
                 {analyticsQuery.data.funnel.map((row) => (
                   <div key={row.eventType} className="flex items-center justify-between py-3 text-sm">
-                    <span className="text-night-60">{row.eventType.replace(/_/g, ' ')}</span>
+                    <span className="text-night-80">{formatAnalyticsEvent(row.eventType)}</span>
                     <span className="font-semibold tabular-nums text-night-80">{row.count}</span>
                   </div>
                 ))}

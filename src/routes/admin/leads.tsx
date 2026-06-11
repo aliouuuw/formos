@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 import { EmptyState } from '#/components/empty-state'
 import { PageHeader } from '#/components/page-header'
@@ -32,6 +33,10 @@ function LeadsPage() {
     orpc.leads.updateStatus.mutationOptions({
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: orpc.leads.list.key() })
+        toast.success('Lead status updated')
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : 'Failed to update lead status')
       },
     }),
   )
@@ -101,7 +106,7 @@ function LeadsPage() {
                 {lead.phone ? <p className="text-sm text-night-60">{lead.phone}</p> : null}
               </div>
 
-              <label className="flex flex-col gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-mauve-60">
+              <label className="flex flex-col gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-label">
                 Status
                 <select
                   value={lead.status}
