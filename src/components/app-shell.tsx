@@ -135,7 +135,7 @@ export function AppShell({
           <nav className="flex items-center gap-2">
             <Link to="/login">
               <Button variant="ghost" size="sm">
-                Sign in
+                Se connecter
               </Button>
             </Link>
             <Link to="/admin">
@@ -149,7 +149,7 @@ export function AppShell({
       <main>{children}</main>
       <footer className="border-t border-border-subtle bg-white py-10">
         <div className="page-container flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-text-secondary">Internal lead capture for Everest Finance teams.</p>
+          <p className="text-sm text-text-secondary">Capture interne de leads pour les équipes Everest Finance.</p>
           <Badge variant="mauve" className="w-fit normal-case tracking-[0.14em]">
             Formos · Everest Finance
           </Badge>
