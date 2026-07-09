@@ -13,7 +13,12 @@ const config = defineConfig({
   plugins: [
     devtools(),
     neon,
-    nitro({ preset: 'bun', rollupConfig: { external: [/^@sentry\//] } }),
+    // On Vercel, omit preset so Nitro emits the Vercel Build Output API.
+    // Locally, use bun so `bun run start` can serve `.output/server`.
+    nitro({
+      ...(process.env.VERCEL ? {} : { preset: 'bun' as const }),
+      rollupConfig: { external: [/^@sentry\//] },
+    }),
     tailwindcss(),
     tanstackStart(),
     viteReact(),
