@@ -3,6 +3,17 @@ import { z } from 'zod'
 
 const isProduction = process.env.NODE_ENV === 'production'
 
+function resolveBetterAuthUrl(): string | undefined {
+  if (process.env.BETTER_AUTH_URL) {
+    return process.env.BETTER_AUTH_URL
+  }
+
+  const vercelHost =
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL
+
+  return vercelHost ? `https://${vercelHost}` : undefined
+}
+
 export const env = createEnv({
   server: {
     DATABASE_URL: z.string().url().optional(),
@@ -12,9 +23,8 @@ export const env = createEnv({
     BETTER_AUTH_URL: z.string().url().optional(),
     ALLOWED_EMAIL_DOMAIN: z.string().optional(),
     INNGEST_EVENT_KEY: z.string().optional(),
-    INNGEST_SIGNING_KEY: isProduction
-      ? z.string().min(1)
-      : z.string().optional(),
+    // Only required when serving /api/inngest — do not block app boot.
+    INNGEST_SIGNING_KEY: z.string().optional(),
     /** Legacy slug redirect TTL in days. 0 = never expire. Default 90. */
     SLUG_REDIRECT_TTL_DAYS: z.coerce.number().int().min(0).max(3650).optional(),
   },
@@ -27,7 +37,7 @@ export const env = createEnv({
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
-    BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
+    BETTER_AUTH_URL: resolveBetterAuthUrl(),
     ALLOWED_EMAIL_DOMAIN: process.env.ALLOWED_EMAIL_DOMAIN,
     INNGEST_EVENT_KEY: process.env.INNGEST_EVENT_KEY,
     INNGEST_SIGNING_KEY: process.env.INNGEST_SIGNING_KEY,
@@ -37,3 +47,13 @@ export const env = createEnv({
   },
   emptyStringAsUndefined: true,
 })
+
+export function requireInngestSigningKey(): string {
+  if (!env.INNGEST_SIGNING_KEY) {
+    throw new Error(
+      'INNGEST_SIGNING_KEY is not configured. Add it in Vercel Environment Variables to enable Inngest.',
+    )
+  }
+
+  return env.INNGEST_SIGNING_KEY
+}
