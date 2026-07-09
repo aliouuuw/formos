@@ -19,7 +19,7 @@ function AdminLayout() {
 
   useEffect(() => {
     if (!isPending && !session?.user) {
-      void router.navigate({ to: '/login' })
+      void router.navigate({ to: '/' })
     }
   }, [isPending, router, session?.user])
 

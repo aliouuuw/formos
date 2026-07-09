@@ -64,8 +64,8 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Route | Purpose |
 |-------|---------|
-| `/` | Marketing landing |
-| `/login` | Admin sign in |
+| `/` | Sign in (split-screen) |
+| `/login` | Redirects to `/` |
 | `/admin` | Form dashboard |
 | `/admin/forms/:formId` | Edit, publish, analytics |
 | `/admin/leads` | Lead pipeline |
@@ -76,7 +76,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Workflow
 
-1. Sign in at `/login` (accounts are provisioned manually; sign-up is disabled).
+1. Sign in at `/` (accounts are provisioned manually; sign-up is disabled).
 2. Create a form in `/admin`.
 3. Edit the JSON definition or metadata, then **Publish**.
 4. Share `/f/your-slug` on a landing page or dedicated route.

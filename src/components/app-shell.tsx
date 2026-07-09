@@ -140,7 +140,7 @@ export function AppShell({
             </Link>
             <Link to="/admin">
               <Button variant="mauve" size="sm" showArrow>
-                Admin
+                Ouvrir Formos
               </Button>
             </Link>
           </nav>
