@@ -35,7 +35,18 @@ docker compose --profile neon up -d neon-local
 ```bash
 bun install
 bun run db:push
+bun run db:seed
 ```
+
+Set a password for the first admin user when seeding:
+
+```bash
+SEED_ADMIN_EMAIL=you@everestfinance.com \
+SEED_ADMIN_PASSWORD='choose-a-strong-password' \
+bun run db:seed
+```
+
+Sign-up is disabled in the app, so `db:seed` is how you provision admin accounts (local or production DB).
 
 ### 3. Run
 
@@ -78,6 +89,7 @@ bun run dev           # Start dev server
 bun run build         # Production build (Nitro + Bun preset)
 bun run start         # Run production server
 bun run db:push       # Push Drizzle schema to Postgres
+bun run db:seed       # Provision admin user (+ optional demo form)
 bun run db:studio     # Drizzle Studio
 bun run generate-routes
 bun run inngest:dev   # Local Inngest dev server
