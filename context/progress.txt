@@ -1,6 +1,21 @@
 Formos — project progress log
 ==============================
 
+2026-07-09 (checkpoint)
+-----------------------
+- Since 2026-06-11: builder preview uses FormRenderer (UX-001); field picker / select / structure rail polish.
+- Slug redirects shipped: form_slug_redirects + published-slug change warnings; auto-expire via SLUG_REDIRECT_TTL_DAYS (default 90).
+- This chat: docs checkpoint only (no feature work).
+- Git: main @ eda2512, working tree clean.
+- Backlog: slug-change-redirect done; next focus is lead-pipeline hygiene (dupes + honeypot).
+
+Next up (priority order)
+-------------------------
+1. Duplicate submission guard + spam honeypot (lead pipeline hygiene).
+2. Embeddable forms (backlog embed-mode).
+3. CRM/Slack webhooks via Inngest (backlog crm-webhooks).
+4. Conditional field logic (backlog conditional-logic).
+
 2026-06-11 (checkpoint)
 -----------------------
 - Visual form builder shipped: drag-and-drop fields (@dnd-kit), Typeform-style 3-pane editor (structure / canvas / inspector).
@@ -10,10 +25,10 @@ Formos — project progress log
 - Git: main @ 664db8f, working tree clean.
 - Review (Bugbot + Security): no branch diff on main — subagents could not run; prior findings in context/review-findings.json (all BUG/SEC items remediated).
 
-Next up (priority order)
--------------------------
+Next up (priority order) — superseded 2026-07-09
+-------------------------------------------------
 1. ~~Builder preview ↔ FormRenderer alignment (UX-001, UX-034)~~ — done.
-2. ~~Slug change redirect / warning~~ — done (form_slug_redirects + editor banner).
+2. ~~Slug change redirect / warning~~ — done (form_slug_redirects + editor banner + TTL).
 3. Duplicate submission guard + spam honeypot (lead pipeline hygiene).
 4. Embeddable forms (backlog embed-mode).
 5. CRM/Slack webhooks via Inngest (backlog crm-webhooks).
