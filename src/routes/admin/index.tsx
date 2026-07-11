@@ -25,7 +25,7 @@ function AdminDashboard() {
         setTitle('')
       },
       onError: (err) => {
-        toast.error(err instanceof Error ? err.message : 'Failed to create form')
+        toast.error(err instanceof Error ? err.message : 'Impossible de créer le formulaire')
       },
     }),
   )
@@ -33,54 +33,54 @@ function AdminDashboard() {
   return (
     <div className="space-y-10">
       <PageHeader
-        kicker="Workspace"
-        title="Forms"
-        description="Create flows, publish to /f/slug, and monitor completion analytics."
+        kicker="Espace de travail"
+        title="Formulaires"
+        description="Créez des parcours, publiez-les sur /f/slug et suivez les résultats."
       />
 
       <Panel>
         <PanelHeader>
-          <h2 className="text-base font-semibold text-night-80">New form</h2>
-          <p className="mt-1 text-sm text-night-60">Starts with a default email capture step.</p>
+          <h2 className="text-base font-semibold text-night-80">Nouveau formulaire</h2>
+          <p className="mt-1 text-sm text-night-60">Commence avec une étape de capture email.</p>
         </PanelHeader>
         <PanelBody className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <Input
-            placeholder="Mortgage inquiry"
+            placeholder="Demande de prêt immobilier"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="sm:flex-1"
           />
           <Button
-            variant="everest"
+            variant="mauve"
             showArrow
             onClick={() => createMutation.mutate({ title })}
             disabled={!title.trim() || createMutation.isPending}
           >
-            Create form
+            Créer
           </Button>
         </PanelBody>
       </Panel>
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-text-label">
-            Your forms
+          <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-text-label">
+            Vos formulaires
           </h2>
           {formsQuery.data ? (
-            <span className="text-sm text-night-60">{formsQuery.data.length} total</span>
+            <span className="text-xs text-night-60">{formsQuery.data.length} au total</span>
           ) : null}
         </div>
 
         {formsQuery.isLoading ? (
           <Panel>
-            <PanelBody className="py-10 text-sm text-night-60">Loading forms...</PanelBody>
+            <PanelBody className="py-10 text-sm text-night-60">Chargement des formulaires…</PanelBody>
           </Panel>
         ) : null}
 
         {formsQuery.data?.length === 0 && !formsQuery.isLoading ? (
           <EmptyState
-            title="No forms yet"
-            description="Create your first form above. Publish it when you're ready to share /f/slug with visitors."
+            title="Aucun formulaire"
+            description="Créez votre premier formulaire ci-dessus. Publiez-le quand vous êtes prêt à partager /f/slug."
           />
         ) : null}
 
@@ -92,7 +92,7 @@ function AdminDashboard() {
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="truncate text-lg font-semibold text-night-80">{form.title}</h3>
                     <Badge variant={form.status === 'published' ? 'everest' : 'mauve'}>
-                      {form.status}
+                      {form.status === 'published' ? 'Publié' : 'Brouillon'}
                     </Badge>
                   </div>
                   <p className="mt-1 font-mono text-sm text-everest-green">/f/{form.slug}</p>
@@ -100,13 +100,13 @@ function AdminDashboard() {
                 <div className="flex flex-wrap gap-2">
                   <Link to="/admin/forms/$formId" params={{ formId: form.id }}>
                     <Button variant="outline" size="sm">
-                      Edit
+                      Modifier
                     </Button>
                   </Link>
                   {form.status === 'published' ? (
                     <Link to="/f/$slug" params={{ slug: form.slug }} target="_blank">
                       <Button variant="secondary" size="sm">
-                        Open live
+                        Voir le formulaire
                       </Button>
                     </Link>
                   ) : null}

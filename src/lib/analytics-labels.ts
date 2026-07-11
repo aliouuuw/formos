@@ -1,11 +1,11 @@
 const EVENT_LABELS: Record<string, string> = {
-  form_viewed: 'Form viewed',
-  form_started: 'Form started',
-  form_completed: 'Form completed',
-  page_viewed: 'Page viewed',
-  field_viewed: 'Field viewed',
-  field_answered: 'Field answered',
-  field_skipped: 'Field skipped',
+  form_viewed: 'Formulaire vu',
+  form_started: 'Formulaire démarré',
+  form_completed: 'Formulaire complété',
+  page_viewed: 'Page vue',
+  field_viewed: 'Question vue',
+  field_answered: 'Question répondue',
+  field_skipped: 'Question ignorée',
 }
 
 export function formatAnalyticsEvent(eventType: string): string {

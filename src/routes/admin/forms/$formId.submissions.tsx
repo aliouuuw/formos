@@ -42,14 +42,14 @@ function SubmissionsPage() {
   return (
     <div className="space-y-10">
       <PageHeader
-        kicker="Submissions"
+        kicker="Soumissions"
         title={form?.title ?? '…'}
-        description={`${submissions.length} submission${submissions.length === 1 ? '' : 's'} collected`}
+        description={`${submissions.length} soumission${submissions.length === 1 ? '' : 's'} collectée${submissions.length === 1 ? '' : 's'}`}
         actions={
           <div className="flex items-center gap-2">
             <Link to="/admin/forms/$formId" params={{ formId }}>
               <Button variant="ghost" size="sm">
-                ← Editor
+                ← Éditeur
               </Button>
             </Link>
             <Button
@@ -58,7 +58,7 @@ function SubmissionsPage() {
               onClick={handleExport}
               disabled={submissions.length === 0 || exportQuery.isFetching}
             >
-              {exportQuery.isFetching ? 'Exporting…' : 'Export CSV'}
+              {exportQuery.isFetching ? 'Export…' : 'Exporter CSV'}
             </Button>
           </div>
         }
@@ -66,21 +66,21 @@ function SubmissionsPage() {
 
       {submissionsQuery.isLoading ? (
         <Panel>
-          <PanelBody className="py-10 text-sm text-night-60">Loading submissions…</PanelBody>
+          <PanelBody className="py-10 text-sm text-night-60">Chargement des soumissions…</PanelBody>
         </Panel>
       ) : submissions.length === 0 ? (
         <EmptyState
-          title="No submissions yet"
-          description="Once visitors complete this form, submissions will appear here."
+          title="Aucune soumission"
+          description="Les visiteurs qui complètent ce formulaire apparaîtront ici."
         />
       ) : (
         <Panel>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
               <thead>
-                <tr className="border-b border-mauve-10 text-left">
+                <tr className="border-b border-border-subtle text-left">
                   <th className="px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-mauve-60 sm:px-8">
-                    Submitted
+                    Reçue le
                   </th>
                   {fields.slice(0, 4).map((f) => (
                     <th
@@ -92,7 +92,7 @@ function SubmissionsPage() {
                   ))}
                   {fields.length > 4 ? (
                     <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-mauve-60">
-                      +{fields.length - 4} more
+                      +{fields.length - 4} autres
                     </th>
                   ) : null}
                   <th className="px-4 py-3" />
@@ -124,7 +124,7 @@ function SubmissionsPage() {
                           params={{ formId, submissionId: sub.id }}
                         >
                           <Button variant="ghost" size="sm">
-                            View
+                            Voir
                           </Button>
                         </Link>
                       </td>

@@ -14,6 +14,14 @@ import { orpc } from '#/orpc/client'
 
 export const Route = createFileRoute('/admin/leads')({ component: LeadsPage })
 
+const statusLabels: Record<LeadStatus, string> = {
+  new: 'Nouveau',
+  contacted: 'Contacté',
+  qualified: 'Qualifié',
+  won: 'Gagné',
+  lost: 'Perdu',
+}
+
 const statuses: LeadStatus[] = ['new', 'contacted', 'qualified', 'won', 'lost']
 
 const statusVariant: Record<LeadStatus, 'mauve' | 'everest' | 'default' | 'secondary' | 'outline'> = {
@@ -33,10 +41,10 @@ function LeadsPage() {
     orpc.leads.updateStatus.mutationOptions({
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: orpc.leads.list.key() })
-        toast.success('Lead status updated')
+        toast.success('Statut mis à jour')
       },
       onError: (err) => {
-        toast.error(err instanceof Error ? err.message : 'Failed to update lead status')
+        toast.error(err instanceof Error ? err.message : 'Impossible de mettre à jour le statut')
       },
     }),
   )
@@ -49,7 +57,7 @@ function LeadsPage() {
       <PageHeader
         kicker="Pipeline"
         title="Leads"
-        description="Every submission from your published forms, ready for follow-up."
+        description="Toutes les réponses de vos formulaires publiés, prêtes à être relancées."
       />
 
       <div className="flex flex-wrap gap-2">
@@ -58,7 +66,7 @@ function LeadsPage() {
           variant={filter === 'all' ? 'mauve' : 'ghost'}
           onClick={() => setFilter('all')}
         >
-          All
+          Tous
         </Button>
         {statuses.map((status) => (
           <Button
@@ -67,26 +75,26 @@ function LeadsPage() {
             variant={filter === status ? 'mauve' : 'ghost'}
             onClick={() => setFilter(status)}
           >
-            {status}
+            {statusLabels[status]}
           </Button>
         ))}
       </div>
 
       {leadsQuery.isLoading ? (
         <Panel>
-          <PanelBody className="py-10 text-sm text-night-60">Loading leads...</PanelBody>
+          <PanelBody className="py-10 text-sm text-night-60">Chargement des leads…</PanelBody>
         </Panel>
       ) : null}
 
       {leads.length === 0 && !leadsQuery.isLoading ? (
         <EmptyState
-          title="No leads in this view"
-          description="Publish a form and share /f/slug. New submissions will appear here with email, phone, and source form."
+          title="Aucun lead dans cette vue"
+          description="Publiez un formulaire et partagez /f/slug. Les nouvelles soumissions apparaîtront ici."
         />
       ) : null}
 
       <Panel>
-        <PanelBody className="divide-y divide-mauve-10 p-0">
+        <PanelBody className="divide-y divide-mauve/10 p-0">
           {leads.map((lead) => (
             <div
               key={lead.id}
@@ -95,9 +103,9 @@ function LeadsPage() {
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium text-night-80">
-                    {lead.name ?? lead.email ?? 'Anonymous lead'}
+                    {lead.name ?? lead.email ?? 'Lead anonyme'}
                   </p>
-                  <Badge variant={statusVariant[lead.status as LeadStatus]}>{lead.status}</Badge>
+                  <Badge variant={statusVariant[lead.status as LeadStatus]}>{statusLabels[lead.status as LeadStatus]}</Badge>
                 </div>
                 <p className="text-sm text-night-60">
                   {lead.form?.title} · {new Date(lead.createdAt).toLocaleString()}
@@ -107,7 +115,7 @@ function LeadsPage() {
               </div>
 
               <label className="flex flex-col gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-label">
-                Status
+                Statut
                 <select
                   value={lead.status}
                   onChange={(e) =>
@@ -123,7 +131,7 @@ function LeadsPage() {
                 >
                   {statuses.map((status) => (
                     <option key={status} value={status}>
-                      {status}
+                      {statusLabels[status]}
                     </option>
                   ))}
                 </select>

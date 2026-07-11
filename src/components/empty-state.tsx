@@ -14,11 +14,11 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center rounded-2xl border border-dashed border-mauve-20 bg-mauve-05 px-6 py-14 text-center',
+        'flex flex-col items-center justify-center rounded-2xl border border-dashed border-mauve/20 bg-mauve-05 px-6 py-14 text-center',
         className,
       )}
     >
-      <p className="text-lg font-medium text-mauve">{title}</p>
+      <p className="text-base font-semibold text-night-80">{title}</p>
       <p className="mt-2 max-w-sm text-sm leading-relaxed text-night-60">{description}</p>
       {action ? <div className="mt-6">{action}</div> : null}
     </div>

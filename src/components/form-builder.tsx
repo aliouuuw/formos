@@ -29,13 +29,13 @@ import { cn } from '#/lib/utils'
 /* ------------------------------------------------------------------ */
 
 const fieldTypes: { type: FieldType; label: string; glyph: string }[] = [
-  { type: 'short_text', label: 'Short text', glyph: 'Aa' },
-  { type: 'long_text', label: 'Long text', glyph: '¶' },
+  { type: 'short_text', label: 'Texte court', glyph: 'Aa' },
+  { type: 'long_text', label: 'Texte long', glyph: '¶' },
   { type: 'email', label: 'Email', glyph: '@' },
-  { type: 'phone', label: 'Phone', glyph: '☎' },
-  { type: 'number', label: 'Number', glyph: '#' },
-  { type: 'select', label: 'Dropdown', glyph: '▾' },
-  { type: 'checkbox', label: 'Checkbox', glyph: '✓' },
+  { type: 'phone', label: 'Téléphone', glyph: '☎' },
+  { type: 'number', label: 'Nombre', glyph: '#' },
+  { type: 'select', label: 'Liste déroulante', glyph: '▾' },
+  { type: 'checkbox', label: 'Case à cocher', glyph: '✓' },
   { type: 'date', label: 'Date', glyph: '▦' },
 ]
 
@@ -126,7 +126,7 @@ function FieldRow({
             selected ? 'font-medium text-night-80' : 'text-night-60',
           )}
         >
-          {field.label || 'Untitled field'}
+          {field.label || 'Question sans titre'}
           {field.required ? <span className="ml-0.5 text-mauve">*</span> : null}
         </span>
       </button>
@@ -135,7 +135,7 @@ function FieldRow({
         type="button"
         onClick={onRemove}
         className="rounded p-1 text-mauve-20 opacity-0 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"
-        aria-label={`Remove ${field.label}`}
+        aria-label={`Supprimer ${field.label}`}
       >
         <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden>
           <path d="M3.5 3.5l7 7m0-7l-7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -182,13 +182,13 @@ function FieldTypePicker({
     >
       <div className="flex items-center justify-between border-b border-border-subtle bg-white px-3 py-2">
         <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-mauve-60">
-          Field type
+          Type de question
         </span>
         <button
           type="button"
           onClick={onClose}
           className="rounded-lg p-1 text-night-40 transition-colors hover:bg-mauve-05 hover:text-night-80"
-          aria-label="Close"
+          aria-label="Fermer"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
             <path d="M18 6L6 18M6 6l12 12" />
@@ -231,7 +231,7 @@ function FieldInspector({
   return (
     <div className="space-y-5">
       <div className="space-y-1.5">
-        <Label htmlFor="insp-label">Question</Label>
+        <Label htmlFor="insp-label">Libellé</Label>
         <Textarea
           id="insp-label"
           rows={3}
@@ -241,17 +241,17 @@ function FieldInspector({
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="insp-placeholder">Placeholder</Label>
+        <Label htmlFor="insp-placeholder">Texte d'aide</Label>
         <Input
           id="insp-placeholder"
           value={field.placeholder ?? ''}
-          placeholder={field.type === 'checkbox' ? 'Checkbox text' : 'Shown inside the input'}
+          placeholder={field.type === 'checkbox' ? 'Texte de la case' : 'Affiché dans le champ'}
           onChange={(e) => onChange({ ...field, placeholder: e.target.value || undefined })}
         />
       </div>
       {field.type === 'select' ? (
         <div className="space-y-1.5">
-          <Label htmlFor="insp-options">Choices, one per line</Label>
+          <Label htmlFor="insp-options">Options, une par ligne</Label>
           <Textarea
             id="insp-options"
             rows={5}
@@ -266,7 +266,7 @@ function FieldInspector({
         </div>
       ) : null}
       <label className="flex cursor-pointer items-center justify-between rounded-xl border border-mauve-10 px-4 py-3 hover:bg-mauve-05/50 transition-colors">
-        <span className="text-sm font-medium text-night-80">Required</span>
+        <span className="text-sm font-medium text-night-80">Obligatoire</span>
         <input
           type="checkbox"
           checked={field.required ?? false}
@@ -285,7 +285,7 @@ function FieldInspector({
 export function FormBuilder({
   definition,
   onChange,
-  previewTitle = 'Preview',
+  previewTitle = 'Aperçu',
 }: {
   definition: FormDefinition
   onChange: (definition: FormDefinition) => void
@@ -339,7 +339,7 @@ export function FormBuilder({
   function addPage() {
     const page: FormPage = {
       id: crypto.randomUUID(),
-      title: `Step ${definition.pages.length + 1}`,
+      title: `Étape ${definition.pages.length + 1}`,
       fields: [],
     }
     onChange({ ...definition, pages: [...definition.pages, page] })
@@ -403,7 +403,7 @@ export function FormBuilder({
                       {pi + 1}
                     </span>
                     <span className={cn("truncate text-[13px] font-semibold", isActivePage ? "text-night-80" : "text-night-60")}>
-                      {page.title?.trim() || `Step ${pi + 1}`}
+                      {page.title?.trim() || `Étape ${pi + 1}`}
                     </span>
                   </button>
                   <div className="flex items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100">
@@ -412,7 +412,7 @@ export function FormBuilder({
                       onClick={() => movePage(page.id, -1)}
                       disabled={pi === 0}
                       className="rounded p-1 text-mauve-40 hover:bg-white hover:text-mauve disabled:opacity-30 shadow-sm"
-                      aria-label="Move step up"
+                      aria-label="Déplacer l'étape vers le haut"
                     >
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 15l-6-6-6 6"/></svg>
                     </button>
@@ -421,7 +421,7 @@ export function FormBuilder({
                       onClick={() => movePage(page.id, 1)}
                       disabled={pi === definition.pages.length - 1}
                       className="ml-1 rounded p-1 text-mauve-40 hover:bg-white hover:text-mauve disabled:opacity-30 shadow-sm"
-                      aria-label="Move step down"
+                      aria-label="Déplacer l'étape vers le bas"
                     >
                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6"/></svg>
                     </button>
@@ -430,7 +430,7 @@ export function FormBuilder({
                       onClick={() => removePage(page.id)}
                       disabled={definition.pages.length <= 1}
                       className="ml-2 rounded p-1 text-mauve-40 hover:bg-red-50 hover:text-red-600 disabled:opacity-30"
-                      aria-label="Delete step"
+                      aria-label="Supprimer l'étape"
                     >
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
@@ -476,7 +476,7 @@ export function FormBuilder({
                         <span className="flex h-6 w-6 items-center justify-center rounded-md border border-dashed border-mauve-20 bg-transparent text-xs">
                           +
                         </span>
-                        Add field
+                        Ajouter une question
                       </button>
                     )}
                   </div>
@@ -492,7 +492,7 @@ export function FormBuilder({
             onClick={addPage}
             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-night-60 hover:bg-mauve-05 hover:text-night-80"
           >
-            <span className="text-mauve-40">+</span> Add step
+            <span className="text-mauve-40">+</span> Ajouter une étape
           </button>
           <button
             type="button"
@@ -504,7 +504,7 @@ export function FormBuilder({
                 : 'text-night-60 hover:bg-mauve-05 hover:text-night-80',
             )}
           >
-            Ending screen
+            Écran de fin
             {selection.kind === 'ending' && <span className="h-1.5 w-1.5 rounded-full bg-mauve" />}
           </button>
         </div>
@@ -559,15 +559,15 @@ export function FormBuilder({
           <div className="space-y-6">
             <div className="border-b border-mauve-10 pb-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-mauve-60">
-                Step configuration
+                Configuration de l'étape
               </p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="page-title">Internal title (optional)</Label>
+              <Label htmlFor="page-title">Titre interne (optionnel)</Label>
               <Input
                 id="page-title"
                 value={activePage.title ?? ''}
-                placeholder={`Step ${activePageIndex + 1}`}
+                placeholder={`Étape ${activePageIndex + 1}`}
                 onChange={(e) =>
                   patchPage(activePage.id, (p) => ({
                     ...p,
@@ -575,22 +575,22 @@ export function FormBuilder({
                   }))
                 }
               />
-              <p className="text-xs text-night-40 mt-1">This appears at the top of the form step to help users context switch.</p>
+              <p className="text-xs text-night-40 mt-1">S'affiche en haut de l'étape pour guider les visiteurs.</p>
             </div>
           </div>
         ) : selection.kind === 'ending' ? (
           <div className="space-y-6">
              <div className="border-b border-mauve-10 pb-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-mauve-60">
-                Ending configuration
+                Configuration de fin
               </p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="thanks">Thank-you message</Label>
+              <Label htmlFor="thanks">Message de remerciement</Label>
               <Textarea
                 id="thanks"
                 rows={4}
-                placeholder="Thanks for your submission!"
+                placeholder="Merci pour votre participation !"
                 value={definition.theme?.thankYouMessage ?? ''}
                 onChange={(e) =>
                   onChange({

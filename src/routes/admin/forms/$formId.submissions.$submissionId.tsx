@@ -33,13 +33,13 @@ function SubmissionDetailPage() {
   return (
     <div className="space-y-10">
       <PageHeader
-        kicker="Submission"
+        kicker="Soumission"
         title={`#${submission.id.slice(0, 8)}`}
-        description={`Submitted ${new Date(submission.createdAt).toLocaleString()} · form version ${submission.formVersion}`}
+        description={`Reçue le ${new Date(submission.createdAt).toLocaleString()} · version ${submission.formVersion}`}
         actions={
           <Link to="/admin/forms/$formId/submissions" params={{ formId }}>
             <Button variant="ghost" size="sm">
-              ← All submissions
+              ← Toutes les soumissions
             </Button>
           </Link>
         }
@@ -48,12 +48,12 @@ function SubmissionDetailPage() {
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <Panel>
           <PanelHeader>
-            <h2 className="text-base font-semibold text-night-80">Answers</h2>
+            <h2 className="text-base font-semibold text-night-80">Réponses</h2>
             <p className="mt-1 text-sm text-night-60">
-              Rendered against the definition at version {submission.formVersion}.
+              Affichées selon la définition en version {submission.formVersion}.
             </p>
           </PanelHeader>
-          <PanelBody className="divide-y divide-mauve-10 p-0">
+          <PanelBody className="divide-y divide-mauve/10 p-0">
             {fields.map((field) => {
               const value = answers[field.id]
               return (
@@ -84,18 +84,18 @@ function SubmissionDetailPage() {
               </PanelHeader>
               <PanelBody className="space-y-3">
                 {lead.name ? (
-                  <Row label="Name" value={lead.name} />
+                  <Row label="Nom" value={lead.name} />
                 ) : null}
                 {lead.email ? (
                   <Row label="Email" value={lead.email} highlight />
                 ) : null}
                 {lead.phone ? (
-                  <Row label="Phone" value={lead.phone} />
+                  <Row label="Téléphone" value={lead.phone} />
                 ) : null}
                 {lead.status ? (
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-mauve-60">
-                      Status
+                      Statut
                     </span>
                     <Badge variant="mauve">{lead.status}</Badge>
                   </div>
@@ -106,31 +106,31 @@ function SubmissionDetailPage() {
 
           <Panel>
             <PanelHeader>
-              <h2 className="text-base font-semibold text-night-80">Metadata</h2>
+              <h2 className="text-base font-semibold text-night-80">Métadonnées</h2>
             </PanelHeader>
             <PanelBody className="space-y-3">
               <Row label="Session" value={submission.sessionId} mono />
               {submission.completedAt ? (
                 <Row
-                  label="Completed"
+                  label="Complétée"
                   value={new Date(submission.completedAt).toLocaleString()}
                 />
               ) : null}
               {(submission.metadata as Record<string, string> | null)?.utmSource ? (
                 <Row
-                  label="UTM source"
+                  label="Source UTM"
                   value={(submission.metadata as Record<string, string>).utmSource}
                 />
               ) : null}
               {(submission.metadata as Record<string, string> | null)?.utmCampaign ? (
                 <Row
-                  label="UTM campaign"
+                  label="Campagne UTM"
                   value={(submission.metadata as Record<string, string>).utmCampaign}
                 />
               ) : null}
               {(submission.metadata as Record<string, string> | null)?.referrer ? (
                 <Row
-                  label="Referrer"
+                  label="Référent"
                   value={(submission.metadata as Record<string, string>).referrer}
                 />
               ) : null}

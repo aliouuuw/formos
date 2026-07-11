@@ -2,7 +2,7 @@ import * as React from 'react'
 
 import { cn } from '#/lib/utils'
 
-/** Double-bezel container: outer shell + inner surface */
+/** Clean card container */
 export function Panel({
   className,
   innerClassName,
@@ -12,19 +12,12 @@ export function Panel({
   return (
     <div
       className={cn(
-        'rounded-[1.75rem] bg-mauve-05 p-1.5 ring-1 ring-border-subtle',
+        'overflow-hidden rounded-2xl border border-border-subtle bg-white shadow-[0_1px_2px_rgba(28,20,29,0.03),0_8px_24px_rgba(28,20,29,0.04)]',
         className,
       )}
       {...props}
     >
-      <div
-        className={cn(
-          'rounded-[calc(1.75rem-0.375rem)] bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]',
-          innerClassName,
-        )}
-      >
-        {children}
-      </div>
+      <div className={cn(innerClassName)}>{children}</div>
     </div>
   )
 }

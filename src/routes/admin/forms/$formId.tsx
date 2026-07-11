@@ -7,6 +7,7 @@ import { FormBuilder } from '#/components/form-builder'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Label } from '#/components/ui/label'
+import { Panel, PanelBody } from '#/components/ui/panel'
 import { Textarea } from '#/components/ui/textarea'
 import { formatAnalyticsEvent } from '#/lib/analytics-labels'
 import { formDefinitionSchema, slugify } from '#/lib/form-types'
@@ -138,11 +139,11 @@ function FormEditorPage() {
   }
 
   if (formQuery.isLoading) {
-    return <p className="text-sm text-night-60">Loading form…</p>
+    return <p className="text-sm text-night-60">Chargement du formulaire…</p>
   }
 
   if (!formQuery.data) {
-    return <p className="text-sm text-red-700">Form not found.</p>
+    return <p className="text-sm text-red-700">Formulaire introuvable.</p>
   }
 
   const form = formQuery.data
@@ -226,12 +227,12 @@ function FormEditorPage() {
                 disabled={updateMutation.isPending}
               >
                 <span className="mr-0.5 h-1.5 w-1.5 rounded-full bg-gold" aria-hidden />
-                {updateMutation.isPending ? 'Saving…' : 'Save'}
+                {updateMutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
               </Button>
             ) : (
               <span className="inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-xs font-medium text-everest-green">
                 <span className="h-1.5 w-1.5 rounded-full bg-everest-green" aria-hidden />
-                Saved
+                Enregistré
               </span>
             )}
             {published ? (
@@ -239,14 +240,14 @@ function FormEditorPage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => toast.message('Save your changes before opening the live form.')}
+                  onClick={() => toast.message("Enregistrez vos modifications avant d'ouvrir le formulaire en ligne.")}
                 >
-                  View live ↗
+                  Voir en ligne ↗
                 </Button>
               ) : (
                 <Link to="/f/$slug" params={{ slug }} target="_blank">
                   <Button variant="secondary" size="sm">
-                    View live ↗
+                    Voir en ligne ↗
                   </Button>
                 </Link>
               )
@@ -257,18 +258,18 @@ function FormEditorPage() {
                 onClick={() => publishMutation.mutate({ id: formId })}
                 disabled={publishMutation.isPending}
               >
-                Publish
+                {publishMutation.isPending ? 'Publication…' : 'Publier'}
               </Button>
             )}
           </div>
         </div>
 
         {/* Tabs */}
-        <nav className="flex items-center gap-6 border-b border-border-subtle" aria-label="Editor sections">
+        <nav className="flex items-center gap-6 border-b border-border-subtle" aria-label="Sections de l'éditeur">
           {(
             [
-              { id: 'build', label: 'Build' },
-              { id: 'results', label: 'Results' },
+              { id: 'build', label: 'Éditeur' },
+              { id: 'results', label: 'Résultats' },
             ] as const
           ).map(({ id, label }) => (
             <button
@@ -291,7 +292,7 @@ function FormEditorPage() {
               onClick={() => switchMode(mode === 'builder' ? 'json' : 'builder')}
               className="-mb-px ml-auto pb-2.5 font-mono text-xs text-night-60 transition-colors duration-150 hover:text-mauve"
             >
-              {mode === 'builder' ? '{ } Edit JSON' : '← Back to builder'}
+              {mode === 'builder' ? '{ } Modifier le JSON' : "← Retour à l'éditeur"}
             </button>
           ) : null}
         </nav>
@@ -329,20 +330,20 @@ function FormEditorPage() {
       {/* Results tab */}
       {tab === 'results' ? (
         <div className="max-w-3xl space-y-10">
-          <dl className="flex flex-wrap gap-x-12 gap-y-6">
+          <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {(
               [
-                { label: 'Views', value: statsQuery.data?.views ?? 0 },
-                { label: 'Starts', value: statsQuery.data?.starts ?? 0 },
-                { label: 'Completions', value: statsQuery.data?.completions ?? 0 },
-                { label: 'Completion rate', value: `${statsQuery.data?.completionRate ?? 0}%` },
+                { label: 'Vues', value: statsQuery.data?.views ?? 0 },
+                { label: 'Démarrages', value: statsQuery.data?.starts ?? 0 },
+                { label: 'Complétions', value: statsQuery.data?.completions ?? 0 },
+                { label: 'Taux de complétion', value: `${statsQuery.data?.completionRate ?? 0}%` },
               ] as const
             ).map(({ label, value }) => (
-              <div key={label}>
+              <div key={label} className="rounded-2xl border border-border-subtle bg-white p-5">
                 <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-label">
                   {label}
                 </dt>
-                <dd className="mt-1 text-3xl font-semibold tabular-nums text-night-80">{value}</dd>
+                <dd className="mt-2 text-2xl font-semibold tabular-nums text-night-80">{value}</dd>
               </div>
             ))}
           </dl>
@@ -350,29 +351,31 @@ function FormEditorPage() {
           <section className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-text-label">
-                Funnel
+                Entonnoir
               </h2>
               <Link to="/admin/forms/$formId/submissions" params={{ formId }}>
                 <Button variant="outline" size="sm">
-                  Browse submissions →
+                  Parcourir les soumissions →
                 </Button>
               </Link>
             </div>
 
             {analyticsQuery.data?.funnel.length ? (
-              <div className="divide-y divide-border-subtle border-y border-border-subtle">
-                {analyticsQuery.data.funnel.map((row) => (
-                  <div key={row.eventType} className="flex items-center justify-between py-3 text-sm">
-                    <span className="text-night-80">{formatAnalyticsEvent(row.eventType)}</span>
-                    <span className="font-semibold tabular-nums text-night-80">{row.count}</span>
-                  </div>
-                ))}
-              </div>
+              <Panel>
+                <PanelBody className="divide-y divide-mauve/10 p-0">
+                  {analyticsQuery.data.funnel.map((row) => (
+                    <div key={row.eventType} className="flex items-center justify-between px-6 py-3 text-sm sm:px-8">
+                      <span className="text-night-80">{formatAnalyticsEvent(row.eventType)}</span>
+                      <span className="font-semibold tabular-nums text-night-80">{row.count}</span>
+                    </div>
+                  ))}
+                </PanelBody>
+              </Panel>
             ) : (
-              <p className="border-y border-mauve-10 py-8 text-sm text-night-60">
-                No activity yet. {published ? 'Share' : 'Publish the form and share'}{' '}
-                <span className="font-mono text-everest-green">/f/{form.slug}</span> to start
-                collecting data.
+              <p className="rounded-2xl border border-dashed border-mauve/20 bg-mauve-05 py-8 text-center text-sm text-night-60">
+                Pas encore d'activité. {published ? 'Partagez' : 'Publiez le formulaire et partagez'}{' '}
+                <span className="font-mono text-everest-green">/f/{form.slug}</span> pour commencer à
+                collecter des données.
               </p>
             )}
           </section>

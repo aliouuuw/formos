@@ -32,7 +32,7 @@ export default function BetterAuthHeader({ stacked = false }: { stacked?: boolea
           {stacked ? (
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-night-80">
-                {session.user.name ?? 'Signed in'}
+                {session.user.name ?? 'Connecté'}
               </p>
               {session.user.email ? (
                 <p className="truncate text-xs text-text-secondary">{session.user.email}</p>
@@ -55,7 +55,7 @@ export default function BetterAuthHeader({ stacked = false }: { stacked?: boolea
             })
           }}
         >
-          Sign out
+          Se déconnecter
         </Button>
       </div>
     )
