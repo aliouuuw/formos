@@ -66,7 +66,7 @@ function FieldInput({
         required={field.required}
       >
         <SelectTrigger id={field.id} onFocus={onFocus}>
-          <SelectValue placeholder={field.placeholder ?? 'Select...'} />
+          <SelectValue placeholder={field.placeholder ?? 'Sélectionner…'} />
         </SelectTrigger>
         <SelectContent position="popper" className="w-[var(--radix-select-trigger-width)]">
           {field.options?.map((option) => (
@@ -133,6 +133,7 @@ export function FormRenderer({
   definition,
   preview,
   panelClassName,
+  campaign = false,
 }: {
   formId: string
   slug: string
@@ -140,6 +141,8 @@ export function FormRenderer({
   definition: FormDefinition
   preview?: FormRendererPreviewProps
   panelClassName?: string
+  /** IPO campaign surfaces: stronger hierarchy, gold focus, success delight */
+  campaign?: boolean
 }) {
   const isPreview = Boolean(preview)
   const sessionId = useMemo(() => (isPreview ? 'preview' : getSessionId()), [isPreview])
@@ -296,7 +299,7 @@ export function FormRenderer({
         setPageIndex(pageIndex + 1)
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Submission failed')
+      setError(e instanceof Error ? e.message : "Échec de l'envoi")
     } finally {
       setLoading(false)
     }
@@ -305,18 +308,34 @@ export function FormRenderer({
   const thankYouMessage =
     submitted ??
     (preview?.showEnding
-      ? definition.theme?.thankYouMessage?.trim() || 'Thanks for your submission!'
+      ? definition.theme?.thankYouMessage?.trim() || 'Merci pour votre envoi.'
       : null)
 
   if (thankYouMessage) {
     return (
       <Panel className={cn('mx-auto max-w-xl', panelClassName)}>
-        <PanelBody className="space-y-4 py-12 text-center">
-          <Badge variant="mauve" className="mx-auto normal-case tracking-[0.18em]">
-            Submitted
-          </Badge>
-          <h2 className="font-display text-3xl text-night-80">Thank you</h2>
-          <p className="mx-auto max-w-sm text-base leading-relaxed text-night-60">{thankYouMessage}</p>
+        <PanelBody className="space-y-5 py-14 text-center">
+          {campaign ? (
+            <div className="ipo-form-success-mark" aria-hidden>
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M5 12.5 9.5 17 19 7.5"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          ) : (
+            <Badge variant="everest" className="mx-auto normal-case tracking-[0.18em]">
+              Envoyé
+            </Badge>
+          )}
+          <h2 className="text-3xl font-bold tracking-[-0.03em] text-night-80">Merci</h2>
+          <p className="mx-auto max-w-sm text-base leading-relaxed text-text-secondary">
+            {thankYouMessage}
+          </p>
         </PanelBody>
       </Panel>
     )
@@ -326,44 +345,57 @@ export function FormRenderer({
 
   return (
     <Panel className={cn('mx-auto max-w-xl', panelClassName)}>
-      <PanelHeader className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <Badge variant="mauve" className="normal-case tracking-[0.18em]">
-            {title}
-          </Badge>
-          <span className="text-xs font-medium text-night-60">
+      <PanelHeader className="space-y-5">
+        <div className={cn('flex items-center gap-3', campaign ? 'justify-end' : 'justify-between')}>
+          {!campaign ? (
+            <Badge variant="everest" className="normal-case tracking-[0.16em]">
+              {title}
+            </Badge>
+          ) : null}
+          <span className="text-xs font-medium tabular-nums text-text-secondary">
             {pageIndex + 1} / {definition.pages.length}
           </span>
         </div>
         {progress !== null ? (
-          <div className="h-1.5 overflow-hidden rounded-full bg-mauve-10">
+          <div className="h-1.5 overflow-hidden rounded-full bg-everest-green-10">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-mauve via-everest-green to-gold transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
+              className="h-full rounded-full bg-linear-to-r from-everest-green via-everest-green to-gold transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
               style={{ width: `${progress}%` }}
             />
           </div>
         ) : null}
-        <h1 className="text-2xl font-semibold tracking-tight text-night-80 sm:text-3xl">
-          {page.title ?? `Step ${pageIndex + 1}`}
+        <h1
+          className={cn(
+            'tracking-tight text-night-80',
+            campaign
+              ? 'text-[1.75rem] font-bold tracking-[-0.03em] sm:text-[2rem]'
+              : 'text-2xl font-semibold sm:text-3xl',
+          )}
+        >
+          {page.title ?? `Étape ${pageIndex + 1}`}
         </h1>
       </PanelHeader>
 
-      <PanelBody className="space-y-6">
+      <PanelBody className={cn('space-y-6', campaign && 'space-y-7')}>
         {page.fields.length === 0 ? (
-          <div className="rounded-xl border-2 border-dashed border-mauve-10 px-6 py-12 text-center">
-            <p className="text-sm text-night-60">This step has no fields yet.</p>
+          <div className="rounded-xl border-2 border-dashed border-everest-green-10 px-6 py-12 text-center">
+            <p className="text-sm text-text-secondary">Cette étape n&apos;a pas encore de champs.</p>
           </div>
         ) : (
           page.fields.map((field) => (
             <div
               key={field.id}
               className={cn(
-                'space-y-2 rounded-xl transition-colors',
-                preview?.selectedFieldId === field.id && 'bg-mauve-05/60 ring-1 ring-mauve-10 p-3 -mx-3',
+                'space-y-2.5 rounded-xl transition-colors',
+                preview?.selectedFieldId === field.id &&
+                  'bg-everest-green-05/60 -mx-3 p-3 ring-1 ring-everest-green-10',
               )}
             >
               {field.type !== 'checkbox' ? (
-                <Label htmlFor={field.id}>
+                <Label
+                  htmlFor={field.id}
+                  className={cn(campaign ? 'text-everest-green' : 'text-everest-green/75')}
+                >
                   {field.label}
                   {field.required ? ' *' : ''}
                 </Label>
@@ -397,26 +429,31 @@ export function FormRenderer({
           </p>
         ) : null}
 
-        <div className="flex items-center justify-between gap-3 pt-2">
+        <div className="flex items-center justify-between gap-3 border-t border-everest-green/8 pt-6">
           <Button
             type="button"
-            variant="ghost"
+            variant={campaign ? 'outline' : 'ghost'}
             size="sm"
             disabled={pageIndex === 0 || loading}
             onClick={() => setPageIndex(Math.max(0, pageIndex - 1))}
+            className={cn(
+              campaign && pageIndex === 0 && 'opacity-40',
+              campaign && 'border-everest-green/25 text-everest-green',
+            )}
           >
-            Back
+            Retour
           </Button>
           <Button
-            variant={isLastPage ? 'mauve' : 'everest'}
+            variant={isLastPage ? 'default' : 'everest'}
             showArrow={isLastPage}
             onClick={() => void handleNext()}
             disabled={loading}
+            className={cn(isLastPage && 'ipo-cta-gold')}
           >
-            {loading ? 'Saving...' : isLastPage ? 'Submit' : 'Continue'}
+            {loading ? 'Envoi…' : isLastPage ? 'Envoyer' : 'Continuer'}
           </Button>
         </div>
       </PanelBody>
-    </Panel>
+     </Panel>
   )
 }

@@ -49,7 +49,15 @@ export const analyticsEventTypeSchema = z.enum([
   'form_abandoned',
 ])
 
-export const leadStatusSchema = z.enum(['new', 'contacted', 'qualified', 'won', 'lost'])
+export const leadStatusSchema = z.enum([
+  'new',
+  'contacted',
+  'rdv',
+  'souscrit',
+  'qualified',
+  'won',
+  'lost',
+])
 
 export type FieldType = z.infer<typeof fieldTypeSchema>
 export type FormField = z.infer<typeof formFieldSchema>

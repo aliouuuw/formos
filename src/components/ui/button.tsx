@@ -3,24 +3,27 @@ import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '#/lib/utils'
 
-const buttonVariants = cva(
-  'group inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium tracking-wide transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none active:scale-[0.98]',
+export const buttonVariants = cva(
+  'group inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium tracking-wide no-underline transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none active:scale-[0.98]',
   {
     variants: {
       variant: {
         default:
-          'rounded-full bg-gold text-white hover:-translate-y-px hover:brightness-105 hover:shadow-[0_8px_24px_rgba(203,152,36,0.24)] focus-visible:shadow-[0_0_0_3px_var(--jaune-or-20),0_0_0_1px_var(--jaune-or)]',
+          'ipo-cta-gold rounded-full text-white hover:-translate-y-px hover:text-white focus-visible:text-white focus-visible:shadow-[0_0_0_3px_var(--jaune-or-20),0_0_0_1px_var(--gold-cta)]',
         everest:
-          'rounded-full bg-everest-green text-white hover:-translate-y-px hover:shadow-[var(--shadow-card-lift)] focus-visible:shadow-[0_0_0_3px_var(--everest-green-10),0_0_0_1px_var(--everest-green)]',
+          'rounded-full bg-everest-green text-white hover:-translate-y-px hover:bg-[var(--everest-cta-hover)] hover:text-white focus-visible:text-white focus-visible:shadow-[0_0_0_3px_var(--everest-green-10),0_0_0_1px_var(--everest-green)]',
         mauve:
-          'rounded-full bg-mauve text-white hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(70,29,76,0.2)] focus-visible:shadow-[0_0_0_3px_var(--mauve-10),0_0_0_1px_var(--mauve)]',
+          'rounded-full bg-mauve text-white hover:-translate-y-px hover:bg-[#3a183f] hover:text-white focus-visible:text-white focus-visible:shadow-[0_0_0_3px_var(--mauve-10),0_0_0_1px_var(--mauve)]',
         secondary:
-          'rounded-full border border-mauve/20 bg-white text-mauve hover:border-mauve hover:bg-mauve-05',
+          'rounded-full border border-everest-green/20 bg-white text-everest-green hover:border-everest-green hover:bg-everest-green-05 hover:text-everest-green focus-visible:text-everest-green',
         outline:
-          'rounded-full border border-everest-green/20 bg-white text-everest-green hover:border-everest-green hover:bg-everest-green-05',
+          'rounded-full border border-everest-green/20 bg-white text-everest-green hover:border-everest-green hover:bg-everest-green-05 hover:text-everest-green focus-visible:text-everest-green',
         ghost:
-          'rounded-full text-night-60 hover:bg-mauve-05 hover:text-mauve',
-        destructive: 'rounded-full bg-destructive text-white hover:bg-destructive/90',
+          'rounded-full text-text-secondary hover:bg-everest-green-05 hover:text-everest-green focus-visible:text-everest-green',
+        'ghost-light':
+          'rounded-full border border-white/30 bg-white/5 text-white backdrop-blur-sm hover:border-white/55 hover:bg-white/10 hover:text-white focus-visible:text-white',
+        destructive:
+          'rounded-full bg-destructive text-white hover:bg-destructive/90 hover:text-white focus-visible:text-white',
       },
       size: {
         default: 'h-10 px-5 py-2',
@@ -66,7 +69,11 @@ export function Button({
   ...props
 }: ButtonProps) {
   return (
-    <button className={cn(buttonVariants({ variant, size, className }))} {...props}>
+    <button
+      data-ui="button"
+      className={cn(buttonVariants({ variant, size, className }))}
+      {...props}
+    >
       {children}
       {showArrow ? <ButtonArrow /> : null}
     </button>

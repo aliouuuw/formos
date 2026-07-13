@@ -24,6 +24,10 @@
   --cream: #faf6ef;
 
   --jaune-or: #cb9824;
+  /* Gold CTA fill — lighter mustard, still legible with white label text */
+  --gold-cta: #b88928;
+  --gold-cta-hover: #a67c1e;
+  --everest-cta-hover: #023d38;
   --mauve: #461d4c;
   --everest-green: #012d2a;
   --night: #0a0a0a;
@@ -175,6 +179,8 @@
   --color-text-label: var(--text-label);
   --color-border-subtle: var(--border-subtle);
   --color-gold: var(--jaune-or);
+  --color-gold-cta: var(--gold-cta);
+  --color-gold-cta-hover: var(--gold-cta-hover);
   --color-gold-20: var(--jaune-or-20);
   --color-gold-10: var(--jaune-or-10);
   --color-background: var(--background);
@@ -237,14 +243,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
+/* Text links only — button-styled anchors use data-ui="button" and manage their own colors */
+a:where(:not([data-ui='button'])) {
   color: var(--everest-green);
   text-decoration-color: var(--everest-green-20);
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
 }
 
-a:hover {
+a:where(:not([data-ui='button'])):hover {
   color: var(--jaune-or);
 }
 
@@ -432,6 +439,157 @@ pre code {
 
 .rise-in {
   animation: rise-in 700ms var(--ease-out-expo) both;
+}
+
+.ipo-campaign-grain {
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+}
+
+.ipo-nav-link {
+  color: #ffffff;
+  text-decoration: none;
+  transition: color 200ms ease;
+}
+
+.ipo-nav-link:hover {
+  color: var(--jaune-or);
+}
+
+/* Mustard CTA fill — brand gold forward, subtle depth at the edges */
+.ipo-cta-gold {
+  background: linear-gradient(165deg, #d9ad4f 0%, #cb9824 50%, #b88928 100%);
+  color: #ffffff;
+}
+
+.ipo-cta-gold:hover {
+  background: linear-gradient(165deg, #e2b85a 0%, #d4a035 48%, #c4942e 100%);
+  color: #ffffff;
+}
+
+.ipo-hero-media img {
+  opacity: 0.62;
+  filter: saturate(1.05) contrast(1.04);
+}
+
+.ipo-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 800ms var(--ease-out-expo),
+    transform 800ms var(--ease-out-expo);
+  will-change: opacity, transform;
+}
+
+.ipo-reveal.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ipo-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .ipo-hero-media,
+  [data-hero-haze],
+  [data-hero-content] {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
+
+.ipo-form-shell {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse 60% 45% at 85% -5%, rgba(203, 152, 36, 0.18), transparent 52%),
+    radial-gradient(ellipse 50% 40% at 0% 100%, rgba(255, 255, 255, 0.04), transparent 45%),
+    var(--gradient-dark-section);
+}
+
+.ipo-form-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.03;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light;
+}
+
+.ipo-form-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.ipo-form-shell .ipo-text-link {
+  color: rgba(255, 255, 255, 0.82);
+  text-decoration: none;
+}
+
+.ipo-form-shell .ipo-text-link:hover {
+  color: #ffffff;
+}
+
+.ipo-form-panel {
+  border: 1px solid rgba(1, 45, 42, 0.08);
+  animation: rise-in 700ms var(--ease-out-expo) both;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.75) inset,
+    0 28px 70px rgba(1, 45, 42, 0.22);
+}
+
+.ipo-form-panel input:focus-visible,
+.ipo-form-panel [data-slot='select-trigger']:focus-visible,
+.ipo-form-panel button[role='combobox']:focus-visible {
+  border-color: var(--jaune-or) !important;
+  box-shadow:
+    0 0 0 3px var(--jaune-or-20),
+    0 0 0 1px var(--jaune-or) !important;
+}
+
+.ipo-form-success-mark {
+  width: 3.25rem;
+  height: 3.25rem;
+  margin-inline: auto;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  background: var(--everest-green-10);
+  color: var(--everest-green);
+}
+
+.ipo-form-success-mark svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.ipo-form-success-mark path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: ipo-check-draw 600ms var(--ease-out-expo) 180ms forwards;
+}
+
+@keyframes ipo-check-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ipo-form-success-mark path {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+
+  .ipo-form-panel {
+    animation: none;
+  }
 }
 
 @keyframes rise-in {

@@ -7,28 +7,24 @@ config({ path: ['.env.local', '.env'] })
 const { db } = await import('#/db/index')
 const { account, formDefinitionSnapshots, forms, user } = await import('#/db/schema')
 const { createDefaultFormDefinition } = await import('#/lib/form-types')
+const {
+  createIpoInfosFormDefinition,
+  createIpoSubscribeFormDefinition,
+  IPO_FORM_SLUGS,
+} = await import('#/lib/ipo-campaign')
 
 const adminEmail = process.env.SEED_ADMIN_EMAIL ?? 'admin@everestfinance.com'
 const adminPassword = process.env.SEED_ADMIN_PASSWORD
 const adminName = process.env.SEED_ADMIN_NAME ?? 'Formos Admin'
 const seedDemoForm = process.env.SEED_DEMO_FORM !== 'false'
 const demoSlug = process.env.SEED_DEMO_FORM_SLUG ?? 'demo-contact'
+const seedIpoCampaign = process.env.SEED_IPO_CAMPAIGN !== 'false'
 
 function createId() {
   return generateRandomString(32, 'a-z', 'A-Z', '0-9')
 }
 
 async function seedAdminUser() {
-  if (!adminPassword) {
-    throw new Error(
-      'SEED_ADMIN_PASSWORD is required. Example: SEED_ADMIN_PASSWORD="your-password" bun run db:seed',
-    )
-  }
-
-  if (adminPassword.length < 8) {
-    throw new Error('SEED_ADMIN_PASSWORD must be at least 8 characters.')
-  }
-
   const existing = await db.query.user.findFirst({
     where: eq(user.email, adminEmail),
   })
@@ -36,6 +32,16 @@ async function seedAdminUser() {
   if (existing) {
     console.log(`[seed] Admin user already exists: ${adminEmail}`)
     return existing
+  }
+
+  if (!adminPassword) {
+    throw new Error(
+      'SEED_ADMIN_PASSWORD is required to create the first admin. Example: SEED_ADMIN_PASSWORD="your-password" bun run db:seed',
+    )
+  }
+
+  if (adminPassword.length < 8) {
+    throw new Error('SEED_ADMIN_PASSWORD must be at least 8 characters.')
   }
 
   const userId = createId()
@@ -60,25 +66,43 @@ async function seedAdminUser() {
   return { id: userId, email: adminEmail, name: adminName }
 }
 
-async function seedPublishedDemoForm(adminUserId: string) {
+/** Use configured admin, or any existing user when only seeding forms. */
+async function resolveSeedUser() {
+  const byEmail = await db.query.user.findFirst({
+    where: eq(user.email, adminEmail),
+  })
+  if (byEmail) return byEmail
+
+  const anyUser = await db.query.user.findFirst()
+  if (anyUser) {
+    console.log(`[seed] No user for ${adminEmail}; using ${anyUser.email} for form seeding`)
+    return anyUser
+  }
+
+  return seedAdminUser()
+}
+
+async function seedPublishedForm(
+  adminUserId: string,
+  options: { slug: string; title: string; definition: ReturnType<typeof createDefaultFormDefinition> },
+) {
   const existing = await db.query.forms.findFirst({
-    where: eq(forms.slug, demoSlug),
+    where: eq(forms.slug, options.slug),
   })
 
   if (existing) {
-    console.log(`[seed] Demo form already exists: /f/${demoSlug}`)
+    console.log(`[seed] Form already exists: /f/${options.slug}`)
     return
   }
 
   const formId = crypto.randomUUID()
-  const definition = createDefaultFormDefinition('Demo contact')
 
   await db.insert(forms).values({
     id: formId,
-    title: 'Demo contact',
-    slug: demoSlug,
+    title: options.title,
+    slug: options.slug,
     status: 'published',
-    definition,
+    definition: options.definition,
     version: 1,
     createdBy: adminUserId,
     publishedAt: new Date(),
@@ -88,10 +112,34 @@ async function seedPublishedDemoForm(adminUserId: string) {
     id: crypto.randomUUID(),
     formId,
     version: 1,
-    definition,
+    definition: options.definition,
   })
 
-  console.log(`[seed] Created published demo form: /f/${demoSlug}`)
+  console.log(`[seed] Created published form: /f/${options.slug}`)
+}
+
+async function seedPublishedDemoForm(adminUserId: string) {
+  await seedPublishedForm(adminUserId, {
+    slug: demoSlug,
+    title: 'Demo contact',
+    definition: createDefaultFormDefinition('Demo contact'),
+  })
+}
+
+async function seedIpoCampaignForms(adminUserId: string) {
+  await seedPublishedForm(adminUserId, {
+    slug: IPO_FORM_SLUGS.subscribe,
+    title: 'IPO Bridge Bank — Je veux souscrire',
+    definition: createIpoSubscribeFormDefinition(),
+  })
+
+  await seedPublishedForm(adminUserId, {
+    slug: IPO_FORM_SLUGS.infos,
+    title: 'IPO Bridge Bank — Guide & informations',
+    definition: createIpoInfosFormDefinition(),
+  })
+
+  console.log(`[seed] IPO campaign landing: /ipo-bridge-bank`)
 }
 
 try {
@@ -99,10 +147,14 @@ try {
     throw new Error('DATABASE_URL is not set. Configure it in .env.local before seeding.')
   }
 
-  const admin = await seedAdminUser()
+  const admin = await resolveSeedUser()
 
   if (seedDemoForm) {
     await seedPublishedDemoForm(admin.id)
+  }
+
+  if (seedIpoCampaign) {
+    await seedIpoCampaignForms(admin.id)
   }
 
   console.log('[seed] Done.')

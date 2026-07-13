@@ -18,7 +18,9 @@ export function extractLeadFields(
     if (field.type === 'phone' && !phone) phone = value
     if (
       !name &&
-      (field.label.toLowerCase().includes('name') || field.type === 'short_text')
+      (field.label.toLowerCase().includes('name') ||
+        field.label.toLowerCase().includes('nom') ||
+        field.type === 'short_text')
     ) {
       name = value
     }

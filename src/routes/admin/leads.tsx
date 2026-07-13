@@ -9,27 +9,22 @@ import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Panel, PanelBody } from '#/components/ui/panel'
 import type { LeadStatus } from '#/lib/form-types'
+import {
+  LEAD_PIPELINE_STATUSES,
+  LEAD_STATUS_LABELS,
+  LEAD_STATUS_VARIANT,
+} from '#/lib/lead-status'
 import { cn } from '#/lib/utils'
 import { orpc } from '#/orpc/client'
 
 export const Route = createFileRoute('/admin/leads')({ component: LeadsPage })
 
-const statusLabels: Record<LeadStatus, string> = {
-  new: 'Nouveau',
-  contacted: 'Contacté',
-  qualified: 'Qualifié',
-  won: 'Gagné',
-  lost: 'Perdu',
+function leadStatusLabel(status: string): string {
+  return LEAD_STATUS_LABELS[status as LeadStatus] ?? status
 }
 
-const statuses: LeadStatus[] = ['new', 'contacted', 'qualified', 'won', 'lost']
-
-const statusVariant: Record<LeadStatus, 'mauve' | 'everest' | 'default' | 'secondary' | 'outline'> = {
-  new: 'mauve',
-  contacted: 'everest',
-  qualified: 'default',
-  won: 'everest',
-  lost: 'outline',
+function leadStatusVariant(status: string) {
+  return LEAD_STATUS_VARIANT[status as LeadStatus] ?? 'outline'
 }
 
 function LeadsPage() {
@@ -68,14 +63,14 @@ function LeadsPage() {
         >
           Tous
         </Button>
-        {statuses.map((status) => (
+        {LEAD_PIPELINE_STATUSES.map((status) => (
           <Button
             key={status}
             size="sm"
             variant={filter === status ? 'mauve' : 'ghost'}
             onClick={() => setFilter(status)}
           >
-            {statusLabels[status]}
+            {LEAD_STATUS_LABELS[status]}
           </Button>
         ))}
       </div>
@@ -105,7 +100,7 @@ function LeadsPage() {
                   <p className="font-medium text-night-80">
                     {lead.name ?? lead.email ?? 'Lead anonyme'}
                   </p>
-                  <Badge variant={statusVariant[lead.status as LeadStatus]}>{statusLabels[lead.status as LeadStatus]}</Badge>
+                  <Badge variant={leadStatusVariant(lead.status)}>{leadStatusLabel(lead.status)}</Badge>
                 </div>
                 <p className="text-sm text-night-60">
                   {lead.form?.title} · {new Date(lead.createdAt).toLocaleString()}
@@ -129,9 +124,9 @@ function LeadsPage() {
                     'focus:border-mauve focus:outline-none focus:ring-2 focus:ring-mauve/10',
                   )}
                 >
-                  {statuses.map((status) => (
+                  {LEAD_PIPELINE_STATUSES.map((status) => (
                     <option key={status} value={status}>
-                      {statusLabels[status]}
+                      {LEAD_STATUS_LABELS[status]}
                     </option>
                   ))}
                 </select>

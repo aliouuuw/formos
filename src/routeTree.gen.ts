@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as IpoBridgeBankRouteImport } from './routes/ipo-bridge-bank'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
@@ -26,6 +27,11 @@ import { Route as AdminFormsFormIdSubmissionsSubmissionIdRouteImport } from './r
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IpoBridgeBankRoute = IpoBridgeBankRouteImport.update({
+  id: '/ipo-bridge-bank',
+  path: '/ipo-bridge-bank',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -94,6 +100,7 @@ const AdminFormsFormIdSubmissionsSubmissionIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/ipo-bridge-bank': typeof IpoBridgeBankRoute
   '/login': typeof LoginRoute
   '/admin/leads': typeof AdminLeadsRoute
   '/api/$': typeof ApiSplatRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ipo-bridge-bank': typeof IpoBridgeBankRoute
   '/login': typeof LoginRoute
   '/admin/leads': typeof AdminLeadsRoute
   '/api/$': typeof ApiSplatRoute
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/ipo-bridge-bank': typeof IpoBridgeBankRoute
   '/login': typeof LoginRoute
   '/admin/leads': typeof AdminLeadsRoute
   '/api/$': typeof ApiSplatRoute
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/ipo-bridge-bank'
     | '/login'
     | '/admin/leads'
     | '/api/$'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/ipo-bridge-bank'
     | '/login'
     | '/admin/leads'
     | '/api/$'
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/ipo-bridge-bank'
     | '/login'
     | '/admin/leads'
     | '/api/$'
@@ -186,6 +198,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  IpoBridgeBankRoute: typeof IpoBridgeBankRoute
   LoginRoute: typeof LoginRoute
   ApiSplatRoute: typeof ApiSplatRoute
   ApiInngestRoute: typeof ApiInngestRoute
@@ -201,6 +214,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ipo-bridge-bank': {
+      id: '/ipo-bridge-bank'
+      path: '/ipo-bridge-bank'
+      fullPath: '/ipo-bridge-bank'
+      preLoaderRoute: typeof IpoBridgeBankRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -334,6 +354,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  IpoBridgeBankRoute: IpoBridgeBankRoute,
   LoginRoute: LoginRoute,
   ApiSplatRoute: ApiSplatRoute,
   ApiInngestRoute: ApiInngestRoute,
