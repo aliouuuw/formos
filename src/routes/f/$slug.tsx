@@ -48,6 +48,9 @@ function PublicFormPage() {
   }
 
   if (isIpoCampaign) {
+    const isSubscribe = slug === IPO_FORM_SLUGS.subscribe
+    const campaignIntent = isSubscribe ? 'subscribe' : 'infos'
+
     return (
       <div className="ipo-form-shell min-h-dvh">
         <div className="mx-auto flex max-w-3xl flex-col px-4 pb-20 pt-8 sm:px-6 sm:pt-12">
@@ -71,7 +74,9 @@ function PublicFormPage() {
               {formQuery.data.title.replace(/^IPO Bridge Bank — /, '').replace(/^IPO Bridge Bank - /, '')}
             </h1>
             <p className="mt-4 max-w-md text-base font-light leading-8 text-white/62">
-              Un conseiller vous contacte sur le canal choisi sous 24&nbsp;h ouvrées.
+              {isSubscribe
+                ? 'Laissez vos coordonnées : un conseiller vous rappelle sous 24 h ouvrées pour finaliser votre souscription.'
+                : 'Recevez le guide en 5 étapes après envoi du formulaire. Nous pouvons aussi vous rappeler si vous le souhaitez.'}
             </p>
           </div>
 
@@ -82,6 +87,7 @@ function PublicFormPage() {
             definition={formQuery.data.definition}
             panelClassName="ipo-form-panel w-full max-w-none rounded-[2rem]"
             campaign
+            campaignIntent={campaignIntent}
           />
         </div>
       </div>

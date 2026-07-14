@@ -6,7 +6,10 @@ import {
   IPO_CAMPAIGN,
   IPO_FORM_SLUGS,
   IPO_SUBSCRIPTION_STEPS,
+  getIpoCampaignPhase,
+  getIpoPhaseCopy,
   ipoFormSearchParams,
+  ipoWhatsAppUrl,
 } from '#/lib/ipo-campaign'
 import { cn } from '#/lib/utils'
 
@@ -272,13 +275,34 @@ export function IpoBridgeBankLanding() {
   const heroRef = useRef<HTMLElement>(null)
   useHeroKinetic(heroRef)
 
+  const phase = getIpoCampaignPhase()
+  const phaseCopy = getIpoPhaseCopy(phase)
   const [featured, ...restSteps] = IPO_SUBSCRIPTION_STEPS
 
   return (
     <div ref={rootRef} className="ipo-campaign relative min-h-dvh overflow-x-hidden bg-(--summit-ivory)">
       <div className="ipo-campaign-grain pointer-events-none fixed inset-0 z-1" aria-hidden />
 
-      <header className="pointer-events-none absolute inset-x-0 top-0 z-40 px-4 pt-5 sm:px-8 sm:pt-6">
+      {phase !== 'launch' ? (
+        <div
+          className={cn(
+            'sticky top-0 z-50 border-b px-4 py-2.5 text-center text-sm',
+            phase === 'final' || phase === 'closed'
+              ? 'border-gold/30 bg-gold-cta text-white'
+              : 'border-white/10 bg-everest-green text-white/90',
+          )}
+          role="status"
+        >
+          <p className="mx-auto max-w-4xl font-medium leading-snug">{phaseCopy.banner}</p>
+        </div>
+      ) : null}
+
+      <header
+        className={cn(
+          'pointer-events-none absolute inset-x-0 z-40 px-4 sm:px-8',
+          phase !== 'launch' ? 'top-14 pt-3 sm:pt-4' : 'top-0 pt-5 sm:pt-6',
+        )}
+      >
         <div className="pointer-events-auto mx-auto flex max-w-[1400px] items-center justify-between gap-4 rounded-full border border-white/15 bg-everest-green/55 px-4 py-3 text-white shadow-[0_18px_50px_rgba(1,45,42,0.28)] backdrop-blur-xl sm:px-6">
           <EverestMark />
           <div className="flex items-center gap-2 sm:gap-3">
@@ -321,7 +345,7 @@ export function IpoBridgeBankLanding() {
           >
             <div className="max-w-4xl">
               <p className="ipo-reveal mb-7 text-[10px] font-medium uppercase tracking-[0.28em] text-gold" data-reveal>
-                Offre publique · BRVM · 2026
+                {phaseCopy.kicker}
               </p>
               <h1
                 className="ipo-reveal max-w-[16ch] text-[clamp(2.75rem,6.2vw,5.75rem)] font-extrabold leading-[0.94] tracking-[-0.05em] text-white"
@@ -336,20 +360,51 @@ export function IpoBridgeBankLanding() {
                 data-reveal
                 style={{ transitionDelay: '130ms' }}
               >
-                20&nbsp;% du capital de Bridge Bank Group Côte d&apos;Ivoire s&apos;ouvre au public.
-                Everest Finance accompagne votre souscription, du premier échange au dépôt.
+                {phaseCopy.heroSupport}
               </p>
               <div
                 className="ipo-reveal mt-11 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center"
                 data-reveal
                 style={{ transitionDelay: '190ms' }}
               >
-                <CampaignLink intent="subscribe" variant="gold">
-                  Je veux souscrire
-                </CampaignLink>
-                <CampaignLink intent="infos" variant="ghost-light">
-                  J&apos;ai besoin d&apos;infos
-                </CampaignLink>
+                {phase === 'closed' ? (
+                  <>
+                    <a
+                      href={ipoWhatsAppUrl()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-ui="button"
+                      className={cn(
+                        buttonVariants({ variant: 'default', size: 'lg' }),
+                        'ipo-cta-gold',
+                      )}
+                    >
+                      {phaseCopy.primaryCta}
+                      <ArrowDisc className="bg-white/18 text-white" />
+                    </a>
+                    <CampaignLink intent="infos" variant="ghost-light">
+                      {phaseCopy.secondaryCta}
+                    </CampaignLink>
+                  </>
+                ) : phaseCopy.emphasizeInfos ? (
+                  <>
+                    <CampaignLink intent="infos" variant="gold">
+                      {phaseCopy.secondaryCta}
+                    </CampaignLink>
+                    <CampaignLink intent="subscribe" variant="ghost-light">
+                      {phaseCopy.primaryCta}
+                    </CampaignLink>
+                  </>
+                ) : (
+                  <>
+                    <CampaignLink intent="subscribe" variant="gold">
+                      {phaseCopy.primaryCta}
+                    </CampaignLink>
+                    <CampaignLink intent="infos" variant="ghost-light">
+                      {phaseCopy.secondaryCta}
+                    </CampaignLink>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -538,7 +593,17 @@ export function IpoBridgeBankLanding() {
         <div className="mx-auto max-w-[1400px] px-5 py-12 sm:px-10 lg:px-12">
           <div className="mb-10 flex flex-col gap-6 border-b border-white/10 pb-10 sm:flex-row sm:items-center sm:justify-between">
             <EverestMark />
-            <p className="text-xs text-white/45">Campagne IPO Bridge Bank · 2026</p>
+            <div className="flex flex-wrap items-center gap-4">
+              <a
+                href={ipoWhatsAppUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ipo-nav-link text-sm font-medium no-underline"
+              >
+                Question sur WhatsApp
+              </a>
+              <p className="text-xs text-white/45">Campagne IPO Bridge Bank · 2026</p>
+            </div>
           </div>
           <p className="max-w-4xl text-xs leading-6 text-white/40">
             Cette page est éditée par {IPO_CAMPAIGN.intermediary} à titre informatif pour faciliter la prise

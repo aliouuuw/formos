@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { db } from '#/db/index'
 import { formDefinitionSnapshots, formSubmissions, forms, leads } from '#/db/schema'
 import { inngest } from '#/inngest/client'
-import { extractLeadFields } from '#/lib/leads'
+import { extractLeadFields, ipoIntentFromSlug } from '#/lib/leads'
 import { MAX_JSON_BYTES, SUBMIT_RATE_LIMIT } from '#/lib/limits'
 import { checkRateLimit, getClientIp } from '#/lib/rate-limit'
 import { resolvePublishedFormBySlug } from '#/lib/resolve-form-slug'
@@ -71,6 +71,7 @@ export const submitForm = publicContext
     const submissionId = crypto.randomUUID()
     const leadId = crypto.randomUUID()
     const leadFields = extractLeadFields(form.definition, validation.answers)
+    const intent = ipoIntentFromSlug(input.slug)
 
     await db.transaction(async (tx) => {
       await tx.insert(formSubmissions).values({
@@ -98,6 +99,9 @@ export const submitForm = publicContext
         name: leadFields.name,
         phone: leadFields.phone,
         status: 'new',
+        intent,
+        amountRange: leadFields.amountRange,
+        preferredChannel: leadFields.preferredChannel,
         utmSource: input.metadata?.utmSource,
         utmMedium: input.metadata?.utmMedium,
         utmCampaign: input.metadata?.utmCampaign,

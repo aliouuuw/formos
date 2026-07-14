@@ -14,6 +14,7 @@ import { Route as IpoBridgeBankRouteImport } from './routes/ipo-bridge-bank'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as IpoBridgeBankGuideRouteImport } from './routes/ipo-bridge-bank/guide'
 import { Route as FSlugRouteImport } from './routes/f/$slug'
 import { Route as ApiInngestRouteImport } from './routes/api/inngest'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
@@ -48,6 +49,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
+} as any)
+const IpoBridgeBankGuideRoute = IpoBridgeBankGuideRouteImport.update({
+  id: '/guide',
+  path: '/guide',
+  getParentRoute: () => IpoBridgeBankRoute,
 } as any)
 const FSlugRoute = FSlugRouteImport.update({
   id: '/f/$slug',
@@ -100,12 +106,13 @@ const AdminFormsFormIdSubmissionsSubmissionIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/ipo-bridge-bank': typeof IpoBridgeBankRoute
+  '/ipo-bridge-bank': typeof IpoBridgeBankRouteWithChildren
   '/login': typeof LoginRoute
   '/admin/leads': typeof AdminLeadsRoute
   '/api/$': typeof ApiSplatRoute
   '/api/inngest': typeof ApiInngestRoute
   '/f/$slug': typeof FSlugRoute
+  '/ipo-bridge-bank/guide': typeof IpoBridgeBankGuideRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/forms/$formId': typeof AdminFormsFormIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -115,12 +122,13 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/ipo-bridge-bank': typeof IpoBridgeBankRoute
+  '/ipo-bridge-bank': typeof IpoBridgeBankRouteWithChildren
   '/login': typeof LoginRoute
   '/admin/leads': typeof AdminLeadsRoute
   '/api/$': typeof ApiSplatRoute
   '/api/inngest': typeof ApiInngestRoute
   '/f/$slug': typeof FSlugRoute
+  '/ipo-bridge-bank/guide': typeof IpoBridgeBankGuideRoute
   '/admin': typeof AdminIndexRoute
   '/admin/forms/$formId': typeof AdminFormsFormIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -132,12 +140,13 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/ipo-bridge-bank': typeof IpoBridgeBankRoute
+  '/ipo-bridge-bank': typeof IpoBridgeBankRouteWithChildren
   '/login': typeof LoginRoute
   '/admin/leads': typeof AdminLeadsRoute
   '/api/$': typeof ApiSplatRoute
   '/api/inngest': typeof ApiInngestRoute
   '/f/$slug': typeof FSlugRoute
+  '/ipo-bridge-bank/guide': typeof IpoBridgeBankGuideRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/forms/$formId': typeof AdminFormsFormIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -156,6 +165,7 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/api/inngest'
     | '/f/$slug'
+    | '/ipo-bridge-bank/guide'
     | '/admin/'
     | '/admin/forms/$formId'
     | '/api/auth/$'
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/api/inngest'
     | '/f/$slug'
+    | '/ipo-bridge-bank/guide'
     | '/admin'
     | '/admin/forms/$formId'
     | '/api/auth/$'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/api/inngest'
     | '/f/$slug'
+    | '/ipo-bridge-bank/guide'
     | '/admin/'
     | '/admin/forms/$formId'
     | '/api/auth/$'
@@ -198,7 +210,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
-  IpoBridgeBankRoute: typeof IpoBridgeBankRoute
+  IpoBridgeBankRoute: typeof IpoBridgeBankRouteWithChildren
   LoginRoute: typeof LoginRoute
   ApiSplatRoute: typeof ApiSplatRoute
   ApiInngestRoute: typeof ApiInngestRoute
@@ -243,6 +255,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/ipo-bridge-bank/guide': {
+      id: '/ipo-bridge-bank/guide'
+      path: '/guide'
+      fullPath: '/ipo-bridge-bank/guide'
+      preLoaderRoute: typeof IpoBridgeBankGuideRouteImport
+      parentRoute: typeof IpoBridgeBankRoute
     }
     '/f/$slug': {
       id: '/f/$slug'
@@ -351,10 +370,22 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface IpoBridgeBankRouteChildren {
+  IpoBridgeBankGuideRoute: typeof IpoBridgeBankGuideRoute
+}
+
+const IpoBridgeBankRouteChildren: IpoBridgeBankRouteChildren = {
+  IpoBridgeBankGuideRoute: IpoBridgeBankGuideRoute,
+}
+
+const IpoBridgeBankRouteWithChildren = IpoBridgeBankRoute._addFileChildren(
+  IpoBridgeBankRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
-  IpoBridgeBankRoute: IpoBridgeBankRoute,
+  IpoBridgeBankRoute: IpoBridgeBankRouteWithChildren,
   LoginRoute: LoginRoute,
   ApiSplatRoute: ApiSplatRoute,
   ApiInngestRoute: ApiInngestRoute,

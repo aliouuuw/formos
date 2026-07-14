@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { Link } from '@tanstack/react-router'
+
 import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
+import { Button, buttonVariants } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { Panel, PanelBody, PanelHeader } from '#/components/ui/panel'
@@ -15,6 +17,8 @@ import {
 import { Textarea } from '#/components/ui/textarea'
 import { formProgressPercent } from '#/lib/form-progress'
 import type { FormDefinition, FormField } from '#/lib/form-types'
+import { IPO_FIELD_IDS, IPO_GUIDE_PATH, IPO_GUIDE_PDF_PATH, ipoWhatsAppUrl } from '#/lib/ipo-campaign'
+import type { LeadIntent } from '#/lib/leads'
 import { cn } from '#/lib/utils'
 import { client } from '#/orpc/client'
 
@@ -134,6 +138,7 @@ export function FormRenderer({
   preview,
   panelClassName,
   campaign = false,
+  campaignIntent,
 }: {
   formId: string
   slug: string
@@ -143,6 +148,7 @@ export function FormRenderer({
   panelClassName?: string
   /** IPO campaign surfaces: stronger hierarchy, gold focus, success delight */
   campaign?: boolean
+  campaignIntent?: LeadIntent
 }) {
   const isPreview = Boolean(preview)
   const sessionId = useMemo(() => (isPreview ? 'preview' : getSessionId()), [isPreview])
@@ -312,6 +318,9 @@ export function FormRenderer({
       : null)
 
   if (thankYouMessage) {
+    const preferredChannel = answers[IPO_FIELD_IDS.channel]
+    const isWhatsApp = preferredChannel === 'WhatsApp'
+
     return (
       <Panel className={cn('mx-auto max-w-xl', panelClassName)}>
         <PanelBody className="space-y-5 py-14 text-center">
@@ -336,6 +345,52 @@ export function FormRenderer({
           <p className="mx-auto max-w-sm text-base leading-relaxed text-text-secondary">
             {thankYouMessage}
           </p>
+
+          {campaign && campaignIntent === 'infos' ? (
+            <div className="flex flex-col items-center gap-3 pt-2">
+              <a
+                href={IPO_GUIDE_PDF_PATH}
+                download="guide-souscription-ipo-bridge-bank.pdf"
+                data-ui="button"
+                className={cn(buttonVariants({ variant: 'default', size: 'lg' }), 'ipo-cta-gold')}
+              >
+                Télécharger le guide (PDF)
+              </a>
+              <Link
+                to={IPO_GUIDE_PATH}
+                className="text-sm font-medium text-everest-green no-underline hover:text-gold"
+              >
+                Lire la version web
+              </Link>
+            </div>
+          ) : null}
+
+          {campaign && campaignIntent === 'subscribe' ? (
+            <div className="flex flex-col items-center gap-3 pt-2">
+              <p className="max-w-sm text-sm leading-7 text-text-secondary">
+                {isWhatsApp
+                  ? 'Un conseiller vous écrira sur WhatsApp sous 24 h ouvrées.'
+                  : 'Un conseiller vous rappelle sous 24 h ouvrées pour planifier la suite.'}
+              </p>
+              {isWhatsApp ? (
+                <a
+                  href={ipoWhatsAppUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-ui="button"
+                  className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+                >
+                  Ouvrir WhatsApp
+                </a>
+              ) : null}
+              <Link
+                to="/ipo-bridge-bank"
+                className="text-sm font-medium text-everest-green no-underline hover:text-gold"
+              >
+                ← Retour à la campagne
+              </Link>
+            </div>
+          ) : null}
         </PanelBody>
       </Panel>
     )
@@ -450,7 +505,13 @@ export function FormRenderer({
             disabled={loading}
             className={cn(isLastPage && 'ipo-cta-gold')}
           >
-            {loading ? 'Envoi…' : isLastPage ? 'Envoyer' : 'Continuer'}
+            {loading
+              ? 'Envoi…'
+              : isLastPage
+                ? campaignIntent === 'infos'
+                  ? 'Recevoir le guide'
+                  : 'Envoyer'
+                : 'Continuer'}
           </Button>
         </div>
       </PanelBody>

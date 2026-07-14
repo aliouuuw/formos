@@ -581,6 +581,16 @@ pre code {
   }
 }
 
+@media print {
+  .ipo-guide-no-print {
+    display: none !important;
+  }
+
+  .ipo-guide {
+    background: white !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ipo-form-success-mark path {
     stroke-dashoffset: 0;

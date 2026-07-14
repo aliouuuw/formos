@@ -26,6 +26,8 @@ export default {
   },
   leads: {
     list: leads.listLeads,
+    stats: leads.getLeadStats,
     updateStatus: leads.updateLeadStatus,
+    updateAssignee: leads.updateLeadAssignee,
   },
 }
