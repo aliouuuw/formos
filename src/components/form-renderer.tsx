@@ -17,8 +17,9 @@ import {
 import { Textarea } from '#/components/ui/textarea'
 import { formProgressPercent } from '#/lib/form-progress'
 import type { FormDefinition, FormField } from '#/lib/form-types'
-import { IPO_FIELD_IDS, IPO_GUIDE_PATH, IPO_GUIDE_PDF_PATH, ipoWhatsAppUrl } from '#/lib/ipo-campaign'
-import type { LeadIntent } from '#/lib/leads'
+import { BRIDGE_BANK_IPO_CAMPAIGN_ID } from '#/lib/campaigns'
+import { useCampaignContact } from '#/hooks/use-campaign-contact'
+import { IPO_FIELD_IDS } from '#/lib/ipo-campaign'
 import { cn } from '#/lib/utils'
 import { client } from '#/orpc/client'
 
@@ -138,7 +139,6 @@ export function FormRenderer({
   preview,
   panelClassName,
   campaign = false,
-  campaignIntent,
 }: {
   formId: string
   slug: string
@@ -148,10 +148,13 @@ export function FormRenderer({
   panelClassName?: string
   /** IPO campaign surfaces: stronger hierarchy, gold focus, success delight */
   campaign?: boolean
-  campaignIntent?: LeadIntent
 }) {
   const isPreview = Boolean(preview)
   const sessionId = useMemo(() => (isPreview ? 'preview' : getSessionId()), [isPreview])
+  const { data: campaignContact } = useCampaignContact(
+    campaign ? BRIDGE_BANK_IPO_CAMPAIGN_ID : '',
+  )
+  const whatsappHref = campaignContact?.whatsappUrl ?? undefined
   const [internalPageIndex, setInternalPageIndex] = useState(0)
   const pageIndex = preview ? preview.pageIndex : internalPageIndex
   const setPageIndex = (index: number) => {
@@ -346,26 +349,7 @@ export function FormRenderer({
             {thankYouMessage}
           </p>
 
-          {campaign && campaignIntent === 'infos' ? (
-            <div className="flex flex-col items-center gap-3 pt-2">
-              <a
-                href={IPO_GUIDE_PDF_PATH}
-                download="guide-souscription-ipo-bridge-bank.pdf"
-                data-ui="button"
-                className={cn(buttonVariants({ variant: 'default', size: 'lg' }), 'ipo-cta-gold')}
-              >
-                Télécharger le guide (PDF)
-              </a>
-              <Link
-                to={IPO_GUIDE_PATH}
-                className="text-sm font-medium text-everest-green no-underline hover:text-gold"
-              >
-                Lire la version web
-              </Link>
-            </div>
-          ) : null}
-
-          {campaign && campaignIntent === 'subscribe' ? (
+          {campaign ? (
             <div className="flex flex-col items-center gap-3 pt-2">
               <p className="max-w-sm text-sm leading-7 text-text-secondary">
                 {isWhatsApp
@@ -374,7 +358,7 @@ export function FormRenderer({
               </p>
               {isWhatsApp ? (
                 <a
-                  href={ipoWhatsAppUrl()}
+                  href={whatsappHref ?? '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   data-ui="button"
@@ -508,9 +492,7 @@ export function FormRenderer({
             {loading
               ? 'Envoi…'
               : isLastPage
-                ? campaignIntent === 'infos'
-                  ? 'Recevoir le guide'
-                  : 'Envoyer'
+                ? 'Envoyer'
                 : 'Continuer'}
           </Button>
         </div>

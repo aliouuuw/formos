@@ -11,6 +11,17 @@ export const fieldTypeSchema = z.enum([
   'date',
 ])
 
+export const leadRoleSchema = z.enum([
+  'name',
+  'email',
+  'phone',
+  'amount_range',
+  'preferred_channel',
+  'company',
+  'city',
+  'notes',
+])
+
 export const formFieldSchema = z.object({
   id: z.string().min(1),
   type: fieldTypeSchema,
@@ -18,6 +29,8 @@ export const formFieldSchema = z.object({
   required: z.boolean().optional(),
   placeholder: z.string().optional(),
   options: z.array(z.string()).optional(),
+  /** Maps this field into lead extraction / insights */
+  leadRole: leadRoleSchema.optional(),
 })
 
 export const formPageSchema = z.object({
@@ -60,6 +73,7 @@ export const leadStatusSchema = z.enum([
 ])
 
 export type FieldType = z.infer<typeof fieldTypeSchema>
+export type LeadRole = z.infer<typeof leadRoleSchema>
 export type FormField = z.infer<typeof formFieldSchema>
 export type FormPage = z.infer<typeof formPageSchema>
 export type FormDefinition = z.infer<typeof formDefinitionSchema>

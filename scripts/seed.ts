@@ -8,10 +8,10 @@ const { db } = await import('#/db/index')
 const { account, formDefinitionSnapshots, forms, user } = await import('#/db/schema')
 const { createDefaultFormDefinition } = await import('#/lib/form-types')
 const {
-  createIpoInfosFormDefinition,
   createIpoSubscribeFormDefinition,
   IPO_FORM_SLUGS,
 } = await import('#/lib/ipo-campaign')
+const { BRIDGE_BANK_IPO_CAMPAIGN_ID } = await import('#/lib/campaigns')
 
 const adminEmail = process.env.SEED_ADMIN_EMAIL ?? 'admin@everestfinance.com'
 const adminPassword = process.env.SEED_ADMIN_PASSWORD
@@ -84,14 +84,38 @@ async function resolveSeedUser() {
 
 async function seedPublishedForm(
   adminUserId: string,
-  options: { slug: string; title: string; definition: ReturnType<typeof createDefaultFormDefinition> },
+  options: {
+    slug: string
+    title: string
+    definition: ReturnType<typeof createDefaultFormDefinition>
+    campaignId?: string
+  },
 ) {
   const existing = await db.query.forms.findFirst({
     where: eq(forms.slug, options.slug),
   })
 
   if (existing) {
-    console.log(`[seed] Form already exists: /f/${options.slug}`)
+    const patch: {
+      campaignId?: string
+      definition?: typeof options.definition
+      updatedAt: Date
+    } = { updatedAt: new Date() }
+
+    if (options.campaignId && existing.campaignId !== options.campaignId) {
+      patch.campaignId = options.campaignId
+    }
+    // Refresh definition so leadRole metadata lands on existing IPO forms
+    if (options.campaignId) {
+      patch.definition = options.definition
+    }
+
+    if (Object.keys(patch).length > 1) {
+      await db.update(forms).set(patch).where(eq(forms.id, existing.id))
+      console.log(`[seed] Updated form: /f/${options.slug}`)
+    } else {
+      console.log(`[seed] Form already exists: /f/${options.slug}`)
+    }
     return
   }
 
@@ -102,6 +126,7 @@ async function seedPublishedForm(
     title: options.title,
     slug: options.slug,
     status: 'published',
+    campaignId: options.campaignId,
     definition: options.definition,
     version: 1,
     createdBy: adminUserId,
@@ -131,15 +156,31 @@ async function seedIpoCampaignForms(adminUserId: string) {
     slug: IPO_FORM_SLUGS.subscribe,
     title: 'IPO Bridge Bank — Je veux souscrire',
     definition: createIpoSubscribeFormDefinition(),
+    campaignId: BRIDGE_BANK_IPO_CAMPAIGN_ID,
   })
 
-  await seedPublishedForm(adminUserId, {
-    slug: IPO_FORM_SLUGS.infos,
-    title: 'IPO Bridge Bank — Guide & informations',
-    definition: createIpoInfosFormDefinition(),
+  // Backfill campaignId on existing leads for this campaign's forms
+  const ipoForms = await db.query.forms.findMany({
+    where: eq(forms.campaignId, BRIDGE_BANK_IPO_CAMPAIGN_ID),
+    columns: { id: true },
   })
+  if (ipoForms.length > 0) {
+    const { leads } = await import('#/db/schema')
+    const { inArray, isNull, and } = await import('drizzle-orm')
+    const ids = ipoForms.map((f) => f.id)
+    await db
+      .update(leads)
+      .set({ campaignId: BRIDGE_BANK_IPO_CAMPAIGN_ID })
+      .where(and(inArray(leads.formId, ids), isNull(leads.campaignId)))
+  }
 
-  console.log(`[seed] IPO campaign landing: /ipo-bridge-bank`)
+  console.log(`[seed] IPO campaign landing: /ipo-bridge-bank (${BRIDGE_BANK_IPO_CAMPAIGN_ID})`)
+}
+
+async function seedCampaignSettings() {
+  const { seedCampaignSettingsFromEnv } = await import('#/lib/campaigns/settings')
+  await seedCampaignSettingsFromEnv()
+  console.log('[seed] Campaign settings (agents, WhatsApp) — DB or env defaults')
 }
 
 try {
@@ -155,6 +196,7 @@ try {
 
   if (seedIpoCampaign) {
     await seedIpoCampaignForms(admin.id)
+    await seedCampaignSettings()
   }
 
   console.log('[seed] Done.')

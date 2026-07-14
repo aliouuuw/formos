@@ -10,6 +10,7 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
 import type { FormDefinition } from '#/lib/form-types'
+import type { CampaignAgent } from '#/lib/campaigns/types'
 
 // Better Auth tables
 export const user = pgTable('user', {
@@ -70,6 +71,8 @@ export const forms = pgTable(
     title: text('title').notNull(),
     slug: text('slug').notNull(),
     status: text('status').notNull().default('draft'),
+    /** Registry campaign id (e.g. bridge-bank-ipo) */
+    campaignId: text('campaign_id'),
     definition: jsonb('definition').$type<FormDefinition>().notNull(),
     version: integer('version').notNull().default(1),
     createdBy: text('created_by')
@@ -83,6 +86,7 @@ export const forms = pgTable(
     uniqueIndex('forms_slug_idx').on(table.slug),
     index('forms_created_by_idx').on(table.createdBy),
     index('forms_status_idx').on(table.status),
+    index('forms_campaign_id_idx').on(table.campaignId),
   ],
 )
 
@@ -124,6 +128,15 @@ export const formSubmissions = pgTable(
   ],
 )
 
+export type LeadInsightsJson = {
+  company?: string
+  city?: string
+  notes?: string
+  extras?: Record<string, string>
+  classifiedAt?: string
+  campaignId?: string
+}
+
 export const leads = pgTable(
   'leads',
   {
@@ -134,6 +147,8 @@ export const leads = pgTable(
     submissionId: text('submission_id')
       .notNull()
       .references(() => formSubmissions.id, { onDelete: 'cascade' }),
+    /** Registry campaign id — denormalized for filtering */
+    campaignId: text('campaign_id'),
     email: text('email'),
     name: text('name'),
     phone: text('phone'),
@@ -142,6 +157,8 @@ export const leads = pgTable(
     amountRange: text('amount_range'),
     preferredChannel: text('preferred_channel'),
     assignee: text('assignee'),
+    /** Extracted secondary insights (company, city, extras…) */
+    insights: jsonb('insights').$type<LeadInsightsJson>(),
     utmSource: text('utm_source'),
     utmMedium: text('utm_medium'),
     utmCampaign: text('utm_campaign'),
@@ -152,8 +169,17 @@ export const leads = pgTable(
     index('leads_form_id_idx').on(table.formId),
     index('leads_status_idx').on(table.status),
     index('leads_email_idx').on(table.email),
+    index('leads_campaign_id_idx').on(table.campaignId),
   ],
 )
+
+export const campaignSettings = pgTable('campaign_settings', {
+  campaignId: text('campaign_id').primaryKey(),
+  agents: jsonb('agents').$type<CampaignAgent[]>().notNull().default([]),
+  whatsappNumber: text('whatsapp_number'),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  updatedBy: text('updated_by').references(() => user.id, { onDelete: 'set null' }),
+})
 
 export const formDefinitionSnapshots = pgTable(
   'form_definition_snapshots',

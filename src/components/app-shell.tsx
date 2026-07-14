@@ -8,6 +8,8 @@ import { cn } from '#/lib/utils'
 const adminLinks = [
   { to: '/admin' as const, label: 'Formulaires', match: '/admin' },
   { to: '/admin/leads' as const, label: 'Leads', match: '/admin/leads' },
+  { to: '/admin/campaigns' as const, label: 'Campagnes', match: '/admin/campaigns' },
+  { to: '/admin/parametres' as const, label: 'Paramètres', match: '/admin/parametres' },
 ]
 
 function useNavActive(match: string) {

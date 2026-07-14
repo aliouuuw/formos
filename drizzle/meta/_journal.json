@@ -29,6 +29,20 @@
       "when": 1784026218858,
       "tag": "0003_talented_jubilee",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784026742301,
+      "tag": "0004_numerous_sandman",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784027584267,
+      "tag": "0005_careful_garia",
+      "breakpoints": true
     }
   ]
 }

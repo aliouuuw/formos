@@ -1,3 +1,5 @@
+import { agentOptions } from '#/lib/campaigns/agents'
+import { bridgeBankIpoCampaign } from '#/lib/campaigns/bridge-bank-ipo'
 import type { FormDefinition } from '#/lib/form-types'
 
 export const IPO_CAMPAIGN = {
@@ -17,53 +19,27 @@ export const IPO_CAMPAIGN = {
 
 export const IPO_FORM_SLUGS = {
   subscribe: 'ipo-souscrire',
-  infos: 'ipo-infos',
 } as const
 
 export const IPO_GUIDE_PATH = '/ipo-bridge-bank/guide' as const
 export const IPO_GUIDE_PDF_PATH = '/campaign/guide-souscription-ipo-bridge-bank.pdf' as const
 
-/** WhatsApp Business — override via VITE_IPO_WHATSAPP_NUMBER (E.164 without +) */
-export const IPO_WHATSAPP_NUMBER = import.meta.env.VITE_IPO_WHATSAPP_NUMBER ?? '22500000000'
-
-export function ipoWhatsAppUrl(prefill?: string) {
+/** @deprecated Use campaigns.getPublicContact — settings are stored in DB */
+export function ipoWhatsAppUrl(prefill?: string, number?: string) {
+  const n = number?.replace(/\D/g, '')
+  if (!n) return '#'
   const text =
     prefill ??
     "Bonjour, je souhaite recevoir des informations sur l'IPO Bridge Bank via Everest Finance."
-  return `https://wa.me/${IPO_WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`
+  return `https://wa.me/${n}?text=${encodeURIComponent(text)}`
 }
 
 /**
- * Named advisers for lead assignment.
- * Override with VITE_IPO_ADVISERS="Aminata Diallo,Jean Kouassi,Fatou Ndiaye"
+ * @deprecated Agents are loaded from Paramètres (DB). Use campaigns.list in admin.
  */
-function slugifyAdviser(name: string) {
-  return name
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-}
-
-const DEFAULT_ADVISERS = ['Aminata Diallo', 'Jean Kouassi', 'Fatou Ndiaye'] as const
-
-function parseAdviserNames(): string[] {
-  const raw = import.meta.env.VITE_IPO_ADVISERS as string | undefined
-  if (!raw?.trim()) return [...DEFAULT_ADVISERS]
-  return raw
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-}
-
-export const IPO_ADVISER_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
-  { value: '', label: 'Non assigné' },
-  ...parseAdviserNames().map((name) => ({
-    value: slugifyAdviser(name),
-    label: name,
-  })),
-]
+export const IPO_ADVISER_OPTIONS: ReadonlyArray<{ value: string; label: string }> = agentOptions(
+  bridgeBankIpoCampaign.agents,
+)
 
 export function adviserLabel(value: string | null | undefined): string {
   if (!value) return 'Non assigné'
@@ -105,7 +81,7 @@ export function getIpoPhaseCopy(phase: IpoCampaignPhase = getIpoCampaignPhase())
         kicker: 'Bientôt · Ouverture le 20 juillet',
         banner:
           "L'IPO arrive. Demandez le guide dès maintenant et préparez votre dossier avant l'ouverture.",
-        primaryCta: 'Je veux être rappelé',
+        primaryCta: 'Démarrer ma souscription',
         secondaryCta: "Recevoir le guide d'infos",
         heroSupport:
           "La fenêtre de souscription ouvre le 20 juillet 2026. Everest Finance vous aide à anticiper pièces, montant et dépôt.",
@@ -185,6 +161,7 @@ function createIpoLeadFormDefinition(thankYouMessage: string): FormDefinition {
             label: 'Nom complet',
             required: true,
             placeholder: 'Prénom et nom',
+            leadRole: 'name',
           },
           {
             id: IPO_FIELD_IDS.phone,
@@ -192,6 +169,7 @@ function createIpoLeadFormDefinition(thankYouMessage: string): FormDefinition {
             label: 'Téléphone',
             required: true,
             placeholder: '+225 07 00 00 00 00',
+            leadRole: 'phone',
           },
           {
             id: IPO_FIELD_IDS.email,
@@ -199,6 +177,7 @@ function createIpoLeadFormDefinition(thankYouMessage: string): FormDefinition {
             label: 'Email',
             required: true,
             placeholder: 'vous@exemple.com',
+            leadRole: 'email',
           },
           {
             id: IPO_FIELD_IDS.amount,
@@ -206,6 +185,7 @@ function createIpoLeadFormDefinition(thankYouMessage: string): FormDefinition {
             label: 'Montant envisagé',
             required: true,
             options: [...AMOUNT_OPTIONS],
+            leadRole: 'amount_range',
           },
           {
             id: IPO_FIELD_IDS.channel,
@@ -213,6 +193,7 @@ function createIpoLeadFormDefinition(thankYouMessage: string): FormDefinition {
             label: 'Canal de rappel préféré',
             required: true,
             options: ['WhatsApp', 'Téléphone'],
+            leadRole: 'preferred_channel',
           },
         ],
       },
@@ -230,15 +211,9 @@ export function createIpoSubscribeFormDefinition(): FormDefinition {
   )
 }
 
-export function createIpoInfosFormDefinition(): FormDefinition {
-  return createIpoLeadFormDefinition(
-    'Votre demande est enregistrée. Téléchargez le guide ci-dessous ; nous vous enverrons aussi la notice par email.',
-  )
-}
-
-export function ipoFormSearchParams(intent: 'subscribe' | 'infos', channel?: string) {
+export function ipoFormSearchParams(channel?: string) {
   return {
-    utm_source: channel ?? (intent === 'subscribe' ? 'landing-souscrire' : 'landing-infos'),
+    utm_source: channel ?? 'landing-souscrire',
     utm_medium: 'web',
     utm_campaign: IPO_CAMPAIGN.utmCampaign,
   }

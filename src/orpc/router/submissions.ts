@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { db } from '#/db/index'
 import { formDefinitionSnapshots, formSubmissions, forms, leads } from '#/db/schema'
 import { inngest } from '#/inngest/client'
-import { extractLeadFields, ipoIntentFromSlug } from '#/lib/leads'
+import { extractLeadFields, classifySubmission } from '#/lib/leads'
 import { MAX_JSON_BYTES, SUBMIT_RATE_LIMIT } from '#/lib/limits'
 import { checkRateLimit, getClientIp } from '#/lib/rate-limit'
 import { resolvePublishedFormBySlug } from '#/lib/resolve-form-slug'
@@ -71,7 +71,15 @@ export const submitForm = publicContext
     const submissionId = crypto.randomUUID()
     const leadId = crypto.randomUUID()
     const leadFields = extractLeadFields(form.definition, validation.answers)
-    const intent = ipoIntentFromSlug(input.slug)
+    const classification = classifySubmission({
+      formSlug: form.slug,
+      formCampaignId: form.campaignId,
+    })
+    const insights = {
+      ...leadFields.insights,
+      campaignId: classification.campaignId,
+      classifiedAt: new Date().toISOString(),
+    }
 
     try {
       await db.transaction(async (tx) => {
@@ -96,13 +104,15 @@ export const submitForm = publicContext
           id: leadId,
           formId: form.id,
           submissionId,
+          campaignId: classification.campaignId,
           email: leadFields.email,
           name: leadFields.name,
           phone: leadFields.phone,
           status: 'new',
-          intent,
+          intent: classification.intent,
           amountRange: leadFields.amountRange,
           preferredChannel: leadFields.preferredChannel,
+          insights,
           utmSource: input.metadata?.utmSource,
           utmMedium: input.metadata?.utmMedium,
           utmCampaign: input.metadata?.utmCampaign,

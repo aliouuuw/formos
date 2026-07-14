@@ -5,35 +5,23 @@ import { buttonVariants } from '#/components/ui/button'
 import {
   IPO_CAMPAIGN,
   IPO_FORM_SLUGS,
+  IPO_GUIDE_PDF_PATH,
   IPO_SUBSCRIPTION_STEPS,
   getIpoCampaignPhase,
   getIpoPhaseCopy,
   ipoFormSearchParams,
-  ipoWhatsAppUrl,
 } from '#/lib/ipo-campaign'
+import { BRIDGE_BANK_IPO_CAMPAIGN_ID } from '#/lib/campaigns'
+import { useCampaignContact } from '#/hooks/use-campaign-contact'
 import { cn } from '#/lib/utils'
 
-function EverestMark({ tone = 'light' }: { tone?: 'light' | 'dark' }) {
-  const ink = tone === 'light' ? 'text-white' : 'text-everest-green'
-  const mute = tone === 'light' ? 'text-white/55' : 'text-everest-green/55'
-
+function EverestLogo({ className }: { className?: string }) {
   return (
-    <div className={cn('flex items-center gap-3', ink)}>
-      <svg viewBox="0 0 42 42" className="h-8 w-8 sm:h-9 sm:w-9" aria-hidden fill="none">
-        <circle cx="21" cy="21" r="20" stroke="currentColor" strokeOpacity=".2" />
-        <path d="m9 29 11.8-18L33 29H9Z" fill="currentColor" />
-        <path
-          d="m16.7 22.6 4.1-6.2 4.2 6.2-2.2-1-2 2.2-2-2.2-2.1 1Z"
-          fill="var(--jaune-or)"
-        />
-      </svg>
-      <div>
-        <p className="text-sm font-bold leading-none tracking-[-0.02em]">Everest Finance</p>
-        <p className={cn('mt-1 text-[9px] font-medium uppercase tracking-[0.2em]', mute)}>
-          Marchés de capitaux
-        </p>
-      </div>
-    </div>
+    <img
+      src="/logo-everest.png"
+      alt="Everest Finance"
+      className={cn('h-14 w-auto sm:h-16', className)}
+    />
   )
 }
 
@@ -90,17 +78,14 @@ function useMagnetic(strength = 8) {
 }
 
 function CampaignLink({
-  intent,
   children,
   variant,
   className,
 }: {
-  intent: 'subscribe' | 'infos'
   children: React.ReactNode
   variant: 'gold' | 'ghost-light' | 'ghost-dark'
   className?: string
 }) {
-  const slug = intent === 'subscribe' ? IPO_FORM_SLUGS.subscribe : IPO_FORM_SLUGS.infos
   const buttonVariant =
     variant === 'gold' ? 'default' : variant === 'ghost-light' ? 'ghost-light' : 'outline'
   const magneticRef = useMagnetic(7)
@@ -110,8 +95,8 @@ function CampaignLink({
       ref={magneticRef}
       data-ui="button"
       to="/f/$slug"
-      params={{ slug }}
-      search={ipoFormSearchParams(intent)}
+      params={{ slug: IPO_FORM_SLUGS.subscribe }}
+      search={ipoFormSearchParams()}
       className={cn(
         buttonVariants({ variant: buttonVariant, size: 'lg' }),
         'transition-transform duration-150 ease-out',
@@ -130,6 +115,46 @@ function CampaignLink({
         }
       />
     </Link>
+  )
+}
+
+function GuidePdfLink({
+  children,
+  variant,
+  className,
+}: {
+  children: React.ReactNode
+  variant: 'gold' | 'ghost-light' | 'ghost-dark'
+  className?: string
+}) {
+  const buttonVariant =
+    variant === 'gold' ? 'default' : variant === 'ghost-light' ? 'ghost-light' : 'outline'
+  const magneticRef = useMagnetic(7)
+
+  return (
+    <a
+      ref={magneticRef}
+      data-ui="button"
+      href={IPO_GUIDE_PDF_PATH}
+      download="guide-souscription-ipo-bridge-bank.pdf"
+      className={cn(
+        buttonVariants({ variant: buttonVariant, size: 'lg' }),
+        'transition-transform duration-150 ease-out',
+        variant === 'gold' && 'ipo-cta-gold hover:shadow-[0_14px_32px_rgba(203,152,36,0.28)]',
+        className,
+      )}
+    >
+      {children}
+      <ArrowDisc
+        className={
+          variant === 'gold'
+            ? 'bg-white/18 text-white'
+            : variant === 'ghost-light'
+              ? 'bg-white/12 text-white'
+              : 'bg-everest-green/10 text-everest-green'
+        }
+      />
+    </a>
   )
 }
 
@@ -274,6 +299,8 @@ export function IpoBridgeBankLanding() {
   const rootRef = useReveal()
   const heroRef = useRef<HTMLElement>(null)
   useHeroKinetic(heroRef)
+  const { data: contact } = useCampaignContact(BRIDGE_BANK_IPO_CAMPAIGN_ID)
+  const whatsappHref = contact?.whatsappUrl ?? undefined
 
   const phase = getIpoCampaignPhase()
   const phaseCopy = getIpoPhaseCopy(phase)
@@ -299,24 +326,11 @@ export function IpoBridgeBankLanding() {
 
       <header
         className={cn(
-          'pointer-events-none absolute inset-x-0 z-40 px-4 sm:px-8',
+          'pointer-events-none absolute inset-x-0 z-40 flex justify-center px-4 sm:px-8',
           phase !== 'launch' ? 'top-14 pt-3 sm:pt-4' : 'top-0 pt-5 sm:pt-6',
         )}
       >
-        <div className="pointer-events-auto mx-auto flex max-w-[1400px] items-center justify-between gap-4 rounded-full border border-white/15 bg-everest-green/55 px-4 py-3 text-white shadow-[0_18px_50px_rgba(1,45,42,0.28)] backdrop-blur-xl sm:px-6">
-          <EverestMark />
-          <div className="flex items-center gap-2 sm:gap-3">
-            <a
-              href="#parcours"
-              className="ipo-nav-link hidden text-sm font-medium no-underline md:inline"
-            >
-              Parcours
-            </a>
-            <CampaignLink intent="subscribe" variant="gold" className="h-10 px-4 text-xs sm:px-5 sm:text-sm">
-              Souscrire
-            </CampaignLink>
-          </div>
-        </div>
+        <EverestLogo className="pointer-events-auto h-20 sm:h-24" />
       </header>
 
       <main>
@@ -369,8 +383,11 @@ export function IpoBridgeBankLanding() {
               >
                 {phase === 'closed' ? (
                   <>
+                    <GuidePdfLink variant="ghost-light">
+                      {phaseCopy.secondaryCta}
+                    </GuidePdfLink>
                     <a
-                      href={ipoWhatsAppUrl()}
+                      href={whatsappHref ?? '#'}
                       target="_blank"
                       rel="noopener noreferrer"
                       data-ui="button"
@@ -382,26 +399,23 @@ export function IpoBridgeBankLanding() {
                       {phaseCopy.primaryCta}
                       <ArrowDisc className="bg-white/18 text-white" />
                     </a>
-                    <CampaignLink intent="infos" variant="ghost-light">
-                      {phaseCopy.secondaryCta}
-                    </CampaignLink>
                   </>
                 ) : phaseCopy.emphasizeInfos ? (
                   <>
-                    <CampaignLink intent="infos" variant="gold">
-                      {phaseCopy.secondaryCta}
-                    </CampaignLink>
-                    <CampaignLink intent="subscribe" variant="ghost-light">
+                    <CampaignLink variant="gold">
                       {phaseCopy.primaryCta}
                     </CampaignLink>
+                    <GuidePdfLink variant="ghost-light">
+                      {phaseCopy.secondaryCta}
+                    </GuidePdfLink>
                   </>
                 ) : (
                   <>
-                    <CampaignLink intent="subscribe" variant="gold">
-                      {phaseCopy.primaryCta}
-                    </CampaignLink>
-                    <CampaignLink intent="infos" variant="ghost-light">
+                    <GuidePdfLink variant="ghost-light">
                       {phaseCopy.secondaryCta}
+                    </GuidePdfLink>
+                    <CampaignLink variant="gold">
+                      {phaseCopy.primaryCta}
                     </CampaignLink>
                   </>
                 )}
@@ -482,9 +496,9 @@ export function IpoBridgeBankLanding() {
                 <p className="mt-5 max-w-md text-base font-light leading-8 text-text-secondary">
                   {featured.body}
                 </p>
-                <CampaignLink intent="infos" variant="gold" className="mt-10">
+                <GuidePdfLink variant="gold" className="mt-10">
                   Recevoir le guide
-                </CampaignLink>
+                </GuidePdfLink>
               </article>
 
               <ol className="flex flex-col gap-0 lg:col-span-7">
@@ -581,7 +595,7 @@ export function IpoBridgeBankLanding() {
               </p>
             </div>
             <div className="ipo-reveal" data-reveal>
-              <CampaignLink intent="subscribe" variant="gold" className="h-14 px-8 text-base">
+              <CampaignLink variant="gold" className="h-14 px-8 text-base">
                 Démarrer ma souscription
               </CampaignLink>
             </div>
@@ -592,10 +606,10 @@ export function IpoBridgeBankLanding() {
       <footer className="border-t border-white/10 bg-[#021f1d] text-white">
         <div className="mx-auto max-w-[1400px] px-5 py-12 sm:px-10 lg:px-12">
           <div className="mb-10 flex flex-col gap-6 border-b border-white/10 pb-10 sm:flex-row sm:items-center sm:justify-between">
-            <EverestMark />
+            <EverestLogo />
             <div className="flex flex-wrap items-center gap-4">
               <a
-                href={ipoWhatsAppUrl()}
+                href={whatsappHref ?? '#'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ipo-nav-link text-sm font-medium no-underline"

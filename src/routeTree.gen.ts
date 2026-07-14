@@ -18,8 +18,10 @@ import { Route as IpoBridgeBankGuideRouteImport } from './routes/ipo-bridge-bank
 import { Route as FSlugRouteImport } from './routes/f/$slug'
 import { Route as ApiInngestRouteImport } from './routes/api/inngest'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
+import { Route as AdminParametresRouteImport } from './routes/admin/parametres'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminLeadsRouteImport } from './routes/admin/leads'
+import { Route as AdminCampaignsRouteImport } from './routes/admin/campaigns'
 import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AdminFormsFormIdRouteImport } from './routes/admin/forms/$formId'
@@ -71,6 +73,11 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminParametresRoute = AdminParametresRouteImport.update({
+  id: '/parametres',
+  path: '/parametres',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -79,6 +86,11 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
 const AdminLeadsRoute = AdminLeadsRouteImport.update({
   id: '/leads',
   path: '/leads',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCampaignsRoute = AdminCampaignsRouteImport.update({
+  id: '/campaigns',
+  path: '/campaigns',
   getParentRoute: () => AdminRoute,
 } as any)
 const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
@@ -114,8 +126,10 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/ipo-bridge-bank': typeof IpoBridgeBankRouteWithChildren
   '/login': typeof LoginRoute
+  '/admin/campaigns': typeof AdminCampaignsRoute
   '/admin/leads': typeof AdminLeadsRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/parametres': typeof AdminParametresRoute
   '/api/$': typeof ApiSplatRoute
   '/api/inngest': typeof ApiInngestRoute
   '/f/$slug': typeof FSlugRoute
@@ -131,8 +145,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ipo-bridge-bank': typeof IpoBridgeBankRouteWithChildren
   '/login': typeof LoginRoute
+  '/admin/campaigns': typeof AdminCampaignsRoute
   '/admin/leads': typeof AdminLeadsRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/parametres': typeof AdminParametresRoute
   '/api/$': typeof ApiSplatRoute
   '/api/inngest': typeof ApiInngestRoute
   '/f/$slug': typeof FSlugRoute
@@ -150,8 +166,10 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/ipo-bridge-bank': typeof IpoBridgeBankRouteWithChildren
   '/login': typeof LoginRoute
+  '/admin/campaigns': typeof AdminCampaignsRoute
   '/admin/leads': typeof AdminLeadsRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/parametres': typeof AdminParametresRoute
   '/api/$': typeof ApiSplatRoute
   '/api/inngest': typeof ApiInngestRoute
   '/f/$slug': typeof FSlugRoute
@@ -170,8 +188,10 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ipo-bridge-bank'
     | '/login'
+    | '/admin/campaigns'
     | '/admin/leads'
     | '/admin/login'
+    | '/admin/parametres'
     | '/api/$'
     | '/api/inngest'
     | '/f/$slug'
@@ -187,8 +207,10 @@ export interface FileRouteTypes {
     | '/'
     | '/ipo-bridge-bank'
     | '/login'
+    | '/admin/campaigns'
     | '/admin/leads'
     | '/admin/login'
+    | '/admin/parametres'
     | '/api/$'
     | '/api/inngest'
     | '/f/$slug'
@@ -205,8 +227,10 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ipo-bridge-bank'
     | '/login'
+    | '/admin/campaigns'
     | '/admin/leads'
     | '/admin/login'
+    | '/admin/parametres'
     | '/api/$'
     | '/api/inngest'
     | '/f/$slug'
@@ -296,6 +320,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/parametres': {
+      id: '/admin/parametres'
+      path: '/parametres'
+      fullPath: '/admin/parametres'
+      preLoaderRoute: typeof AdminParametresRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/login': {
       id: '/admin/login'
       path: '/login'
@@ -308,6 +339,13 @@ declare module '@tanstack/react-router' {
       path: '/leads'
       fullPath: '/admin/leads'
       preLoaderRoute: typeof AdminLeadsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/campaigns': {
+      id: '/admin/campaigns'
+      path: '/campaigns'
+      fullPath: '/admin/campaigns'
+      preLoaderRoute: typeof AdminCampaignsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/api/rpc/$': {
@@ -376,15 +414,19 @@ const AdminFormsFormIdRouteWithChildren =
   AdminFormsFormIdRoute._addFileChildren(AdminFormsFormIdRouteChildren)
 
 interface AdminRouteChildren {
+  AdminCampaignsRoute: typeof AdminCampaignsRoute
   AdminLeadsRoute: typeof AdminLeadsRoute
   AdminLoginRoute: typeof AdminLoginRoute
+  AdminParametresRoute: typeof AdminParametresRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminFormsFormIdRoute: typeof AdminFormsFormIdRouteWithChildren
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminCampaignsRoute: AdminCampaignsRoute,
   AdminLeadsRoute: AdminLeadsRoute,
   AdminLoginRoute: AdminLoginRoute,
+  AdminParametresRoute: AdminParametresRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminFormsFormIdRoute: AdminFormsFormIdRouteWithChildren,
 }

@@ -1,4 +1,5 @@
 import * as analytics from './analytics'
+import * as campaigns from './campaigns'
 import * as forms from './forms'
 import * as leads from './leads'
 import * as submissions from './submissions'
@@ -27,7 +28,15 @@ export default {
   leads: {
     list: leads.listLeads,
     stats: leads.getLeadStats,
+    insights: leads.getLeadInsightsSummary,
     updateStatus: leads.updateLeadStatus,
     updateAssignee: leads.updateLeadAssignee,
+  },
+  campaigns: {
+    list: campaigns.listCampaignConfigs,
+    get: campaigns.getCampaignConfig,
+    getSettings: campaigns.getCampaignSettings,
+    updateSettings: campaigns.updateCampaignSettings,
+    getPublicContact: campaigns.getPublicContact,
   },
 }
