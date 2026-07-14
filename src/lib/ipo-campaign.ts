@@ -78,13 +78,14 @@ export function getIpoPhaseCopy(phase: IpoCampaignPhase = getIpoCampaignPhase())
   switch (phase) {
     case 'teasing':
       return {
-        kicker: 'Bientôt · Ouverture le 20 juillet',
         banner:
-          "L'IPO arrive. Demandez le guide dès maintenant et préparez votre dossier avant l'ouverture.",
+          "Bientôt · Ouverture le 20 juillet 2026",
         primaryCta: 'Démarrer ma souscription',
         secondaryCta: "Recevoir le guide d'infos",
-        heroSupport:
-          "La fenêtre de souscription ouvre le 20 juillet 2026. Everest Finance vous aide à anticiper pièces, montant et dépôt.",
+        heroSupport: [
+          'EVEREST Finance vous accompagne dans votre souscription.',
+          'Laissez vos coordonnées : un conseiller vous recontacte pour finaliser votre dossier.',
+        ],
         emphasizeInfos: true,
       }
     case 'launch':
@@ -93,8 +94,10 @@ export function getIpoPhaseCopy(phase: IpoCampaignPhase = getIpoCampaignPhase())
         banner: `Souscription ouverte jusqu'au ${IPO_CAMPAIGN.subscriptionEnd}. Un conseiller Everest vous accompagne.`,
         primaryCta: 'Je veux souscrire',
         secondaryCta: "J'ai besoin d'infos",
-        heroSupport:
-          "20 % du capital de Bridge Bank Group Côte d'Ivoire s'ouvre au public. Everest Finance accompagne votre souscription, du premier échange au dépôt.",
+        heroSupport: [
+          "20 % du capital de Bridge Bank Group Côte d'Ivoire s'ouvre au public.",
+          'Everest Finance accompagne votre souscription, du premier échange au dépôt.',
+        ],
         emphasizeInfos: false,
       }
     case 'mid':
@@ -104,8 +107,10 @@ export function getIpoPhaseCopy(phase: IpoCampaignPhase = getIpoCampaignPhase())
           'Fenêtre encore ouverte. Si vous avez déjà un dossier en cours, finalisez-le avec votre conseiller.',
         primaryCta: 'Finaliser ma souscription',
         secondaryCta: 'Relire le guide',
-        heroSupport:
-          'La période avance. Everest Finance relance les dossiers incomplets et reste disponible pour une souscription jusqu’à la clôture.',
+        heroSupport: [
+          'La période avance. Everest Finance relance les dossiers incomplets',
+          'et reste disponible pour une souscription jusqu’à la clôture.',
+        ],
         emphasizeInfos: false,
       }
     case 'final':
@@ -115,8 +120,10 @@ export function getIpoPhaseCopy(phase: IpoCampaignPhase = getIpoCampaignPhase())
           'Clôture le 6 août 2026 (date réelle de l’offre). Après cette date, les nouvelles souscriptions ne seront plus possibles via cette campagne.',
         primaryCta: 'Souscrire avant clôture',
         secondaryCta: "J'ai besoin d'infos",
-        heroSupport:
-          'Derniers jours pour souscrire via Everest Finance. Préparez bulletin et règlement sans attendre la dernière heure.',
+        heroSupport: [
+          'Derniers jours pour souscrire via Everest Finance.',
+          'Préparez bulletin et règlement sans attendre la dernière heure.',
+        ],
         emphasizeInfos: false,
       }
     case 'closed':
@@ -126,8 +133,10 @@ export function getIpoPhaseCopy(phase: IpoCampaignPhase = getIpoCampaignPhase())
           'La période de souscription est terminée. Contactez Everest Finance pour toute question sur le suivi d’allocation.',
         primaryCta: 'Contacter un conseiller',
         secondaryCta: 'Lire le guide',
-        heroSupport:
-          'La souscription publique est close. Notre équipe reste disponible pour le suivi post-clôture et la cotation prévue.',
+        heroSupport: [
+          'La souscription publique est close.',
+          'Notre équipe reste disponible pour le suivi post-clôture et la cotation prévue.',
+        ],
         emphasizeInfos: true,
       }
   }

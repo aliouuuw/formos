@@ -468,6 +468,21 @@ pre code {
   color: #ffffff;
 }
 
+.ipo-cta-pulse {
+  animation: ipo-cta-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes ipo-cta-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(203, 152, 36, 0.42);
+  }
+
+  50% {
+    box-shadow: 0 0 0 14px rgba(203, 152, 36, 0);
+  }
+}
+
 .ipo-hero-media img {
   opacity: 0.62;
   filter: saturate(1.05) contrast(1.04);
@@ -499,6 +514,10 @@ pre code {
   [data-hero-content] {
     transform: none !important;
     opacity: 1 !important;
+  }
+
+  .ipo-cta-pulse {
+    animation: none;
   }
 }
 

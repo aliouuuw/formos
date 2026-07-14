@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useEffect, useRef, useState, type Ref } from 'react'
 
 import { buttonVariants } from '#/components/ui/button'
 import {
@@ -11,8 +12,10 @@ import {
   ipoFormSearchParams,
 } from '#/lib/ipo-campaign'
 import { BRIDGE_BANK_IPO_CAMPAIGN_ID } from '#/lib/campaigns'
+import { trackCampaignEvent } from '#/lib/campaign-analytics'
 import { useCampaignContact } from '#/hooks/use-campaign-contact'
 import { cn } from '#/lib/utils'
+import { orpc } from '#/orpc/client'
 
 const BBG_INVESTMENT_REASONS = [
   'Banque rentable et en forte croissance',
@@ -44,6 +47,27 @@ function ArrowDisc({ className }: { className?: string }) {
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
         <path
           d="M3 7h8M8 4l3 3-3 3"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  )
+}
+
+function DownloadDisc({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        'ml-1 flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-y-0.5',
+        className,
+      )}
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+        <path
+          d="M7 2.5v6.5M4.5 7.5 7 10l2.5-2.5M3 11.5h8"
           stroke="currentColor"
           strokeWidth="1.5"
           strokeLinecap="round"
@@ -89,10 +113,12 @@ function CampaignLink({
   children,
   variant,
   className,
+  pulse = false,
 }: {
   children: React.ReactNode
   variant: 'gold' | 'ghost-light' | 'ghost-dark'
   className?: string
+  pulse?: boolean
 }) {
   const buttonVariant =
     variant === 'gold' ? 'default' : variant === 'ghost-light' ? 'ghost-light' : 'outline'
@@ -109,6 +135,7 @@ function CampaignLink({
         buttonVariants({ variant: buttonVariant, size: 'lg' }),
         'transition-transform duration-150 ease-out',
         variant === 'gold' && 'ipo-cta-gold hover:shadow-[0_14px_32px_rgba(203,152,36,0.28)]',
+        pulse && 'ipo-cta-pulse',
         className,
       )}
     >
@@ -130,10 +157,12 @@ function GuidePdfLink({
   children,
   variant,
   className,
+  onTrackClick,
 }: {
   children: React.ReactNode
   variant: 'gold' | 'ghost-light' | 'ghost-dark'
   className?: string
+  onTrackClick?: () => void
 }) {
   const buttonVariant =
     variant === 'gold' ? 'default' : variant === 'ghost-light' ? 'ghost-light' : 'outline'
@@ -145,6 +174,7 @@ function GuidePdfLink({
       data-ui="button"
       href={IPO_GUIDE_PDF_PATH}
       download="guide-souscription-ipo-bridge-bank.pdf"
+      onClick={onTrackClick}
       className={cn(
         buttonVariants({ variant: buttonVariant, size: 'lg' }),
         'transition-transform duration-150 ease-out',
@@ -153,7 +183,7 @@ function GuidePdfLink({
       )}
     >
       {children}
-      <ArrowDisc
+      <DownloadDisc
         className={
           variant === 'gold'
             ? 'bg-white/18 text-white'
@@ -162,6 +192,52 @@ function GuidePdfLink({
               : 'bg-everest-green/10 text-everest-green'
         }
       />
+    </a>
+  )
+}
+
+const FOOTER_SOCIAL_LINK_CLASS =
+  'flex h-10 w-10 items-center justify-center rounded-full border border-white/35 text-white transition-colors hover:border-white/55 hover:bg-white/5'
+
+function FloatingWhatsAppButton({
+  href,
+  onTrackClick,
+}: {
+  href: string | undefined
+  onTrackClick: () => void
+}) {
+  const configured = Boolean(href && href !== '#')
+
+  return (
+    <a
+      href={configured ? href : '#'}
+      target={configured ? '_blank' : undefined}
+      rel={configured ? 'noopener noreferrer' : undefined}
+      aria-label="Question sur WhatsApp"
+      title={
+        configured
+          ? 'Question sur WhatsApp'
+          : 'WhatsApp non configuré — renseignez le numéro dans Paramètres'
+      }
+      onClick={(event) => {
+        if (!configured) {
+          event.preventDefault()
+          return
+        }
+        onTrackClick()
+      }}
+      className={cn(
+        'fixed bottom-5 right-5 z-[100] flex h-14 w-14 items-center justify-center rounded-full',
+        'bg-[#25D366] text-white shadow-[0_8px_28px_rgba(37,211,102,0.38)]',
+        'transition-transform duration-200 hover:scale-105 hover:shadow-[0_12px_36px_rgba(37,211,102,0.48)]',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-everest-green',
+        'sm:bottom-8 sm:right-8',
+        !configured && 'opacity-70',
+      )}
+    >
+      <svg viewBox="0 0 24 24" className="h-7 w-7 fill-white text-white" fill="currentColor" aria-hidden>
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+      </svg>
     </a>
   )
 }
@@ -309,12 +385,30 @@ export function IpoBridgeBankLanding() {
   useHeroKinetic(heroRef)
   const { data: contact } = useCampaignContact(BRIDGE_BANK_IPO_CAMPAIGN_ID)
   const whatsappHref = contact?.whatsappUrl ?? undefined
+  const subscribeFormQuery = useQuery(
+    orpc.forms.getBySlug.queryOptions({ input: { slug: IPO_FORM_SLUGS.subscribe } }),
+  )
+  const campaignFormId = subscribeFormQuery.data?.id
+
+  const trackWhatsAppClick = (placement: string) => {
+    trackCampaignEvent(campaignFormId, 'whatsapp_click', {
+      placement,
+      campaignId: BRIDGE_BANK_IPO_CAMPAIGN_ID,
+    })
+  }
+
+  const trackGuideDownload = (placement: string) => {
+    trackCampaignEvent(campaignFormId, 'guide_download', {
+      placement,
+      campaignId: BRIDGE_BANK_IPO_CAMPAIGN_ID,
+    })
+  }
 
   const phase = getIpoCampaignPhase()
   const phaseCopy = getIpoPhaseCopy(phase)
 
   return (
-    <div ref={rootRef} className="ipo-campaign relative min-h-dvh overflow-x-hidden bg-(--summit-ivory)">
+    <div ref={rootRef as unknown as Ref<HTMLDivElement>} className="ipo-campaign relative min-h-dvh overflow-x-hidden bg-(--summit-ivory)">
       <div className="ipo-campaign-grain pointer-events-none fixed inset-0 z-1" aria-hidden />
 
       {phase !== 'launch' ? (
@@ -333,11 +427,20 @@ export function IpoBridgeBankLanding() {
 
       <header
         className={cn(
-          'pointer-events-none absolute inset-x-0 z-40 flex justify-center px-4 sm:px-8',
+          'pointer-events-none absolute inset-x-0 z-40',
           phase !== 'launch' ? 'top-14 pt-3 sm:pt-4' : 'top-0 pt-5 sm:pt-6',
         )}
       >
-        <EverestLogo className="pointer-events-auto h-20 sm:h-24" />
+        <div className="pointer-events-auto mx-auto flex w-full max-w-[1400px] items-center justify-between gap-4 px-5 sm:px-10 lg:px-12">
+          <EverestLogo className="h-20 sm:h-24" />
+          <GuidePdfLink
+            variant="ghost-light"
+            className="h-10 border-0 px-4 text-xs hover:border-0 sm:h-11 sm:px-5 sm:text-sm"
+            onTrackClick={() => trackGuideDownload('header')}
+          >
+            {phaseCopy.secondaryCta}
+          </GuidePdfLink>
+        </div>
       </header>
 
       <main>
@@ -353,21 +456,18 @@ export function IpoBridgeBankLanding() {
                 className="h-full w-full object-cover object-[center_38%]"
               />
             </div>
-            <div className="absolute inset-0 bg-[linear-gradient(108deg,rgba(1,45,42,0.96)_0%,rgba(1,45,42,0.82)_38%,rgba(1,45,42,0.45)_68%,rgba(1,45,42,0.62)_100%)]" />
-            <div
+            {/* <div className="absolute inset-0 bg-[linear-gradient(108deg,rgba(1,45,42,0.96)_0%,rgba(1,45,42,0.82)_38%,rgba(1,45,42,0.45)_68%,rgba(1,45,42,0.62)_100%)]" /> */}
+            {/* <div
               data-hero-haze
               className="absolute inset-0 bg-[radial-gradient(ellipse_at_72%_32%,rgba(203,152,36,0.22),transparent_44%)] will-change-transform"
-            />
+            /> */}
           </div>
 
           <div
             data-hero-content
             className="relative z-10 mx-auto flex min-h-dvh max-w-[1400px] flex-col justify-end px-5 pb-20 pt-36 sm:px-10 sm:pb-24 lg:justify-center lg:px-12 lg:pb-28 lg:pt-32 will-change-transform"
           >
-            <div className="max-w-4xl">
-              <p className="ipo-reveal mb-7 text-[10px] font-medium uppercase tracking-[0.28em] text-gold" data-reveal>
-                {phaseCopy.kicker}
-              </p>
+            <div className="max-w-6xl">
               <h1
                 className="ipo-reveal max-w-[16ch] text-[clamp(2.75rem,6.2vw,5.75rem)] font-extrabold leading-[0.94] tracking-[-0.05em] text-white"
                 data-reveal
@@ -377,11 +477,13 @@ export function IpoBridgeBankLanding() {
                 <span className="text-gold">Bridge Bank</span>
               </h1>
               <p
-                className="ipo-reveal mt-8 max-w-xl text-base font-light leading-8 text-white/74 sm:text-lg sm:leading-9"
+                className="ipo-reveal mt-8 max-w-4xl text-base font-light leading-8 text-white/74 sm:text-lg sm:leading-9"
                 data-reveal
                 style={{ transitionDelay: '130ms' }}
               >
-                {phaseCopy.heroSupport}
+                {phaseCopy.heroSupport[0]}
+                <br />
+                {phaseCopy.heroSupport[1]}
               </p>
               <div
                 className="ipo-reveal mt-11 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center"
@@ -389,42 +491,24 @@ export function IpoBridgeBankLanding() {
                 style={{ transitionDelay: '190ms' }}
               >
                 {phase === 'closed' ? (
-                  <>
-                    <GuidePdfLink variant="ghost-light">
-                      {phaseCopy.secondaryCta}
-                    </GuidePdfLink>
-                    <a
-                      href={whatsappHref ?? '#'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      data-ui="button"
-                      className={cn(
-                        buttonVariants({ variant: 'default', size: 'lg' }),
-                        'ipo-cta-gold',
-                      )}
-                    >
-                      {phaseCopy.primaryCta}
-                      <ArrowDisc className="bg-white/18 text-white" />
-                    </a>
-                  </>
-                ) : phaseCopy.emphasizeInfos ? (
-                  <>
-                    <CampaignLink variant="gold">
-                      {phaseCopy.primaryCta}
-                    </CampaignLink>
-                    <GuidePdfLink variant="ghost-light">
-                      {phaseCopy.secondaryCta}
-                    </GuidePdfLink>
-                  </>
+                  <a
+                    href={whatsappHref ?? '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-ui="button"
+                    onClick={() => trackWhatsAppClick('hero')}
+                    className={cn(
+                      buttonVariants({ variant: 'default', size: 'lg' }),
+                      'ipo-cta-gold',
+                    )}
+                  >
+                    {phaseCopy.primaryCta}
+                    <ArrowDisc className="bg-white/18 text-white" />
+                  </a>
                 ) : (
-                  <>
-                    <GuidePdfLink variant="ghost-light">
-                      {phaseCopy.secondaryCta}
-                    </GuidePdfLink>
-                    <CampaignLink variant="gold">
-                      {phaseCopy.primaryCta}
-                    </CampaignLink>
-                  </>
+                  <CampaignLink variant="gold" pulse>
+                    {phaseCopy.primaryCta}
+                  </CampaignLink>
                 )}
               </div>
             </div>
@@ -438,7 +522,7 @@ export function IpoBridgeBankLanding() {
                 Prix par action
               </dt>
               <dd className="mt-3">
-                <span className="text-[1.75rem] font-bold tracking-[-0.04em] tabular-nums text-night-80 sm:text-3xl">
+                <span className="text-[1.75rem] font-bold tracking-[-0.04em] tabular-nums text-everest-green sm:text-3xl">
                   <span ref={price.ref}>{new Intl.NumberFormat('fr-FR').format(price.value)}</span>
                 </span>
                 <span className="ml-2 text-sm font-medium text-gold">FCFA</span>
@@ -452,7 +536,7 @@ export function IpoBridgeBankLanding() {
               <dt className="text-[10px] font-medium uppercase tracking-[0.2em] text-everest-green/55">
                 Fenêtre de souscription
               </dt>
-              <dd className="mt-3 text-[1.75rem] font-bold tracking-[-0.04em] text-night-80 sm:text-3xl">
+              <dd className="mt-3 text-[1.75rem] font-bold tracking-[-0.04em] text-everest-green sm:text-3xl">
                 20 juil. <span className="text-gold">→</span> 6 août
               </dd>
             </div>
@@ -465,7 +549,7 @@ export function IpoBridgeBankLanding() {
                 Cotation visée
               </dt>
               <dd className="mt-3">
-                <span className="text-[1.75rem] font-bold tracking-[-0.04em] text-night-80 sm:text-3xl">
+                <span className="text-[1.75rem] font-bold tracking-[-0.04em] text-everest-green sm:text-3xl">
                   Septembre
                 </span>
                 <span className="ml-2 text-sm font-medium text-gold">2026</span>
@@ -480,17 +564,17 @@ export function IpoBridgeBankLanding() {
               <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.24em] text-everest-green/50">
                 Pourquoi investir
               </p>
-              <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold tracking-[-0.04em] text-night-80 leading-[1.05]">
-                Pourquoi acheter des actions BBG CI ?
+              <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold tracking-[-0.04em] text-everest-green leading-[1.05]">
+                Pourquoi acheter des actions <br /><strong>BBG CI</strong> ?
               </h2>
             </div>
 
-            <ul className="mt-16 grid gap-px overflow-hidden rounded-[2rem] border border-everest-green/10 bg-everest-green/10 sm:grid-cols-2">
+            <ul className="mt-16 grid gap-px overflow-hidden rounded-[2rem] sm:grid-cols-2">
               {BBG_INVESTMENT_REASONS.map((reason, index) => (
                 <li
                   key={reason}
                   data-reveal
-                  className="ipo-reveal group flex gap-5 bg-white p-6 transition-colors duration-300 sm:gap-6 sm:p-8 lg:hover:bg-[#faf8f4]"
+                  className="ipo-reveal group flex gap-5 bg-white px-6 transition-colors duration-300 sm:gap-6 sm:p-8 lg:hover:bg-[#faf8f4]"
                   style={{ transitionDelay: `${index * 60}ms` }}
                 >
                   <span
@@ -499,90 +583,61 @@ export function IpoBridgeBankLanding() {
                   >
                     {String(index + 1).padStart(2, '0')}
                   </span>
-                  <p className="pt-2 text-base font-medium leading-8 text-night-80">{reason}</p>
+                  <p className="pt-2 text-base font-medium leading-6 text-night-80">{reason}</p>
                 </li>
               ))}
             </ul>
           </div>
         </section>
-
-        <section className="relative overflow-hidden bg-white">
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-1/3 bg-[radial-gradient(ellipse_at_100%_50%,rgba(70,29,76,0.06),transparent_70%)]" />
-          <div className="relative mx-auto max-w-[1400px] px-5 py-24 sm:px-10 lg:px-12 lg:py-32">
-            <div className="ipo-reveal max-w-2xl" data-reveal>
-              <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.24em] text-everest-green/50">
-                Pourquoi Everest
-              </p>
-              <h2 className="text-[clamp(1.85rem,3.5vw,2.75rem)] font-bold tracking-[-0.035em] text-night-80 leading-[1.08]">
-                Un intermédiaire. Un suivi. Une décision éclairée.
-              </h2>
-            </div>
-
-            <div className="mt-16 grid gap-x-16 gap-y-16 lg:grid-cols-3">
-              {[
-                {
-                  index: 'I',
-                  title: 'Accompagnement dédié',
-                  body: 'Un conseiller qualifie votre projet et prépare le dossier de souscription avec vous.',
-                },
-                {
-                  index: 'II',
-                  title: 'Information documentée',
-                  body: "Notice, calendrier et conditions de l'offre sont présentés avant toute décision.",
-                },
-                {
-                  index: 'III',
-                  title: 'Fenêtre maîtrisée',
-                  body: `Souscription du ${IPO_CAMPAIGN.subscriptionStart} au ${IPO_CAMPAIGN.subscriptionEnd}, avec clôture anticipée possible.`,
-                },
-              ].map((item, index) => (
-                <article
-                  key={item.title}
-                  data-reveal
-                  className="ipo-reveal relative"
-                  style={{ transitionDelay: `${index * 80}ms` }}
-                >
-                  <div className="flex items-center gap-4 lg:block">
-                    <span
-                      aria-hidden
-                      className="pointer-events-none shrink-0 select-none text-4xl font-extrabold leading-none tracking-[-0.04em] text-everest-green/8 sm:text-5xl lg:text-[5.5rem]"
-                    >
-                      {item.index}
-                    </span>
-                    <h3 className="text-xl font-semibold tracking-[-0.02em] text-night-80 lg:mt-4">
-                      {item.title}
-                    </h3>
-                  </div>
-                  <p className="mt-3 text-sm leading-7 text-text-secondary">{item.body}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
       </main>
 
-      <footer className="border-t border-white/10 bg-[#021f1d] text-white">
-        <div className="mx-auto max-w-[1400px] px-5 py-12 sm:px-10 lg:px-12">
-          <div className="mb-10 flex flex-col gap-6 border-b border-white/10 pb-10 sm:flex-row sm:items-center sm:justify-between">
-            <EverestLogo />
-            <div className="flex flex-wrap items-center gap-4">
-              <a
-                href={whatsappHref ?? '#'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ipo-nav-link text-sm font-medium no-underline"
-              >
-                Question sur WhatsApp
-              </a>
-              <p className="text-xs text-white/45">Campagne IPO Bridge Bank · 2026</p>
-            </div>
-          </div>
+      <footer className="border-t border-white/10 bg-everest-green text-white">
+        <div className="mx-auto flex max-w-[1400px] flex-col gap-6 px-5 py-12 sm:flex-row sm:items-center sm:justify-between sm:px-10 lg:px-12">
           <p className="max-w-4xl text-xs leading-6 text-white/40">
-            EVEREST Finance vous accompagne dans votre souscription. Laissez vos coordonnées : un conseiller
-            vous recontacte pour finaliser votre dossier.
+            EVEREST Finance, Société agréée et régulée par l&apos;AMF-UMOA n° SGI/2016-01
           </p>
+          <nav aria-label="Réseaux sociaux" className="flex items-center gap-3">
+            <a
+              href="https://www.linkedin.com/company/20529632/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Everest Finance sur LinkedIn"
+              className={FOOTER_SOCIAL_LINK_CLASS}
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4 fill-white" aria-hidden>
+                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+              </svg>
+            </a>
+            <a
+              href="https://www.facebook.com/everestfinanceSGI/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Everest Finance sur Facebook"
+              className={FOOTER_SOCIAL_LINK_CLASS}
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4 fill-white" aria-hidden>
+                <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" />
+              </svg>
+            </a>
+            <a
+              href="https://www.tiktok.com/@everest_finance"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Everest Finance sur TikTok"
+              className={FOOTER_SOCIAL_LINK_CLASS}
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4 fill-white" aria-hidden>
+                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.76-1.6.08-.33.18-.67.18-1.01.02-3.72.02-7.44.02-11.16z" />
+              </svg>
+            </a>
+          </nav>
         </div>
       </footer>
+
+      <FloatingWhatsAppButton
+        href={whatsappHref}
+        onTrackClick={() => trackWhatsAppClick('floating')}
+      />
     </div>
   )
 }

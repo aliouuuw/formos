@@ -60,6 +60,8 @@ export const analyticsEventTypeSchema = z.enum([
   'field_skipped',
   'form_completed',
   'form_abandoned',
+  'whatsapp_click',
+  'guide_download',
 ])
 
 export const leadStatusSchema = z.enum([

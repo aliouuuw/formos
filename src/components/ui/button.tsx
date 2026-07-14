@@ -21,7 +21,7 @@ export const buttonVariants = cva(
         ghost:
           'rounded-full text-text-secondary hover:bg-everest-green-05 hover:text-everest-green focus-visible:text-everest-green',
         'ghost-light':
-          'rounded-full border border-white/30 bg-white/5 text-white backdrop-blur-sm hover:border-white/55 hover:bg-white/10 hover:text-white focus-visible:text-white',
+          'rounded-full text-white hover:border-white/55 hover:bg-white/10 hover:text-white focus-visible:text-white',
         destructive:
           'rounded-full bg-destructive text-white hover:bg-destructive/90 hover:text-white focus-visible:text-white',
       },

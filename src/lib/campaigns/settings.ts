@@ -4,6 +4,7 @@ import { db } from '#/db/index'
 import { campaignSettings } from '#/db/schema'
 import { getCampaignById, getCampaignByFormSlug, listCampaigns } from '#/lib/campaigns'
 import { parseAgentNames, slugifyAgent } from '#/lib/campaigns/agents'
+import { BRIDGE_BANK_IPO_CAMPAIGN_ID } from '#/lib/campaigns/bridge-bank-ipo'
 import { DEFAULT_CAMPAIGN_AGENTS } from '#/lib/campaigns/settings-types'
 import type { CampaignAgent, CampaignConfig } from '#/lib/campaigns/types'
 
@@ -12,8 +13,16 @@ function defaultAgentsFor(campaignId: string): CampaignAgent[] {
   return base?.agents.length ? base.agents : DEFAULT_CAMPAIGN_AGENTS
 }
 
+function envWhatsappFor(campaignId: string): string | null {
+  if (campaignId !== BRIDGE_BANK_IPO_CAMPAIGN_ID) return null
+  const raw =
+    process.env.CAMPAIGN_WHATSAPP_BRIDGE_BANK_IPO ?? process.env.VITE_IPO_WHATSAPP_NUMBER
+  const digits = raw?.replace(/\D/g, '').trim()
+  return digits || null
+}
+
 function defaultWhatsappFor(campaignId: string): string | null {
-  return getCampaignById(campaignId)?.whatsappNumber ?? null
+  return getCampaignById(campaignId)?.whatsappNumber ?? envWhatsappFor(campaignId)
 }
 
 export async function getStoredCampaignSettings(campaignId: string) {
@@ -114,9 +123,7 @@ export function campaignWhatsAppUrl(number: string | undefined, prefill?: string
 
 /** Seed DB settings from env on first deploy (optional). */
 export async function seedCampaignSettingsFromEnv() {
-  const { BRIDGE_BANK_IPO_CAMPAIGN_ID } = await import('#/lib/campaigns/bridge-bank-ipo')
   const existing = await getStoredCampaignSettings(BRIDGE_BANK_IPO_CAMPAIGN_ID)
-  if (existing) return
 
   const envAgents =
     process.env.CAMPAIGN_AGENTS_BRIDGE_BANK_IPO ??
@@ -124,14 +131,33 @@ export async function seedCampaignSettingsFromEnv() {
     process.env.VITE_CAMPAIGN_AGENTS_bridge_bank_ipo
   const envWhatsapp =
     process.env.CAMPAIGN_WHATSAPP_BRIDGE_BANK_IPO ?? process.env.VITE_IPO_WHATSAPP_NUMBER
+  const whatsappDigits = envWhatsapp?.replace(/\D/g, '').trim() || null
 
-  if (!envAgents && !envWhatsapp) return
+  if (!envAgents && !whatsappDigits) return
+
+  if (existing) {
+    const shouldFillWhatsapp = !existing.whatsappNumber && whatsappDigits
+    const shouldFillAgents = existing.agents.length === 0 && Boolean(envAgents)
+    if (!shouldFillWhatsapp && !shouldFillAgents) return
+
+    await db
+      .update(campaignSettings)
+      .set({
+        ...(shouldFillWhatsapp ? { whatsappNumber: whatsappDigits } : {}),
+        ...(shouldFillAgents
+          ? { agents: normalizeAgentsFromLabels(envAgents!.split(',')) }
+          : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(campaignSettings.campaignId, BRIDGE_BANK_IPO_CAMPAIGN_ID))
+    return
+  }
 
   await db.insert(campaignSettings).values({
     campaignId: BRIDGE_BANK_IPO_CAMPAIGN_ID,
     agents: envAgents
       ? normalizeAgentsFromLabels(envAgents.split(','))
       : defaultAgentsFor(BRIDGE_BANK_IPO_CAMPAIGN_ID),
-    whatsappNumber: envWhatsapp?.trim() || null,
+    whatsappNumber: whatsappDigits,
   })
 }

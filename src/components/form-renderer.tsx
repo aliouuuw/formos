@@ -20,17 +20,9 @@ import type { FormDefinition, FormField } from '#/lib/form-types'
 import { BRIDGE_BANK_IPO_CAMPAIGN_ID } from '#/lib/campaigns'
 import { useCampaignContact } from '#/hooks/use-campaign-contact'
 import { IPO_FIELD_IDS } from '#/lib/ipo-campaign'
+import { getSessionId } from '#/lib/session-id'
 import { cn } from '#/lib/utils'
 import { client } from '#/orpc/client'
-
-function getSessionId() {
-  const key = 'formos_session_id'
-  const existing = localStorage.getItem(key)
-  if (existing) return existing
-  const id = crypto.randomUUID()
-  localStorage.setItem(key, id)
-  return id
-}
 
 function FieldInput({
   field,

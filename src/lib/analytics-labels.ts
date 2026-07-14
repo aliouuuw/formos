@@ -6,6 +6,8 @@ const EVENT_LABELS: Record<string, string> = {
   field_viewed: 'Question vue',
   field_answered: 'Question répondue',
   field_skipped: 'Question ignorée',
+  whatsapp_click: 'Clic WhatsApp',
+  guide_download: 'Téléchargement guide',
 }
 
 export function formatAnalyticsEvent(eventType: string): string {
