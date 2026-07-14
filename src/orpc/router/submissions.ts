@@ -73,50 +73,69 @@ export const submitForm = publicContext
     const leadFields = extractLeadFields(form.definition, validation.answers)
     const intent = ipoIntentFromSlug(input.slug)
 
-    await db.transaction(async (tx) => {
-      await tx.insert(formSubmissions).values({
-        id: submissionId,
-        formId: form.id,
-        formVersion: form.version,
-        sessionId: input.sessionId,
-        answers: validation.answers,
-        metadata: input.metadata,
-        completedAt: new Date(),
+    try {
+      await db.transaction(async (tx) => {
+        await tx.insert(formSubmissions).values({
+          id: submissionId,
+          formId: form.id,
+          formVersion: form.version,
+          sessionId: input.sessionId,
+          answers: validation.answers,
+          metadata: input.metadata,
+          completedAt: new Date(),
+        })
+
+        await tx.insert(formDefinitionSnapshots).values({
+          id: crypto.randomUUID(),
+          formId: form.id,
+          version: form.version,
+          definition: form.definition,
+        }).onConflictDoNothing()
+
+        await tx.insert(leads).values({
+          id: leadId,
+          formId: form.id,
+          submissionId,
+          email: leadFields.email,
+          name: leadFields.name,
+          phone: leadFields.phone,
+          status: 'new',
+          intent,
+          amountRange: leadFields.amountRange,
+          preferredChannel: leadFields.preferredChannel,
+          utmSource: input.metadata?.utmSource,
+          utmMedium: input.metadata?.utmMedium,
+          utmCampaign: input.metadata?.utmCampaign,
+        })
       })
-
-      await tx.insert(formDefinitionSnapshots).values({
-        id: crypto.randomUUID(),
+    } catch (error) {
+      console.error('[submissions.submit] Database transaction failed', {
+        slug: input.slug,
         formId: form.id,
-        version: form.version,
-        definition: form.definition,
-      }).onConflictDoNothing()
-
-      await tx.insert(leads).values({
-        id: leadId,
-        formId: form.id,
-        submissionId,
-        email: leadFields.email,
-        name: leadFields.name,
-        phone: leadFields.phone,
-        status: 'new',
-        intent,
-        amountRange: leadFields.amountRange,
-        preferredChannel: leadFields.preferredChannel,
-        utmSource: input.metadata?.utmSource,
-        utmMedium: input.metadata?.utmMedium,
-        utmCampaign: input.metadata?.utmCampaign,
+        error: error instanceof Error ? error.message : error,
       })
-    })
+      throw new ORPCError('INTERNAL_SERVER_ERROR', {
+        message: 'Unable to save submission. Please try again shortly.',
+      })
+    }
 
-    await inngest.send({
-      name: 'form/submission.completed',
-      data: {
-        formId: form.id,
+    try {
+      await inngest.send({
+        name: 'form/submission.completed',
+        data: {
+          formId: form.id,
+          submissionId,
+          leadId,
+          email: leadFields.email,
+        },
+      })
+    } catch (error) {
+      console.error('[submissions.submit] Inngest event failed (submission saved)', {
         submissionId,
         leadId,
-        email: leadFields.email,
-      },
-    })
+        error: error instanceof Error ? error.message : error,
+      })
+    }
 
     return {
       submissionId,

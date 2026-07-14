@@ -22,6 +22,13 @@
       "when": 1781145371736,
       "tag": "0002_colossal_madrox",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1784026218858,
+      "tag": "0003_talented_jubilee",
+      "breakpoints": true
     }
   ]
 }

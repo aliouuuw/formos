@@ -89,8 +89,8 @@ function LeadsPage() {
     <div className="space-y-10">
       <PageHeader
         kicker="Pipeline"
-        title="Leads IPO"
-        description="Suivi des prospects Bridge Bank : source, montant, canal et conversion vers la souscription."
+        title="Leads"
+        description="Suivi des prospectst"
       />
 
       <div className="flex flex-wrap items-center gap-2">
