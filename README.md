@@ -34,9 +34,25 @@ docker compose --profile neon up -d neon-local
 
 ```bash
 bun install
-bun run db:push
+bun run db:migrate:local   # or db:push for quick schema sync
 bun run db:seed
 ```
+
+**Local vs Neon migrations** (when switching DBs often):
+
+```bash
+cp .env.neon.example .env.neon   # once — paste Neon pooler URL
+
+bun run db:generate              # after schema changes
+bun run db:migrate:local         # Docker Postgres (docker compose up -d postgres)
+bun run db:migrate:neon          # Neon branch from .env.neon
+
+# If a DB was built with db:push first:
+bun run db:baseline:local        # or db:baseline:neon
+bun run db:migrate:local         # applies only pending migrations
+```
+
+`.env.local` drives the **app** (`bun run dev`, seed, studio). Targeted `db:*:local` / `db:*:neon` scripts use a fixed local Docker URL or `.env.neon` so migrations never hit the wrong database by accident.
 
 Set a password for the first admin user when seeding:
 
@@ -91,9 +107,11 @@ Open [http://localhost:3000](http://localhost:3000).
 bun run dev           # Start dev server
 bun run build         # Production build (Nitro + Bun preset)
 bun run start         # Run production server
-bun run db:push       # Push Drizzle schema to Postgres
-bun run db:seed       # Provision admin user (+ optional demo form)
-bun run db:studio     # Drizzle Studio
+bun run db:push            # Push Drizzle schema (quick local sync)
+bun run db:migrate:local   # Apply migrations → local Docker Postgres
+bun run db:migrate:neon    # Apply migrations → Neon (.env.neon)
+bun run db:seed            # Provision admin user (+ optional demo form)
+bun run db:studio          # Drizzle Studio
 bun run generate-routes
 bun run inngest:dev   # Local Inngest dev server
 ```
