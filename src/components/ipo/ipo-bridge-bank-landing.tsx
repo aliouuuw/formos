@@ -26,15 +26,18 @@ const BBG_INVESTMENT_REASONS = [
   'Banque en pleine expansion digitale et régionale',
 ] as const
 
-/** Keep trailing parentheticals (e.g. visa refs) on one line so wraps break before them. */
+/** Keep trailing parentheticals (e.g. visa refs) on one line; force break before them on mobile. */
 function formatReasonLabel(reason: string) {
   const visaMatch = reason.match(/^(.*?)(\s*)(\([^)]+\))$/)
   if (!visaMatch) return reason
   const [, lead, space, visa] = visaMatch
+  // Non-breaking hyphen so "AMF-UMOA" never splits mid-acronym.
+  const leadProtected = lead.replaceAll('AMF-UMOA', 'AMF\u2011UMOA')
   return (
     <>
-      {lead}
-      {space}
+      {leadProtected}
+      <br className="sm:hidden" />
+      <span className="hidden sm:inline">{space}</span>
       <span className="whitespace-nowrap">{visa}</span>
     </>
   )
@@ -223,6 +226,17 @@ function FloatingWhatsAppButton({
   buttonRef?: Ref<HTMLAnchorElement>
 }) {
   const configured = Boolean(href && href !== '#')
+  const [entered, setEntered] = useState(false)
+
+  useEffect(() => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduce) {
+      setEntered(true)
+      return
+    }
+    const id = window.setTimeout(() => setEntered(true), 480)
+    return () => window.clearTimeout(id)
+  }, [])
 
   return (
     <a
@@ -244,15 +258,19 @@ function FloatingWhatsAppButton({
         onTrackClick()
       }}
       className={cn(
-        'fixed bottom-5 right-5 z-[100] flex h-14 w-14 items-center justify-center rounded-full',
+        'fixed bottom-4 right-4 z-100 flex h-12 w-12 items-center justify-center rounded-full sm:bottom-8 sm:right-8 sm:h-14 sm:w-14',
         'bg-[#25D366] text-white shadow-[0_8px_28px_rgba(37,211,102,0.38)]',
-        'transition-transform duration-200 hover:scale-105 hover:shadow-[0_12px_36px_rgba(37,211,102,0.48)]',
+        'transition-[transform,opacity,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]',
+        'hover:scale-105 hover:shadow-[0_12px_36px_rgba(37,211,102,0.48)]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-everest-green',
-        'sm:bottom-8 sm:right-8',
-        !configured && 'opacity-70',
+        entered
+          ? configured
+            ? 'translate-y-0 scale-100 opacity-100'
+            : 'translate-y-0 scale-100 opacity-70'
+          : 'translate-y-3 scale-90 opacity-0',
       )}
     >
-      <svg viewBox="0 0 24 24" className="h-7 w-7 fill-white text-white" fill="currentColor" aria-hidden>
+      <svg viewBox="0 0 24 24" className="h-6 w-6 fill-white text-white sm:h-7 sm:w-7" fill="currentColor" aria-hidden>
         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
       </svg>
     </a>
@@ -490,11 +508,11 @@ export function IpoBridgeBankLanding() {
           phase !== 'launch' ? 'top-14 pt-3 sm:pt-4' : 'top-0 pt-5 sm:pt-6',
         )}
       >
-        <div className="pointer-events-auto mx-auto flex w-full max-w-[1400px] items-center justify-between gap-4 px-5 sm:px-10 lg:px-12">
-          <EverestLogo className="h-20 sm:h-24" />
+        <div className="pointer-events-auto mx-auto flex w-full max-w-[1400px] items-center justify-between gap-3 px-5 sm:gap-4 sm:px-10 lg:px-12">
+          <EverestLogo className="h-16 sm:h-24 lg:h-28" />
           <GuidePdfLink
             variant="ghost-light"
-            className="h-10 border-0 px-4 text-xs hover:border-0 sm:h-11 sm:px-5 sm:text-sm"
+            className="h-9 shrink-0 border-0 px-2.5 text-[11px] hover:border-0 sm:h-11 sm:px-5 sm:text-sm"
             onTrackClick={() => trackGuideDownload('header')}
           >
             {phaseCopy.secondaryCta}
@@ -524,11 +542,11 @@ export function IpoBridgeBankLanding() {
 
           <div
             data-hero-content
-            className="relative z-10 mx-auto flex min-h-dvh max-w-[1400px] flex-col justify-end px-5 pb-20 pt-36 sm:px-10 sm:pb-24 lg:justify-center lg:px-12 lg:pb-28 lg:pt-32 will-change-transform"
+            className="relative z-10 mx-auto flex min-h-dvh max-w-[1400px] flex-col justify-center px-5 py-28 sm:px-10 sm:py-32 lg:px-12 lg:py-28 will-change-transform"
           >
-            <div className="max-w-6xl">
+            <div className="mx-auto w-full max-w-6xl text-center sm:mx-0 sm:text-left">
               <h1
-                className="ipo-reveal max-w-[16ch] text-[clamp(1.5rem,4vw,3.75rem)] font-extrabold leading-[1.2] tracking-[-0.05em] text-white"
+                className="ipo-reveal mx-auto max-w-[14ch] text-[clamp(2.35rem,9.5vw,3.75rem)] font-extrabold leading-[1.08] tracking-[-0.05em] text-white sm:mx-0 sm:max-w-[16ch] sm:leading-[1.2]"
                 data-reveal
                 style={{ transitionDelay: '70ms' }}
               >
@@ -536,16 +554,17 @@ export function IpoBridgeBankLanding() {
                 <span className="text-gold">Bridge Bank</span>
               </h1>
               <p
-                className="ipo-reveal mt-8 max-w-4xl text-base font-light leading-4 text-white/74 sm:text-lg sm:leading-8"
+                className="ipo-reveal mx-auto mt-5 max-w-[34ch] text-base font-light leading-7 text-white/74 sm:mx-0 sm:mt-8 sm:max-w-4xl sm:text-lg sm:leading-8"
                 data-reveal
                 style={{ transitionDelay: '130ms' }}
               >
                 {phaseCopy.heroSupport[0]}
-                <br />
+                <br className="hidden sm:block" />
+                <span className="sm:hidden"> </span>
                 {phaseCopy.heroSupport[1]}
               </p>
               <div
-                className="ipo-reveal mt-11 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center"
+                className="ipo-reveal mt-8 flex flex-col items-center gap-3 sm:mt-11 sm:flex-row sm:items-center"
                 data-reveal
                 style={{ transitionDelay: '190ms' }}
               >
@@ -574,75 +593,77 @@ export function IpoBridgeBankLanding() {
           </div>
         </section>
 
-        <section className="relative z-10 -mt-10 border border-everest-green/10 bg-white/95 shadow-[0_24px_60px_rgba(1,45,42,0.08)] backdrop-blur-sm sm:-mt-14">
-          <dl className="mx-auto grid max-w-[1400px] divide-y divide-everest-green/10 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-            <div className="ipo-reveal px-6 py-9 sm:px-10 lg:px-12" data-reveal>
-              <dt className="text-[10px] font-medium uppercase tracking-[0.2em] text-everest-green/55">
+        <section className="relative z-10 -mt-8 border border-everest-green/10 bg-white/95 shadow-[0_24px_60px_rgba(1,45,42,0.08)] backdrop-blur-sm sm:-mt-14">
+          <dl className="mx-auto grid max-w-[1400px] grid-cols-3 divide-x divide-everest-green/10">
+            <div className="ipo-reveal px-2.5 py-4 text-center sm:px-10 sm:py-9 sm:text-left lg:px-12" data-reveal>
+              <dt className="text-[8px] font-medium uppercase leading-tight tracking-[0.14em] text-everest-green/55 sm:text-[10px] sm:tracking-[0.2em]">
                 Prix par action
               </dt>
-              <dd className="mt-3">
-                <span className="text-[1.75rem] font-bold tracking-[-0.04em] tabular-nums text-everest-green sm:text-3xl">
+              <dd className="mt-1.5 sm:mt-3">
+                <span className="text-[0.95rem] font-bold tracking-[-0.04em] tabular-nums text-everest-green sm:text-3xl">
                   <span ref={price.ref}>{new Intl.NumberFormat('fr-FR').format(price.value)}</span>
                 </span>
-                <span className="ml-2 text-sm font-medium text-gold">FCFA</span>
+                <span className="ml-1 text-[10px] font-medium text-gold sm:ml-2 sm:text-sm">FCFA</span>
               </dd>
             </div>
             <div
-              className="ipo-reveal px-6 py-9 sm:px-10 lg:px-12"
+              className="ipo-reveal px-2.5 py-4 text-center sm:px-10 sm:py-9 sm:text-left lg:px-12"
               data-reveal
               style={{ transitionDelay: '50ms' }}
             >
-              <dt className="text-[10px] font-medium uppercase tracking-[0.2em] text-everest-green/55">
+              <dt className="text-[8px] font-medium uppercase leading-tight tracking-[0.14em] text-everest-green/55 sm:text-[10px] sm:tracking-[0.2em]">
                 Fenêtre de souscription
               </dt>
-              <dd className="mt-3 text-[1.75rem] font-bold tracking-[-0.04em] text-everest-green sm:text-3xl">
+              <dd className="mt-1.5 text-[0.8rem] font-bold leading-snug tracking-[-0.04em] text-everest-green sm:mt-3 sm:text-3xl sm:leading-none">
                 20 juil. <span className="text-gold">→</span> 6 août
               </dd>
             </div>
             <div
-              className="ipo-reveal px-6 py-9 sm:px-10 lg:px-12"
+              className="ipo-reveal px-2.5 py-4 text-center sm:px-10 sm:py-9 sm:text-left lg:px-12"
               data-reveal
               style={{ transitionDelay: '100ms' }}
             >
-              <dt className="text-[10px] font-medium uppercase tracking-[0.2em] text-everest-green/55">
+              <dt className="text-[8px] font-medium uppercase leading-tight tracking-[0.14em] text-everest-green/55 sm:text-[10px] sm:tracking-[0.2em]">
                 Cotation visée
               </dt>
-              <dd className="mt-3">
-                <span className="text-[1.75rem] font-bold tracking-[-0.04em] text-everest-green sm:text-3xl">
+              <dd className="mt-1.5 sm:mt-3">
+                <span className="text-[0.95rem] font-bold tracking-[-0.04em] text-everest-green sm:text-3xl">
                   Septembre
                 </span>
-                <span className="ml-2 text-sm font-medium text-gold">2026</span>
+                <span className="ml-1 text-[10px] font-medium text-gold sm:ml-2 sm:text-sm">2026</span>
               </dd>
             </div>
           </dl>
         </section>
 
         <section id="parcours" className="bg-(--summit-ivory)">
-          <div className="mx-auto max-w-[1400px] px-5 py-24 sm:px-10 lg:px-12 lg:py-36">
+          <div className="mx-auto max-w-[1400px] px-5 py-14 sm:px-10 sm:py-24 lg:px-12 lg:py-36">
             <div className="ipo-reveal max-w-3xl" data-reveal>
-              <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.24em] text-everest-green/50">
+              <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.24em] text-everest-green/50 sm:mb-4">
                 Pourquoi investir
               </p>
-              <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold tracking-[-0.04em] text-everest-green leading-[1.05]">
-                Pourquoi acheter des actions <br /><strong>BBG CI</strong> ?
+              <h2 className="text-[clamp(1.65rem,7vw,3.5rem)] font-bold tracking-[-0.04em] text-everest-green leading-[1.1] sm:leading-[1.05]">
+                Pourquoi acheter des actions{' '}
+                <br className="hidden sm:block" />
+                <strong>BBG CI</strong> ?
               </h2>
             </div>
 
-            <ul className="mt-16 grid gap-px overflow-hidden rounded-[2rem] sm:grid-cols-2">
+            <ul className="mt-8 grid gap-px overflow-hidden rounded-3xl sm:mt-16 sm:rounded-[2rem] sm:grid-cols-2">
               {BBG_INVESTMENT_REASONS.map((reason, index) => (
                 <li
                   key={reason}
                   data-reveal
-                  className="ipo-reveal group flex gap-5 bg-white px-6 transition-colors duration-300 sm:gap-6 sm:p-8 lg:hover:bg-[#faf8f4]"
+                  className="ipo-reveal group flex gap-4 bg-white px-5 py-5 transition-colors duration-300 sm:gap-6 sm:p-8 lg:hover:bg-[#faf8f4]"
                   style={{ transitionDelay: `${index * 60}ms` }}
                 >
                   <span
                     aria-hidden
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-gold/35 bg-gold/10 text-xs font-bold tabular-nums tracking-wide text-gold transition-colors duration-300 group-hover:border-gold/55 group-hover:bg-gold/16"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gold/35 bg-gold/10 text-xs font-bold tabular-nums tracking-wide text-gold transition-colors duration-300 group-hover:border-gold/55 group-hover:bg-gold/16 sm:h-11 sm:w-11"
                   >
                     {String(index + 1).padStart(2, '0')}
                   </span>
-                  <p className="pt-2 text-base font-medium leading-6 text-night-80">
+                  <p className="pt-1.5 text-[0.9375rem] font-medium leading-6 text-night-80 sm:pt-2 sm:text-base">
                     {formatReasonLabel(reason)}
                   </p>
                 </li>
@@ -653,9 +674,9 @@ export function IpoBridgeBankLanding() {
       </main>
 
       <footer className="border-t border-white/10 bg-everest-green text-white">
-        <div className="mx-auto flex max-w-[1400px] flex-col gap-4 px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-10 sm:py-7 lg:px-12">
-          <p className="max-w-4xl text-xs leading-6 text-white/40">
-            EVEREST Finance, Société agréée et régulée par l&apos;AMF-UMOA n° SGI/2016-01
+        <div className="mx-auto flex max-w-[1400px] flex-col items-center gap-5 px-5 py-6 md:pb-24 text-center sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-10 sm:py-7 sm:pb-7 sm:text-left lg:px-12">
+          <p className="max-w-4xl text-xs leading-5 text-white/40 sm:leading-6">
+            EVEREST Finance, Société agréée et régulée par l&apos;AMF-UMOA <br /> n° SGI/2016-01
           </p>
           <nav
             ref={footerNavRef}
