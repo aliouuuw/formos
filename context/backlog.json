@@ -1,6 +1,6 @@
 {
   "project": "formos",
-  "updated": "2026-07-09",
+  "updated": "2026-07-14",
   "items": [
     {
       "id": "submit-validation",
@@ -46,10 +46,10 @@
     },
     {
       "id": "crm-webhooks",
-      "title": "CRM & Slack webhooks",
+      "title": "CRM & Slack webhooks on new lead",
       "status": "todo",
-      "priority": "medium",
-      "notes": "Extend Inngest handler to notify external systems on new leads."
+      "priority": "high",
+      "notes": "IPO cut: Slack/email (or Inngest) when a lead is created. Later: HubSpot/Notion/Sheets sync. See docs/admin-leads-roadmap.md § Tier 3."
     },
     {
       "id": "conditional-logic",
@@ -140,21 +140,147 @@
       "title": "Partial submissions capture",
       "status": "todo",
       "priority": "medium",
-      "notes": "Track field events but discard answers on abandon; high-value for lead gen."
+      "notes": "Track field events but discard answers on abandon; high-value for lead gen / warm recovery queue. See docs/admin-leads-roadmap.md § Tier 4."
     },
     {
       "id": "submission-export-detail",
       "title": "Submission detail view + CSV export",
       "status": "done",
       "priority": "medium",
-      "notes": "listSubmissions capped at 100, no pagination; no UI to browse answers or export."
+      "notes": "Done for form submissions. Lead-level CSV is tracked separately as lead-csv-export."
     },
     {
       "id": "lead-detail-notes",
-      "title": "Lead detail view, notes, assignment",
+      "title": "Lead detail view + notes + full answers",
+      "status": "todo",
+      "priority": "high",
+      "notes": "Assignment already exists. Still missing: detail drawer/page, editable notes, linked submission answers, activity on status/assignee. Surface IPO extras (investor_profile, securities_account). See docs/admin-leads-roadmap.md § Tier 1."
+    },
+    {
+      "id": "lead-csv-export",
+      "title": "Lead CSV / Excel export",
+      "status": "todo",
+      "priority": "high",
+      "notes": "Filtered export (campaign, status, date, assignee) with contact, amount, profile, compte titres, channel, city, UTMs, status, agent, createdAt. IPO day-to-day critical."
+    },
+    {
+      "id": "lead-list-query",
+      "title": "Lead list: server filters, search, sort, pagination",
+      "status": "todo",
+      "priority": "high",
+      "notes": "Replace client filter on 200-row cap. Server: status, assignee, intent, amount, channel, source, date range, form, q(name/email/phone). Sort + cursor/page pagination."
+    },
+    {
+      "id": "lead-ipo-fields-ui",
+      "title": "Surface IPO classification fields in leads UI",
+      "status": "todo",
+      "priority": "high",
+      "notes": "investor_profile + securities_account live in insights.extras but are not shown as badges/columns. Needed for prioritization (diaspora / institutional / no-account)."
+    },
+    {
+      "id": "lead-work-queue",
+      "title": "My leads / unassigned work queue + aging",
+      "status": "todo",
+      "priority": "high",
+      "notes": "Filter by assignee + Non assigné. Highlight SLA breaches (new >24h, contacted >72h) matching the 24h callback promise."
+    },
+    {
+      "id": "lead-bulk-actions",
+      "title": "Bulk assign / status / export",
+      "status": "todo",
+      "priority": "medium",
+      "notes": "Multi-select on leads list → assign agent, change status, export, tag."
+    },
+    {
+      "id": "lead-tags-priority",
+      "title": "Lead tags, labels, and priority scoring",
+      "status": "todo",
+      "priority": "medium",
+      "notes": "Curated or freeform tags (urgent, docs-incomplets, VIP). Optional score from amount + profile + compte titres."
+    },
+    {
+      "id": "lead-duplicates",
+      "title": "Duplicate lead detection and merge",
+      "status": "todo",
+      "priority": "medium",
+      "notes": "Same phone/email across submissions → flag or merge, keep history."
+    },
+    {
+      "id": "lead-saved-views",
+      "title": "Saved lead views / presets",
+      "status": "todo",
+      "priority": "medium",
+      "notes": "Presets e.g. Nouveaux WhatsApp, Institutionnels >10M, Sans agent, Fenêtre clôture."
+    },
+    {
+      "id": "lead-kanban",
+      "title": "Pipeline board (Kanban) by status",
       "status": "todo",
       "priority": "low",
-      "notes": "Leads list capped at 200 with no pagination/search; no notes or owner assignment."
+      "notes": "Optional board view for morning standups; list remains primary."
+    },
+    {
+      "id": "lead-click-to-contact",
+      "title": "Click-to-contact from preferred channel",
+      "status": "todo",
+      "priority": "medium",
+      "notes": "One-click wa.me / tel: / mailto: from preferredChannel; log touch event."
+    },
+    {
+      "id": "lead-round-robin",
+      "title": "Round-robin / auto-assignment",
+      "status": "todo",
+      "priority": "low",
+      "notes": "Auto-assign new leads across campaign agents when unassigned."
+    },
+    {
+      "id": "lead-rbac",
+      "title": "Role-based lead access",
+      "status": "todo",
+      "priority": "medium",
+      "notes": "Agents see own leads; admins see all; optional read-only managers. Depends on user-provisioning."
+    },
+    {
+      "id": "lead-audit-trail",
+      "title": "Lead activity / audit trail",
+      "status": "todo",
+      "priority": "medium",
+      "notes": "Who changed status/assignee/notes and when — coaching + compliance."
+    },
+    {
+      "id": "lead-funnel-join",
+      "title": "Funnel × leads reporting join",
+      "status": "todo",
+      "priority": "low",
+      "notes": "Source → form start → complete → lead → souscrit. Ties analytics-dashboard to pipeline."
+    },
+    {
+      "id": "lead-smart-routing",
+      "title": "Smart routing by profile / amount / channel",
+      "status": "todo",
+      "priority": "low",
+      "notes": "Institutionnel → senior; WhatsApp pref → WA-capable agent; amount >10M → VIP queue."
+    },
+    {
+      "id": "lead-reminders",
+      "title": "Follow-up reminders and tasks",
+      "status": "todo",
+      "priority": "low",
+      "notes": "Due dates, overdue badges, optional calendar/ICS."
+    },
+    {
+      "id": "lead-reporting-digest",
+      "title": "Daily lead reporting digest",
+      "status": "todo",
+      "priority": "low",
+      "notes": "New leads, conversion by agent/source/amount; export for ops / CREPMF-style reporting."
+    },
+    {
+      "id": "lead-data-quality",
+      "title": "Phone/email normalization and DQ flags",
+      "status": "todo",
+      "priority": "low",
+      "notes": "E.164 phones, email validation, incomplete-dossier flags."
     },
     {
       "id": "rate-limit-memory-leak",
@@ -172,10 +298,10 @@
     },
     {
       "id": "gdpr-consent",
-      "title": "GDPR/consent checkbox + privacy notice",
+      "title": "GDPR/consent, retention, export/delete",
       "status": "todo",
       "priority": "low",
-      "notes": "Collecting PII with UTM tracking; no consent field in definition schema."
+      "notes": "Public consent checkbox intentionally omitted from IPO form. Still need retention policy + subject export/delete by email. See docs/admin-leads-roadmap.md § Tier 4."
     }
   ]
 }

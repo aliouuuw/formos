@@ -41,7 +41,7 @@ src/
       forms.ts          # CRUD, publish, archive, stats
       submissions.ts    # Submit, list, get (with snapshot), CSV export
       analytics.ts      # Event tracking, form analytics
-      leads.ts          # Lead list, status update
+      leads.ts          # Lead list, stats, insights, status + assignee update
     client.ts           # oRPC client for React Query hooks
     context.ts          # Auth context (via Better Auth)
   routes/               # TanStack file-based routing
@@ -70,7 +70,11 @@ src/
 
 context/
   backlog.json          # Project backlog (priority, status, notes)
-  decisions.log       # ADR-style decisions
+  decisions.log         # ADR-style decisions
+
+docs/
+  admin-leads-roadmap.md  # Admin lead ops: current state, IPO cut, tiers
+  ipo-channel-utm.md      # Campaign UTM conventions
 
 PRODUCT.md              # Design context (register: product)
 ```
@@ -118,7 +122,7 @@ Better Auth handles session management. The admin routes (`/admin/*`) are wrappe
 | `forms` | Form definitions, metadata, status, version |
 | `form_definition_snapshots` | Frozen copies of form defs per version |
 | `form_submissions` | Submitted answers (JSONB), formVersion, leadId |
-| `leads` | Captured leads (name, email, phone, status, notes) |
+| `leads` | Captured leads (contact, status, assignee, amount, channel, UTMs, insights JSONB) |
 | `analytics_events` | Event tracking (form_started, field_answered, etc.) |
 
 See `src/db/schema.ts` for full schema and relations.
@@ -147,8 +151,14 @@ See `src/db/schema.ts` for full schema and relations.
 - `getByForm({ formId })` — funnel + field events
 
 ### Leads (`orpc.leads.*`)
-- `list()` — all leads
+- `list({ formId?, status?, campaignId? })` — leads for owned forms (limit 200, newest first)
+- `stats({ campaignId? })` — totals, by status / intent / source, conversion rate
+- `insights({ campaignId? })` — amount buckets, preferred channels, agent load
 - `updateStatus({ id, status })`
+- `updateAssignee({ id, assignee })`
+
+Admin UI: `/admin/leads` (campaign chips, client status filter, inline status + assignee).  
+Roadmap for export, search, detail/notes, SLA queue, webhooks: [`docs/admin-leads-roadmap.md`](docs/admin-leads-roadmap.md).
 
 ---
 
@@ -208,17 +218,21 @@ bunx tsr generate
 
 ## Backlog (High Priority Remaining)
 
-See `context/backlog.json` for the full list. Key remaining items:
+See `context/backlog.json` for the full list and [`docs/admin-leads-roadmap.md`](docs/admin-leads-roadmap.md) for the admin lead-ops tiers. Key remaining items:
 
 | ID | Title | Priority | Notes |
 |----|-------|----------|-------|
-| `slug-change-redirect` | Redirect on slug change | medium | If a form's slug changes, old `/f/old-slug` URLs 404. Need redirect table. |
-| `spam-honeypot` | Spam / bot protection | medium | Add honeypot field, rate-limit hardening. |
-| `partial-submissions` | Partial submissions | medium | Track field events but keep answers on abandon; high-value for lead gen. |
-| `lead-detail-notes` | Lead detail + notes | low | Leads list capped at 200; no detail view, notes, or owner assignment. |
-| `gdpr-consent` | GDPR / consent | low | Consent checkbox, data retention, export/delete. |
+| `lead-csv-export` | Lead CSV export | high | Filtered export for campaign ops (submissions CSV already exists). |
+| `lead-list-query` | Lead search / filters / pagination | high | Replace 200-row client filter with server query. |
+| `lead-detail-notes` | Lead detail + notes | high | Assignment exists; still need detail, notes, full answers. |
+| `lead-ipo-fields-ui` | Show IPO profil / compte titres | high | Extras stored but not visible in list. |
+| `lead-work-queue` | Unassigned + aging queue | high | SLA vs 24h callback promise. |
+| `crm-webhooks` | Slack / email on new lead | high | Inngest notify; later CRM sync. |
+| `spam-honeypot` | Spam / bot protection | medium | Honeypot + rate-limit hardening. |
+| `partial-submissions` | Partial submissions | medium | Abandon → warm recovery queue. |
 | `embed-mode` | Embeddable forms | medium | iframe / script embed for landing pages. |
 | `conditional-logic` | Conditional field logic | medium | Show/hide fields based on answers. |
+| `gdpr-consent` | Retention / export / delete | low | Public consent omitted on IPO form; retention still needed. |
 
 ---
 
