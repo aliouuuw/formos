@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useRef, useState, type Ref } from 'react'
+import { useEffect, useRef, useState, type Ref, type RefObject } from 'react'
 
 import { buttonVariants } from '#/components/ui/button'
 import {
@@ -25,6 +25,20 @@ const BBG_INVESTMENT_REASONS = [
   "Participation directe à la croissance de l'économie ivoirienne, 1ère puissance économique de l'UEMOA",
   'Banque en pleine expansion digitale et régionale',
 ] as const
+
+/** Keep trailing parentheticals (e.g. visa refs) on one line so wraps break before them. */
+function formatReasonLabel(reason: string) {
+  const visaMatch = reason.match(/^(.*?)(\s*)(\([^)]+\))$/)
+  if (!visaMatch) return reason
+  const [, lead, space, visa] = visaMatch
+  return (
+    <>
+      {lead}
+      {space}
+      <span className="whitespace-nowrap">{visa}</span>
+    </>
+  )
+}
 
 function EverestLogo({ className }: { className?: string }) {
   return (
@@ -202,14 +216,17 @@ const FOOTER_SOCIAL_LINK_CLASS =
 function FloatingWhatsAppButton({
   href,
   onTrackClick,
+  buttonRef,
 }: {
   href: string | undefined
   onTrackClick: () => void
+  buttonRef?: Ref<HTMLAnchorElement>
 }) {
   const configured = Boolean(href && href !== '#')
 
   return (
     <a
+      ref={buttonRef}
       href={configured ? href : '#'}
       target={configured ? '_blank' : undefined}
       rel={configured ? 'noopener noreferrer' : undefined}
@@ -274,6 +291,45 @@ function useReveal() {
   }, [])
 
   return rootRef
+}
+
+/** Shifts footer social links left when the fixed WhatsApp button overlaps them. */
+function useFooterNavWhatsAppClearance(
+  navRef: RefObject<HTMLElement | null>,
+  whatsappRef: RefObject<HTMLAnchorElement | null>,
+) {
+  const [clearance, setClearance] = useState(0)
+
+  useEffect(() => {
+    const nav = navRef.current
+    const whatsapp = whatsappRef.current
+    if (!nav || !whatsapp) return
+
+    const gap = 16
+
+    const check = () => {
+      const navRect = nav.getBoundingClientRect()
+      const btnRect = whatsapp.getBoundingClientRect()
+      const verticallyOverlaps =
+        navRect.bottom > btnRect.top && navRect.top < btnRect.bottom
+      if (!verticallyOverlaps) {
+        setClearance(0)
+        return
+      }
+      const overlap = navRect.right + gap - btnRect.left
+      setClearance(overlap > 0 ? Math.ceil(overlap) : 0)
+    }
+
+    check()
+    window.addEventListener('scroll', check, { passive: true })
+    window.addEventListener('resize', check)
+    return () => {
+      window.removeEventListener('scroll', check)
+      window.removeEventListener('resize', check)
+    }
+  }, [navRef, whatsappRef])
+
+  return clearance
 }
 
 /** Cursor depth + scroll haze on the hero — light Alpine kinetic without GSAP. */
@@ -382,6 +438,9 @@ export function IpoBridgeBankLanding() {
   const price = useCountUp(IPO_CAMPAIGN.sharePriceFcfa)
   const rootRef = useReveal()
   const heroRef = useRef<HTMLElement>(null)
+  const footerNavRef = useRef<HTMLElement>(null)
+  const whatsappRef = useRef<HTMLAnchorElement>(null)
+  const footerNavClearance = useFooterNavWhatsAppClearance(footerNavRef, whatsappRef)
   useHeroKinetic(heroRef)
   const { data: contact } = useCampaignContact(BRIDGE_BANK_IPO_CAMPAIGN_ID)
   const whatsappHref = contact?.whatsappUrl ?? undefined
@@ -583,7 +642,9 @@ export function IpoBridgeBankLanding() {
                   >
                     {String(index + 1).padStart(2, '0')}
                   </span>
-                  <p className="pt-2 text-base font-medium leading-6 text-night-80">{reason}</p>
+                  <p className="pt-2 text-base font-medium leading-6 text-night-80">
+                    {formatReasonLabel(reason)}
+                  </p>
                 </li>
               ))}
             </ul>
@@ -592,11 +653,18 @@ export function IpoBridgeBankLanding() {
       </main>
 
       <footer className="border-t border-white/10 bg-everest-green text-white">
-        <div className="mx-auto flex max-w-[1400px] flex-col gap-6 px-5 py-12 sm:flex-row sm:items-center sm:justify-between sm:px-10 lg:px-12">
+        <div className="mx-auto flex max-w-[1400px] flex-col gap-4 px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-10 sm:py-7 lg:px-12">
           <p className="max-w-4xl text-xs leading-6 text-white/40">
             EVEREST Finance, Société agréée et régulée par l&apos;AMF-UMOA n° SGI/2016-01
           </p>
-          <nav aria-label="Réseaux sociaux" className="flex items-center gap-3">
+          <nav
+            ref={footerNavRef}
+            aria-label="Réseaux sociaux"
+            className="flex items-center gap-3 transition-[margin] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+            style={{
+              marginRight: footerNavClearance > 0 ? footerNavClearance : undefined,
+            }}
+          >
             <a
               href="https://www.linkedin.com/company/20529632/"
               target="_blank"
@@ -636,6 +704,7 @@ export function IpoBridgeBankLanding() {
 
       <FloatingWhatsAppButton
         href={whatsappHref}
+        buttonRef={whatsappRef}
         onTrackClick={() => trackWhatsAppClick('floating')}
       />
     </div>
