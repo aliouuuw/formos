@@ -485,18 +485,21 @@ export function IpoBridgeBankLanding() {
               </h2>
             </div>
 
-            <ul className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+            <ul className="mt-16 grid gap-px overflow-hidden rounded-[2rem] border border-everest-green/10 bg-everest-green/10 sm:grid-cols-2">
               {BBG_INVESTMENT_REASONS.map((reason, index) => (
                 <li
                   key={reason}
                   data-reveal
-                  className="ipo-reveal rounded-2xl border border-everest-green/10 bg-white p-6 sm:p-7"
+                  className="ipo-reveal group flex gap-5 bg-white p-6 transition-colors duration-300 sm:gap-6 sm:p-8 lg:hover:bg-[#faf8f4]"
                   style={{ transitionDelay: `${index * 60}ms` }}
                 >
-                  <span className="text-sm font-semibold tracking-[0.18em] text-gold">
+                  <span
+                    aria-hidden
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-gold/35 bg-gold/10 text-xs font-bold tabular-nums tracking-wide text-gold transition-colors duration-300 group-hover:border-gold/55 group-hover:bg-gold/16"
+                  >
                     {String(index + 1).padStart(2, '0')}
                   </span>
-                  <p className="mt-4 text-base font-medium leading-8 text-night-80">{reason}</p>
+                  <p className="pt-2 text-base font-medium leading-8 text-night-80">{reason}</p>
                 </li>
               ))}
             </ul>
@@ -539,18 +542,18 @@ export function IpoBridgeBankLanding() {
                   className="ipo-reveal relative"
                   style={{ transitionDelay: `${index * 80}ms` }}
                 >
-                  <span
-                    aria-hidden
-                    className="pointer-events-none block select-none text-[5.5rem] font-extrabold leading-none tracking-[-0.04em] text-everest-green/8"
-                  >
-                    {item.index}
-                  </span>
-                  <div className="-mt-9 pt-7">
-                    <h3 className="text-xl font-semibold tracking-[-0.02em] text-night-80">
+                  <div className="flex items-center gap-4 lg:block">
+                    <span
+                      aria-hidden
+                      className="pointer-events-none shrink-0 select-none text-4xl font-extrabold leading-none tracking-[-0.04em] text-everest-green/8 sm:text-5xl lg:text-[5.5rem]"
+                    >
+                      {item.index}
+                    </span>
+                    <h3 className="text-xl font-semibold tracking-[-0.02em] text-night-80 lg:mt-4">
                       {item.title}
                     </h3>
-                    <p className="mt-3 text-sm leading-7 text-text-secondary">{item.body}</p>
                   </div>
+                  <p className="mt-3 text-sm leading-7 text-text-secondary">{item.body}</p>
                 </article>
               ))}
             </div>
