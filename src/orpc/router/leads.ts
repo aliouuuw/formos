@@ -1,12 +1,36 @@
 import { ORPCError } from '@orpc/server'
-import { and, desc, eq, inArray, sql } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  isNull,
+  or,
+  sql,
+  type SQL,
+} from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '#/db/index'
-import { forms, leads } from '#/db/schema'
+import { formDefinitionSnapshots, forms, leads, type LeadInsightsJson } from '#/db/schema'
 import { getCampaignById, listCampaigns } from '#/lib/campaigns'
 import { resolveCampaignConfig, resolveCampaignForLead } from '#/lib/campaigns/settings'
 import { leadStatusSchema } from '#/lib/form-types'
+import {
+  CONTACTED_LEAD_SLA_HOURS,
+  escapeCsvCell,
+  investorProfile,
+  LEAD_LIST_SORTS,
+  LEAD_UNASSIGNED,
+  mergeLeadNotes,
+  NEW_LEAD_SLA_HOURS,
+  securitiesAccount,
+} from '#/lib/lead-admin'
+import { LEAD_STATUS_LABELS } from '#/lib/lead-status'
+import { adviserLabel, formatLeadSource } from '#/lib/leads'
 import { authedContext } from '#/orpc/context'
 
 async function userForms(userId: string) {
@@ -27,52 +51,229 @@ function formIdsForCampaign(
     .map((f) => f.id)
 }
 
-export const listLeads = authedContext
-  .input(
-    z.object({
-      formId: z.string().optional(),
-      status: leadStatusSchema.optional(),
-      /** Filter by registry campaign id */
-      campaignId: z.string().optional(),
-      /** @deprecated Prefer campaignId — kept for older clients */
-      campaignOnly: z.boolean().optional(),
-    }),
+const leadListFiltersSchema = z.object({
+  formId: z.string().optional(),
+  status: leadStatusSchema.optional(),
+  /** Filter by registry campaign id */
+  campaignId: z.string().optional(),
+  /** @deprecated Prefer campaignId — kept for older clients */
+  campaignOnly: z.boolean().optional(),
+  /** Agent id, or `__unassigned__` */
+  assignee: z.string().max(64).optional(),
+  /** Free-text search on name / email / phone */
+  q: z.string().max(120).optional(),
+  sort: z.enum(LEAD_LIST_SORTS).optional(),
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(50),
+  /** Only leads breaching SLA (new >24h or contacted >72h) */
+  agedOnly: z.boolean().optional(),
+})
+
+async function resolveScopedFormIds(
+  userId: string,
+  input: {
+    formId?: string
+    campaignId?: string
+    campaignOnly?: boolean
+  },
+): Promise<string[]> {
+  const owned = await userForms(userId)
+  const formIds = owned.map((form) => form.id)
+  if (formIds.length === 0) return []
+
+  if (input.formId && !formIds.includes(input.formId)) {
+    return []
+  }
+
+  let scopedFormIds = formIds
+  const campaignId =
+    input.campaignId ?? (input.campaignOnly ? listCampaigns()[0]?.id : undefined)
+
+  if (campaignId) {
+    const campaignFormIds = formIdsForCampaign(owned, campaignId)
+    if (campaignFormIds.length === 0) return []
+    scopedFormIds = input.formId ? [input.formId] : campaignFormIds
+  } else if (input.formId) {
+    scopedFormIds = [input.formId]
+  }
+
+  return scopedFormIds
+}
+
+/** Per-campaign deadlines via campaign_settings, with global defaults as fallback. */
+function buildAgedOnlyCondition(): SQL {
+  const aged = or(
+    and(
+      eq(leads.status, 'new'),
+      sql`${leads.createdAt} < NOW() - (
+        COALESCE(
+          (SELECT new_lead_deadline_hours FROM campaign_settings WHERE campaign_id = ${leads.campaignId}),
+          ${NEW_LEAD_SLA_HOURS}
+        ) * INTERVAL '1 hour'
+      )`,
+    ),
+    and(
+      eq(leads.status, 'contacted'),
+      sql`${leads.updatedAt} < NOW() - (
+        COALESCE(
+          (SELECT contacted_lead_deadline_hours FROM campaign_settings WHERE campaign_id = ${leads.campaignId}),
+          ${CONTACTED_LEAD_SLA_HOURS}
+        ) * INTERVAL '1 hour'
+      )`,
+    ),
   )
+  return aged!
+}
+
+function buildLeadConditions(
+  scopedFormIds: string[],
+  input: z.infer<typeof leadListFiltersSchema>,
+): SQL[] {
+  const conditions: SQL[] = [inArray(leads.formId, scopedFormIds)]
+
+  if (input.status) {
+    conditions.push(eq(leads.status, input.status))
+  }
+
+  if (input.assignee === LEAD_UNASSIGNED) {
+    conditions.push(isNull(leads.assignee))
+  } else if (input.assignee) {
+    conditions.push(eq(leads.assignee, input.assignee))
+  }
+
+  const q = input.q?.trim()
+  if (q) {
+    const pattern = `%${q.replace(/[%_]/g, '')}%`
+    const search = or(
+      ilike(leads.name, pattern),
+      ilike(leads.email, pattern),
+      ilike(leads.phone, pattern),
+    )
+    if (search) conditions.push(search)
+  }
+
+  if (input.agedOnly) {
+    conditions.push(buildAgedOnlyCondition())
+  }
+
+  return conditions
+}
+
+function leadOrderBy(sort: z.infer<typeof leadListFiltersSchema>['sort']) {
+  switch (sort) {
+    case 'created_asc':
+      return [asc(leads.createdAt)]
+    case 'updated_desc':
+      return [desc(leads.updatedAt)]
+    case 'updated_asc':
+      return [asc(leads.updatedAt)]
+    case 'created_desc':
+    default:
+      return [desc(leads.createdAt)]
+  }
+}
+
+const leadWithForm = {
+  form: { columns: { id: true, title: true, slug: true, campaignId: true } },
+} as const
+
+export const listLeads = authedContext
+  .input(leadListFiltersSchema)
   .handler(async ({ context, input }) => {
-    const owned = await userForms(context.user.id)
-    const formIds = owned.map((form) => form.id)
-    if (formIds.length === 0) return []
-
-    if (input.formId && !formIds.includes(input.formId)) {
-      return []
+    const scopedFormIds = await resolveScopedFormIds(context.user.id, input)
+    if (scopedFormIds.length === 0) {
+      return {
+        items: [],
+        total: 0,
+        page: input.page,
+        pageSize: input.pageSize,
+        hasMore: false,
+      }
     }
 
-    let scopedFormIds = formIds
-    const campaignId =
-      input.campaignId ??
-      (input.campaignOnly ? listCampaigns()[0]?.id : undefined)
+    const conditions = buildLeadConditions(scopedFormIds, input)
+    const where = and(...conditions)
+    const offset = (input.page - 1) * input.pageSize
 
-    if (campaignId) {
-      const campaignFormIds = formIdsForCampaign(owned, campaignId)
-      if (campaignFormIds.length === 0) return []
-      scopedFormIds = input.formId ? [input.formId] : campaignFormIds
-    } else if (input.formId) {
-      scopedFormIds = [input.formId]
+    const [totalRow] = await db.select({ value: count() }).from(leads).where(where)
+    const total = totalRow?.value ?? 0
+
+    const items = await db.query.leads.findMany({
+      where,
+      orderBy: leadOrderBy(input.sort),
+      limit: input.pageSize,
+      offset,
+      with: leadWithForm,
+    })
+
+    return {
+      items,
+      total,
+      page: input.page,
+      pageSize: input.pageSize,
+      hasMore: offset + items.length < total,
     }
+  })
 
-    const conditions = [
-      inArray(leads.formId, scopedFormIds),
-      ...(input.status ? [eq(leads.status, input.status)] : []),
-    ]
-
-    return db.query.leads.findMany({
-      where: and(...conditions),
-      orderBy: [desc(leads.createdAt)],
-      limit: 200,
+export const getLead = authedContext
+  .input(z.object({ id: z.string() }))
+  .handler(async ({ context, input }) => {
+    const lead = await db.query.leads.findFirst({
+      where: eq(leads.id, input.id),
       with: {
-        form: { columns: { id: true, title: true, slug: true, campaignId: true } },
+        form: {
+          columns: {
+            id: true,
+            title: true,
+            slug: true,
+            campaignId: true,
+            createdBy: true,
+            definition: true,
+            version: true,
+          },
+        },
+        submission: {
+          columns: {
+            id: true,
+            answers: true,
+            formVersion: true,
+            createdAt: true,
+            metadata: true,
+          },
+        },
       },
     })
+
+    if (!lead || lead.form.createdBy !== context.user.id) {
+      throw new ORPCError('NOT_FOUND', { message: 'Lead not found' })
+    }
+
+    const snapshot = await db.query.formDefinitionSnapshots.findFirst({
+      where: and(
+        eq(formDefinitionSnapshots.formId, lead.formId),
+        eq(formDefinitionSnapshots.version, lead.submission.formVersion),
+      ),
+    })
+
+    const definition = snapshot?.definition ?? lead.form.definition
+    const fields = definition.pages.flatMap((page) =>
+      page.fields.map((field) => ({
+        id: field.id,
+        label: field.label,
+        type: field.type,
+        leadRole: field.leadRole,
+        pageTitle: page.title,
+      })),
+    )
+
+    const { createdBy: _createdBy, definition: _definition, ...formPublic } = lead.form
+
+    return {
+      ...lead,
+      form: formPublic,
+      fields,
+      answers: lead.submission.answers as Record<string, string>,
+    }
   })
 
 export const getLeadStats = authedContext
@@ -87,8 +288,7 @@ export const getLeadStats = authedContext
     let formIds = owned.map((f) => f.id)
 
     const campaignId =
-      input.campaignId ??
-      (input.campaignOnly ? listCampaigns()[0]?.id : undefined)
+      input.campaignId ?? (input.campaignOnly ? listCampaigns()[0]?.id : undefined)
 
     const campaign = campaignId ? await resolveCampaignConfig(campaignId) : undefined
 
@@ -105,6 +305,8 @@ export const getLeadStats = authedContext
         conversionRate: 0,
         converted: 0,
         subscribed: 0,
+        unassigned: 0,
+        aged: 0,
       }
     }
 
@@ -139,6 +341,14 @@ export const getLeadStats = authedContext
     }
     const conversionRate = total > 0 ? Math.round((converted / total) * 1000) / 10 : 0
 
+    const [unassignedRow] = await db
+      .select({ value: count() })
+      .from(leads)
+      .where(and(inArray(leads.formId, formIds), isNull(leads.assignee)))
+
+    const agedWhere = and(inArray(leads.formId, formIds), buildAgedOnlyCondition())
+    const [agedRow] = await db.select({ value: count() }).from(leads).where(agedWhere)
+
     return {
       total,
       byStatus,
@@ -147,6 +357,8 @@ export const getLeadStats = authedContext
       conversionRate,
       converted,
       subscribed: converted,
+      unassigned: unassignedRow?.value ?? 0,
+      aged: agedRow?.value ?? 0,
     }
   })
 
@@ -222,6 +434,131 @@ export const updateLeadAssignee = authedContext
     return updated
   })
 
+export const updateLeadNotes = authedContext
+  .input(
+    z.object({
+      id: z.string(),
+      notes: z.string().max(4000),
+    }),
+  )
+  .handler(async ({ context, input }) => {
+    const lead = await db.query.leads.findFirst({
+      where: eq(leads.id, input.id),
+      with: { form: true },
+    })
+
+    if (!lead || lead.form.createdBy !== context.user.id) {
+      throw new ORPCError('NOT_FOUND', { message: 'Lead not found' })
+    }
+
+    const insights = mergeLeadNotes(
+      lead.insights as LeadInsightsJson | null,
+      input.notes,
+    ) as LeadInsightsJson
+
+    const [updated] = await db
+      .update(leads)
+      .set({
+        insights,
+        updatedAt: new Date(),
+      })
+      .where(eq(leads.id, input.id))
+      .returning()
+
+    return updated
+  })
+
+export const exportLeadsCsv = authedContext
+  .input(
+    leadListFiltersSchema.omit({ page: true, pageSize: true }).extend({
+      /** Soft cap to avoid huge payloads */
+      limit: z.number().int().min(1).max(5000).default(2000),
+    }),
+  )
+  .handler(async ({ context, input }) => {
+    const scopedFormIds = await resolveScopedFormIds(context.user.id, input)
+    if (scopedFormIds.length === 0) {
+      return { csv: '', count: 0 }
+    }
+
+    const conditions = buildLeadConditions(scopedFormIds, {
+      ...input,
+      page: 1,
+      pageSize: input.limit,
+    })
+
+    const rows = await db.query.leads.findMany({
+      where: and(...conditions),
+      orderBy: leadOrderBy(input.sort),
+      limit: input.limit,
+      with: leadWithForm,
+    })
+
+    const header = [
+      'lead_id',
+      'created_at',
+      'updated_at',
+      'status',
+      'name',
+      'email',
+      'phone',
+      'amount_range',
+      'preferred_channel',
+      'investor_profile',
+      'securities_account',
+      'city',
+      'company',
+      'assignee',
+      'intent',
+      'utm_source',
+      'utm_medium',
+      'utm_campaign',
+      'form_title',
+      'form_slug',
+      'campaign_id',
+      'notes',
+    ]
+
+    const lines = rows.map((row) => {
+      const insights = row.insights as LeadInsightsJson | null
+      const campaign = getCampaignById(row.campaignId ?? row.form?.campaignId ?? '')
+      return [
+        escapeCsvCell(row.id),
+        escapeCsvCell(row.createdAt.toISOString()),
+        escapeCsvCell(row.updatedAt.toISOString()),
+        escapeCsvCell(LEAD_STATUS_LABELS[row.status as keyof typeof LEAD_STATUS_LABELS] ?? row.status),
+        escapeCsvCell(row.name ?? ''),
+        escapeCsvCell(row.email ?? ''),
+        escapeCsvCell(row.phone ?? ''),
+        escapeCsvCell(row.amountRange ?? ''),
+        escapeCsvCell(row.preferredChannel ?? ''),
+        escapeCsvCell(investorProfile(insights) ?? ''),
+        escapeCsvCell(securitiesAccount(insights) ?? ''),
+        escapeCsvCell(insights?.city ?? ''),
+        escapeCsvCell(insights?.company ?? ''),
+        escapeCsvCell(
+          adviserLabel(row.assignee, {
+            campaignId: row.campaignId ?? row.form?.campaignId,
+            formSlug: row.form?.slug,
+          }),
+        ),
+        escapeCsvCell(row.intent ?? ''),
+        escapeCsvCell(formatLeadSource(row.utmSource, campaign)),
+        escapeCsvCell(row.utmMedium ?? ''),
+        escapeCsvCell(row.utmCampaign ?? ''),
+        escapeCsvCell(row.form?.title ?? ''),
+        escapeCsvCell(row.form?.slug ?? ''),
+        escapeCsvCell(row.campaignId ?? row.form?.campaignId ?? ''),
+        escapeCsvCell(insights?.notes ?? ''),
+      ].join(',')
+    })
+
+    return {
+      csv: [header.map(escapeCsvCell).join(','), ...lines].join('\n'),
+      count: rows.length,
+    }
+  })
+
 export const getLeadInsightsSummary = authedContext
   .input(z.object({ campaignId: z.string().optional() }))
   .handler(async ({ context, input }) => {
@@ -231,7 +568,7 @@ export const getLeadInsightsSummary = authedContext
       formIds = formIdsForCampaign(owned, input.campaignId)
     }
     if (formIds.length === 0) {
-      return { amountBuckets: {}, channels: {}, agents: {}, unassigned: 0 }
+      return { amountBuckets: {}, channels: {}, agents: {}, unassigned: 0, profiles: {}, accounts: {} }
     }
 
     const rows = await db.query.leads.findMany({
@@ -240,6 +577,7 @@ export const getLeadInsightsSummary = authedContext
         amountRange: true,
         preferredChannel: true,
         assignee: true,
+        insights: true,
       },
       limit: 2000,
     })
@@ -247,6 +585,8 @@ export const getLeadInsightsSummary = authedContext
     const amountBuckets: Record<string, number> = {}
     const channels: Record<string, number> = {}
     const agents: Record<string, number> = {}
+    const profiles: Record<string, number> = {}
+    const accounts: Record<string, number> = {}
     let unassigned = 0
 
     for (const row of rows) {
@@ -261,7 +601,12 @@ export const getLeadInsightsSummary = authedContext
       } else {
         unassigned += 1
       }
+      const insights = row.insights as LeadInsightsJson | null
+      const profile = investorProfile(insights)
+      const account = securitiesAccount(insights)
+      if (profile) profiles[profile] = (profiles[profile] ?? 0) + 1
+      if (account) accounts[account] = (accounts[account] ?? 0) + 1
     }
 
-    return { amountBuckets, channels, agents, unassigned }
+    return { amountBuckets, channels, agents, unassigned, profiles, accounts }
   })

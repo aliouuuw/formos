@@ -43,6 +43,13 @@
       "when": 1784027584267,
       "tag": "0005_careful_garia",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784044473291,
+      "tag": "0006_easy_la_nuit",
+      "breakpoints": true
     }
   ]
 }

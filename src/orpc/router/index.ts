@@ -13,6 +13,8 @@ export default {
     update: forms.updateForm,
     publish: forms.publishForm,
     archive: forms.archiveForm,
+    restore: forms.restoreForm,
+    delete: forms.deleteForm,
     stats: forms.getFormStats,
   },
   submissions: {
@@ -27,10 +29,13 @@ export default {
   },
   leads: {
     list: leads.listLeads,
+    get: leads.getLead,
     stats: leads.getLeadStats,
     insights: leads.getLeadInsightsSummary,
     updateStatus: leads.updateLeadStatus,
     updateAssignee: leads.updateLeadAssignee,
+    updateNotes: leads.updateLeadNotes,
+    exportCsv: leads.exportLeadsCsv,
   },
   campaigns: {
     list: campaigns.listCampaignConfigs,

@@ -177,6 +177,10 @@ export const campaignSettings = pgTable('campaign_settings', {
   campaignId: text('campaign_id').primaryKey(),
   agents: jsonb('agents').$type<CampaignAgent[]>().notNull().default([]),
   whatsappNumber: text('whatsapp_number'),
+  /** Hours before a « new » lead is flagged as overdue (first contact) */
+  newLeadDeadlineHours: integer('new_lead_deadline_hours').notNull().default(24),
+  /** Hours before a « contacted » lead is flagged as overdue (follow-up) */
+  contactedLeadDeadlineHours: integer('contacted_lead_deadline_hours').notNull().default(72),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   updatedBy: text('updated_by').references(() => user.id, { onDelete: 'set null' }),
 })

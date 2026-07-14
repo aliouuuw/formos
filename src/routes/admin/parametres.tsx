@@ -10,7 +10,7 @@ import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { Panel, PanelBody, PanelHeader } from '#/components/ui/panel'
 import { slugifyAgent } from '#/lib/campaigns/agents'
-import { cn } from '#/lib/utils'
+import { leadAgingRules } from '#/lib/lead-admin'
 import { orpc } from '#/orpc/client'
 
 export const Route = createFileRoute('/admin/parametres')({
@@ -36,6 +36,8 @@ function ParametresPage() {
 
   const [agents, setAgents] = useState<AgentRow[]>([])
   const [whatsapp, setWhatsapp] = useState('')
+  const [newLeadDeadlineHours, setNewLeadDeadlineHours] = useState('24')
+  const [contactedLeadDeadlineHours, setContactedLeadDeadlineHours] = useState('72')
 
   useEffect(() => {
     if (!settingsQuery.data) return
@@ -45,6 +47,8 @@ function ParametresPage() {
         : [{ id: '', label: '' }],
     )
     setWhatsapp(settingsQuery.data.whatsappNumber ?? '')
+    setNewLeadDeadlineHours(String(settingsQuery.data.newLeadDeadlineHours))
+    setContactedLeadDeadlineHours(String(settingsQuery.data.contactedLeadDeadlineHours))
   }, [settingsQuery.data])
 
   const saveMutation = useMutation(
@@ -53,6 +57,7 @@ function ParametresPage() {
         await queryClient.invalidateQueries({ queryKey: orpc.campaigns.list.key() })
         await queryClient.invalidateQueries({ queryKey: orpc.campaigns.getSettings.key() })
         await queryClient.invalidateQueries({ queryKey: orpc.leads.list.key() })
+        await queryClient.invalidateQueries({ queryKey: orpc.leads.stats.key() })
         toast.success('Paramètres enregistrés')
       },
       onError: (err) => {
@@ -88,6 +93,16 @@ function ParametresPage() {
       toast.error('WhatsApp : 8 à 15 chiffres, format international sans +')
       return
     }
+    const newHours = Number.parseInt(newLeadDeadlineHours, 10)
+    const contactedHours = Number.parseInt(contactedLeadDeadlineHours, 10)
+    if (!Number.isFinite(newHours) || newHours < 1 || newHours > 720) {
+      toast.error('Premier contact : saisissez un délai entre 1 et 720 heures')
+      return
+    }
+    if (!Number.isFinite(contactedHours) || contactedHours < 1 || contactedHours > 720) {
+      toast.error('Relance : saisissez un délai entre 1 et 720 heures')
+      return
+    }
     saveMutation.mutate({
       campaignId: selectedId,
       agents: cleaned.map((a) => ({
@@ -95,6 +110,8 @@ function ParametresPage() {
         label: a.label.trim(),
       })),
       whatsappNumber: whatsapp.trim() || null,
+      newLeadDeadlineHours: newHours,
+      contactedLeadDeadlineHours: contactedHours,
     })
   }
 
@@ -103,10 +120,10 @@ function ParametresPage() {
       <PageHeader
         kicker="Administration"
         title="Paramètres"
-        description="Agents, WhatsApp et données opérationnelles par campagne."
+        description="Agents, délais de relance, WhatsApp et données opérationnelles par campagne."
         actions={
           <Link to="/admin/campaigns">
-            <Button variant="outline" size="sm">
+            <Button variant="everest" size="sm">
               Voir les campagnes
             </Button>
           </Link>
@@ -119,7 +136,7 @@ function ParametresPage() {
             <Button
               key={c.id}
               size="sm"
-              variant={selectedId === c.id ? 'mauve' : 'ghost'}
+              variant={selectedId === c.id ? 'mauve' : 'secondary'}
               onClick={() => setActiveId(c.id)}
             >
               {c.shortName}
@@ -139,8 +156,8 @@ function ParametresPage() {
               {settingsQuery.data.campaignName}
             </h2>
             <p className="mt-1 text-sm text-text-secondary">
-              Ces valeurs sont utilisées dans le pipeline leads, les assignations et les liens
-              WhatsApp publics.
+              Ces valeurs sont utilisées dans le pipeline leads, les assignations, les alertes «
+              Délais dépassés » et les liens WhatsApp publics.
             </p>
           </PanelHeader>
           <PanelBody className="space-y-10">
@@ -180,10 +197,67 @@ function ParametresPage() {
                   </li>
                 ))}
               </ul>
-              <Button type="button" variant="outline" size="sm" onClick={addAgent}>
+              <Button type="button" variant="everest" size="sm" onClick={addAgent}>
                 <Plus size={16} className="mr-1.5" />
                 Ajouter un agent
               </Button>
+            </section>
+
+            <section className="space-y-4 border-t border-mauve/10 pt-8">
+              <div>
+                <h3 className="text-sm font-semibold text-night-80">Délais de relance</h3>
+                <p className="mt-1 text-sm text-text-secondary">
+                  Définit quand un lead apparaît comme « Délais dépassés » dans le pipeline. Les
+                  heures sont comptées depuis la création (statut Nouveau) ou la dernière mise à
+                  jour (statut Contacté).
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="new-deadline" className="text-xs text-text-label">
+                    Premier contact (Nouveau)
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="new-deadline"
+                      inputMode="numeric"
+                      value={newLeadDeadlineHours}
+                      onChange={(e) => setNewLeadDeadlineHours(e.target.value.replace(/\D/g, ''))}
+                      className="max-w-[6rem]"
+                    />
+                    <span className="text-sm text-text-secondary">heures</span>
+                  </div>
+                  <p className="text-xs text-text-secondary">
+                    {leadAgingRules({
+                      newLeadHours: Number(newLeadDeadlineHours) || 24,
+                      contactedLeadHours: Number(contactedLeadDeadlineHours) || 72,
+                    }).new.description}
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="contacted-deadline" className="text-xs text-text-label">
+                    Relance (Contacté)
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="contacted-deadline"
+                      inputMode="numeric"
+                      value={contactedLeadDeadlineHours}
+                      onChange={(e) =>
+                        setContactedLeadDeadlineHours(e.target.value.replace(/\D/g, ''))
+                      }
+                      className="max-w-[6rem]"
+                    />
+                    <span className="text-sm text-text-secondary">heures</span>
+                  </div>
+                  <p className="text-xs text-text-secondary">
+                    {leadAgingRules({
+                      newLeadHours: Number(newLeadDeadlineHours) || 24,
+                      contactedLeadHours: Number(contactedLeadDeadlineHours) || 72,
+                    }).contacted.description}
+                  </p>
+                </div>
+              </div>
             </section>
 
             <section className="space-y-4 border-t border-mauve/10 pt-8">

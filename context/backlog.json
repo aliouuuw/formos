@@ -152,37 +152,37 @@
     {
       "id": "lead-detail-notes",
       "title": "Lead detail view + notes + full answers",
-      "status": "todo",
+      "status": "done",
       "priority": "high",
-      "notes": "Assignment already exists. Still missing: detail drawer/page, editable notes, linked submission answers, activity on status/assignee. Surface IPO extras (investor_profile, securities_account). See docs/admin-leads-roadmap.md § Tier 1."
+      "notes": "Done 2026-07-14 — LeadDetailPanel with answers, notes (insights.notes), status/assignee, click-to-contact. See docs/admin-leads-roadmap.md."
     },
     {
       "id": "lead-csv-export",
       "title": "Lead CSV / Excel export",
-      "status": "todo",
+      "status": "done",
       "priority": "high",
-      "notes": "Filtered export (campaign, status, date, assignee) with contact, amount, profile, compte titres, channel, city, UTMs, status, agent, createdAt. IPO day-to-day critical."
+      "notes": "Done 2026-07-14 — orpc.leads.exportCsv respects list filters; Admin Export CSV button."
     },
     {
       "id": "lead-list-query",
       "title": "Lead list: server filters, search, sort, pagination",
-      "status": "todo",
+      "status": "done",
       "priority": "high",
-      "notes": "Replace client filter on 200-row cap. Server: status, assignee, intent, amount, channel, source, date range, form, q(name/email/phone). Sort + cursor/page pagination."
+      "notes": "Done 2026-07-14 — list returns {items,total,page,pageSize,hasMore}; filters: status, assignee, q, sort, agedOnly."
     },
     {
       "id": "lead-ipo-fields-ui",
       "title": "Surface IPO classification fields in leads UI",
-      "status": "todo",
+      "status": "done",
       "priority": "high",
-      "notes": "investor_profile + securities_account live in insights.extras but are not shown as badges/columns. Needed for prioritization (diaspora / institutional / no-account)."
+      "notes": "Done 2026-07-14 — profil + compte titres badges/columns + insights panels."
     },
     {
       "id": "lead-work-queue",
       "title": "My leads / unassigned work queue + aging",
-      "status": "todo",
+      "status": "done",
       "priority": "high",
-      "notes": "Filter by assignee + Non assigné. Highlight SLA breaches (new >24h, contacted >72h) matching the 24h callback promise."
+      "notes": "Done 2026-07-14 — unassigned filter, SLA file (new>24h / contacted>72h), stat cards + badges. Agent-scoped 'my leads' still needs RBAC (lead-rbac)."
     },
     {
       "id": "lead-bulk-actions",
@@ -222,9 +222,9 @@
     {
       "id": "lead-click-to-contact",
       "title": "Click-to-contact from preferred channel",
-      "status": "todo",
+      "status": "done",
       "priority": "medium",
-      "notes": "One-click wa.me / tel: / mailto: from preferredChannel; log touch event."
+      "notes": "Done 2026-07-14 — WhatsApp / tel / mailto links in lead detail panel. Touch event logging still open."
     },
     {
       "id": "lead-round-robin",

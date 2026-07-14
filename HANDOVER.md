@@ -151,14 +151,17 @@ See `src/db/schema.ts` for full schema and relations.
 - `getByForm({ formId })` — funnel + field events
 
 ### Leads (`orpc.leads.*`)
-- `list({ formId?, status?, campaignId? })` — leads for owned forms (limit 200, newest first)
-- `stats({ campaignId? })` — totals, by status / intent / source, conversion rate
-- `insights({ campaignId? })` — amount buckets, preferred channels, agent load
+- `list({ formId?, status?, campaignId?, assignee?, q?, sort?, page?, pageSize?, agedOnly? })` — paginated `{ items, total, page, pageSize, hasMore }`
+- `get({ id })` — lead + submission answers + field labels
+- `stats({ campaignId? })` — totals, by status / intent / source, conversion, unassigned, aged
+- `insights({ campaignId? })` — amount buckets, channels, agents, profiles, accounts
 - `updateStatus({ id, status })`
 - `updateAssignee({ id, assignee })`
+- `updateNotes({ id, notes })` — stores in `insights.notes`
+- `exportCsv({ …filters })` — filtered CSV string
 
-Admin UI: `/admin/leads` (campaign chips, client status filter, inline status + assignee).  
-Roadmap for export, search, detail/notes, SLA queue, webhooks: [`docs/admin-leads-roadmap.md`](docs/admin-leads-roadmap.md).
+Admin UI: `/admin/leads` (filters, search, SLA queue, CSV export, detail drawer).  
+Roadmap: [`docs/admin-leads-roadmap.md`](docs/admin-leads-roadmap.md).
 
 ---
 
@@ -222,17 +225,15 @@ See `context/backlog.json` for the full list and [`docs/admin-leads-roadmap.md`]
 
 | ID | Title | Priority | Notes |
 |----|-------|----------|-------|
-| `lead-csv-export` | Lead CSV export | high | Filtered export for campaign ops (submissions CSV already exists). |
-| `lead-list-query` | Lead search / filters / pagination | high | Replace 200-row client filter with server query. |
-| `lead-detail-notes` | Lead detail + notes | high | Assignment exists; still need detail, notes, full answers. |
-| `lead-ipo-fields-ui` | Show IPO profil / compte titres | high | Extras stored but not visible in list. |
-| `lead-work-queue` | Unassigned + aging queue | high | SLA vs 24h callback promise. |
 | `crm-webhooks` | Slack / email on new lead | high | Inngest notify; later CRM sync. |
+| `lead-bulk-actions` | Bulk assign / status | medium | Multi-select on leads list. |
 | `spam-honeypot` | Spam / bot protection | medium | Honeypot + rate-limit hardening. |
 | `partial-submissions` | Partial submissions | medium | Abandon → warm recovery queue. |
 | `embed-mode` | Embeddable forms | medium | iframe / script embed for landing pages. |
 | `conditional-logic` | Conditional field logic | medium | Show/hide fields based on answers. |
 | `gdpr-consent` | Retention / export / delete | low | Public consent omitted on IPO form; retention still needed. |
+
+Shipped (2026-07-14): `lead-csv-export`, `lead-list-query`, `lead-detail-notes`, `lead-ipo-fields-ui`, `lead-work-queue`, `lead-click-to-contact`.
 
 ---
 

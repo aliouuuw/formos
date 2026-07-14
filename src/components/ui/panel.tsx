@@ -2,7 +2,7 @@ import * as React from 'react'
 
 import { cn } from '#/lib/utils'
 
-/** Clean card container */
+/** Admin / product surface — soft green hairline + green-tinted lift (Everest Summit) */
 export function Panel({
   className,
   innerClassName,
@@ -12,7 +12,7 @@ export function Panel({
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-2xl border border-border-subtle bg-white shadow-[0_1px_2px_rgba(28,20,29,0.03),0_8px_24px_rgba(28,20,29,0.04)]',
+        'overflow-hidden rounded-2xl border border-everest-green/10 bg-card text-card-foreground shadow-[0_8px_24px_rgba(1,45,42,0.06)]',
         className,
       )}
       {...props}
@@ -28,7 +28,7 @@ export function PanelHeader({
 }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('border-b border-border-subtle px-6 py-5 sm:px-8', className)}
+      className={cn('border-b border-everest-green/10 px-6 py-5 sm:px-8', className)}
       {...props}
     />
   )

@@ -1,0 +1,2 @@
+ALTER TABLE "campaign_settings" ADD COLUMN "new_lead_deadline_hours" integer DEFAULT 24 NOT NULL;--> statement-breakpoint
+ALTER TABLE "campaign_settings" ADD COLUMN "contacted_lead_deadline_hours" integer DEFAULT 72 NOT NULL;

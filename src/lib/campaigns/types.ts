@@ -47,6 +47,10 @@ export type CampaignConfig = {
   sourceLabels: Record<string, string>
   /** Optional WhatsApp E.164 without + */
   whatsappNumber?: string
+  /** Overdue threshold for « new » leads (hours since creation) */
+  newLeadDeadlineHours: number
+  /** Overdue threshold for « contacted » leads (hours since last update) */
+  contactedLeadDeadlineHours: number
 }
 
 export type LeadInsights = {

@@ -7,6 +7,9 @@ import { parseAgentNames, slugifyAgent } from '#/lib/campaigns/agents'
 import { BRIDGE_BANK_IPO_CAMPAIGN_ID } from '#/lib/campaigns/bridge-bank-ipo'
 import { DEFAULT_CAMPAIGN_AGENTS } from '#/lib/campaigns/settings-types'
 import type { CampaignAgent, CampaignConfig } from '#/lib/campaigns/types'
+import {
+  resolveLeadDeadlines,
+} from '#/lib/lead-admin'
 
 function defaultAgentsFor(campaignId: string): CampaignAgent[] {
   const base = getCampaignById(campaignId)
@@ -39,11 +42,14 @@ export async function resolveCampaignConfig(campaignId: string): Promise<Campaig
   const agents =
     stored && stored.agents.length > 0 ? stored.agents : defaultAgentsFor(campaignId)
   const whatsappNumber = stored?.whatsappNumber ?? defaultWhatsappFor(campaignId) ?? undefined
+  const deadlines = resolveLeadDeadlines(stored)
 
   return {
     ...base,
     agents,
     whatsappNumber: whatsappNumber ?? undefined,
+    newLeadDeadlineHours: deadlines.newLeadHours,
+    contactedLeadDeadlineHours: deadlines.contactedLeadHours,
   }
 }
 
@@ -82,6 +88,8 @@ export async function saveCampaignSettings(input: {
   campaignId: string
   agents: CampaignAgent[]
   whatsappNumber: string | null
+  newLeadDeadlineHours: number
+  contactedLeadDeadlineHours: number
   updatedBy: string
 }) {
   const base = getCampaignById(input.campaignId)
@@ -89,6 +97,8 @@ export async function saveCampaignSettings(input: {
 
   const agents = input.agents.filter((a) => a.label.trim())
   const whatsapp = input.whatsappNumber?.trim() || null
+  const newLeadDeadlineHours = input.newLeadDeadlineHours
+  const contactedLeadDeadlineHours = input.contactedLeadDeadlineHours
 
   const existing = await getStoredCampaignSettings(input.campaignId)
   if (existing) {
@@ -97,6 +107,8 @@ export async function saveCampaignSettings(input: {
       .set({
         agents,
         whatsappNumber: whatsapp,
+        newLeadDeadlineHours,
+        contactedLeadDeadlineHours,
         updatedAt: new Date(),
         updatedBy: input.updatedBy,
       })
@@ -106,6 +118,8 @@ export async function saveCampaignSettings(input: {
       campaignId: input.campaignId,
       agents,
       whatsappNumber: whatsapp,
+      newLeadDeadlineHours,
+      contactedLeadDeadlineHours,
       updatedBy: input.updatedBy,
     })
   }

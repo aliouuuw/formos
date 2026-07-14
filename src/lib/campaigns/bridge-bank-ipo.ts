@@ -1,5 +1,9 @@
 import { parseAgentNames } from '#/lib/campaigns/agents'
-import { DEFAULT_CAMPAIGN_AGENTS } from '#/lib/campaigns/settings-types'
+import {
+  DEFAULT_CAMPAIGN_AGENTS,
+  DEFAULT_CONTACTED_LEAD_DEADLINE_HOURS,
+  DEFAULT_NEW_LEAD_DEADLINE_HOURS,
+} from '#/lib/campaigns/settings-types'
 import type { CampaignConfig } from '#/lib/campaigns/types'
 
 export const BRIDGE_BANK_IPO_CAMPAIGN_ID = 'bridge-bank-ipo' as const
@@ -28,4 +32,6 @@ export const bridgeBankIpoCampaign: CampaignConfig = {
     email: 'Email clients',
     'everest-site': 'Site Everest',
   },
+  newLeadDeadlineHours: DEFAULT_NEW_LEAD_DEADLINE_HOURS,
+  contactedLeadDeadlineHours: DEFAULT_CONTACTED_LEAD_DEADLINE_HOURS,
 }

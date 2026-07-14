@@ -113,7 +113,9 @@
   --line: var(--command-border);
   --header-bg: var(--summit-glass-strong);
 
-  /* shadcn / Tailwind theme bridge */
+  /* Admin product UI: shadcn semantic tokens map to Everest Summit (see DESIGN.md)
+   * Restrained strategy — green owns structure/selection; gold ≤10% action/live;
+   * mauve is sparse warning/heritage only. Neutrals stay warm (ivory), never cool gray. */
   --background: var(--summit-ivory);
   --foreground: var(--night);
   --card: var(--pure-white);
@@ -124,13 +126,13 @@
   --primary-foreground: var(--pure-white);
   --secondary: var(--everest-green-05);
   --secondary-foreground: var(--everest-green);
-  --muted: var(--command-surface);
-  --muted-foreground: var(--night-60);
+  --muted: var(--summit-fog);
+  --muted-foreground: var(--text-secondary);
   --accent: var(--everest-green-05);
   --accent-foreground: var(--everest-green);
   --destructive: #b42318;
   --destructive-foreground: var(--pure-white);
-  --border: var(--command-border);
+  --border: rgba(1, 45, 42, 0.1);
   --input: var(--everest-green-15);
   --ring: var(--everest-green-30);
   --radius: var(--radius-card);
@@ -143,9 +145,9 @@
   --sidebar-foreground: var(--night);
   --sidebar-primary: var(--everest-green);
   --sidebar-primary-foreground: var(--pure-white);
-  --sidebar-accent: var(--command-surface);
+  --sidebar-accent: var(--everest-green-05);
   --sidebar-accent-foreground: var(--everest-green);
-  --sidebar-border: var(--command-border);
+  --sidebar-border: rgba(1, 45, 42, 0.1);
   --sidebar-ring: var(--jaune-or-20);
 }
 

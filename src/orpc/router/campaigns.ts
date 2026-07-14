@@ -14,12 +14,15 @@ import {
   resolveCampaignConfig,
   saveCampaignSettings,
 } from '#/lib/campaigns/settings'
+import { resolveLeadDeadlines } from '#/lib/lead-admin'
 import { authedContext, publicContext } from '#/orpc/context'
 
 const agentSchema = z.object({
   id: z.string().max(64),
   label: z.string().min(1).max(120),
 })
+
+const deadlineHoursSchema = z.number().int().min(1).max(720)
 
 const settingsInputSchema = z.object({
   campaignId: z.string().min(1),
@@ -30,6 +33,8 @@ const settingsInputSchema = z.object({
     .regex(/^\d*$/, 'Numéro WhatsApp : chiffres uniquement (E.164 sans +)')
     .nullable()
     .optional(),
+  newLeadDeadlineHours: deadlineHoursSchema.optional(),
+  contactedLeadDeadlineHours: deadlineHoursSchema.optional(),
 })
 
 function toApiCampaign(campaign: NonNullable<Awaited<ReturnType<typeof resolveCampaignConfig>>>) {
@@ -48,6 +53,8 @@ function toApiCampaign(campaign: NonNullable<Awaited<ReturnType<typeof resolveCa
     whatsappNumber: campaign.whatsappNumber ?? null,
     whatsappConfigured: Boolean(campaign.whatsappNumber),
     whatsappUrl: campaignWhatsAppUrl(campaign.whatsappNumber),
+    newLeadDeadlineHours: campaign.newLeadDeadlineHours,
+    contactedLeadDeadlineHours: campaign.contactedLeadDeadlineHours,
   }
 }
 
@@ -74,12 +81,15 @@ export const getCampaignSettings = authedContext
 
     const resolved = await resolveCampaignConfig(input.campaignId)
     const stored = await getStoredCampaignSettings(input.campaignId)
+    const deadlines = resolveLeadDeadlines(stored)
 
     return {
       campaignId: input.campaignId,
       campaignName: base.name,
       agents: resolved?.agents ?? [],
       whatsappNumber: resolved?.whatsappNumber ?? '',
+      newLeadDeadlineHours: deadlines.newLeadHours,
+      contactedLeadDeadlineHours: deadlines.contactedLeadHours,
       updatedAt: stored?.updatedAt ?? null,
       hasCustomSettings: Boolean(stored),
     }
@@ -99,10 +109,16 @@ export const updateCampaignSettings = authedContext
           }))
         : normalizeAgentsFromLabels([])
 
+    const stored = await getStoredCampaignSettings(input.campaignId)
+    const currentDeadlines = resolveLeadDeadlines(stored)
+
     const campaign = await saveCampaignSettings({
       campaignId: input.campaignId,
       agents,
       whatsappNumber: input.whatsappNumber ?? null,
+      newLeadDeadlineHours: input.newLeadDeadlineHours ?? currentDeadlines.newLeadHours,
+      contactedLeadDeadlineHours:
+        input.contactedLeadDeadlineHours ?? currentDeadlines.contactedLeadHours,
       updatedBy: context.user.id,
     })
 

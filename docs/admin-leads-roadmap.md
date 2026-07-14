@@ -14,36 +14,38 @@ This document captures how Everest staff should manage IPO (and future campaign)
 | Campaign scoping (IPO / all forms) | Done |
 | Status pipeline (`new` → `contacted` → `rdv` → `souscrit` → `qualified` → `won` → `lost`) | Done |
 | Agent assignment (from campaign settings) | Done |
-| Aggregate stats + insights (amount, channel, agents) | Done |
+| Aggregate stats + insights (amount, channel, agents, profil, compte titres) | Done |
 | UTM source display | Done |
 | Extracted contact + amount + preferred channel | Done |
-| City / company in `insights` | Done (partial UI) |
-| IPO extras (`investor_profile`, `securities_account`) | Stored in `insights.extras`, **not shown** in list |
-| Lead list limit | Hard-capped at **200**, newest first |
-| Status filter | Client-side only (API supports status; UI does not pass it) |
-| Lead CSV export | Missing (CSV exists for **submissions** only) |
-| Lead detail / notes UI | Missing |
-| Search / sort / pagination | Missing |
+| City / company in `insights` | Done |
+| IPO extras (`investor_profile`, `securities_account`) | Done — badges, columns, insights panels |
+| Lead list query | Done — server filters, search, sort, pagination (50/page) |
+| Lead CSV export | Done — respects current filters |
+| Lead detail / notes UI | Done — drawer with answers + notes |
+| Unassigned + SLA aging queue | Done — filters + badges (`new` >24h, `contacted` >72h) |
+| Click-to-contact | Done in detail panel (logging still open) |
 | Activity history / audit trail | Missing |
 | Duplicate detection | Missing |
 | Slack / CRM push on new lead | Missing (`crm-webhooks`) |
+| Bulk actions | Missing |
+| RBAC / “my leads” per agent user | Missing (`lead-rbac`) |
 
 Primary UI: `/admin/leads`  
-API: `orpc.leads.list` · `stats` · `insights` · `updateStatus` · `updateAssignee`
+API: `orpc.leads.list` · `get` · `stats` · `insights` · `updateStatus` · `updateAssignee` · `updateNotes` · `exportCsv`
 
 ---
 
 ## IPO-first cut (ship during subscription window)
 
-Highest leverage for day-to-day ops:
-
-1. **Lead CSV export** — `lead-csv-export`
-2. **Server filters + search + sort + pagination** — `lead-list-query`
-3. **Lead detail + notes + full answers** — `lead-detail-notes`
-4. **Surface profil / compte titres in list** — `lead-ipo-fields-ui`
-5. **Unassigned queue + aging (24h / 72h)** — `lead-work-queue`
-6. **Slack / email on new lead** — `crm-webhooks`
-7. **Bulk assign + status** — `lead-bulk-actions`
+| # | Item | Status |
+|---|---|---|
+| 1 | Lead CSV export — `lead-csv-export` | **Done** |
+| 2 | Server filters + search + sort + pagination — `lead-list-query` | **Done** |
+| 3 | Lead detail + notes + full answers — `lead-detail-notes` | **Done** |
+| 4 | Surface profil / compte titres in list — `lead-ipo-fields-ui` | **Done** |
+| 5 | Unassigned queue + aging (24h / 72h) — `lead-work-queue` | **Done** |
+| 6 | Slack / email on new lead — `crm-webhooks` | Todo |
+| 7 | Bulk assign + status — `lead-bulk-actions` | Todo |
 
 ---
 
