@@ -469,7 +469,7 @@ export function IpoBridgeBankLanding() {
           >
             <div className="max-w-6xl">
               <h1
-                className="ipo-reveal max-w-[16ch] text-[clamp(2.75rem,6.2vw,5.75rem)] font-extrabold leading-[0.94] tracking-[-0.05em] text-white"
+                className="ipo-reveal max-w-[16ch] text-[clamp(1.5rem,4vw,3.75rem)] font-extrabold leading-[1.2] tracking-[-0.05em] text-white"
                 data-reveal
                 style={{ transitionDelay: '70ms' }}
               >
@@ -477,7 +477,7 @@ export function IpoBridgeBankLanding() {
                 <span className="text-gold">Bridge Bank</span>
               </h1>
               <p
-                className="ipo-reveal mt-8 max-w-4xl text-base font-light leading-8 text-white/74 sm:text-lg sm:leading-9"
+                className="ipo-reveal mt-8 max-w-4xl text-base font-light leading-4 text-white/74 sm:text-lg sm:leading-8"
                 data-reveal
                 style={{ transitionDelay: '130ms' }}
               >
