@@ -49,7 +49,7 @@ export default function BetterAuthHeader({ stacked = false }: { stacked?: boolea
               fetchOptions: {
                 onSuccess: async () => {
                   await router.invalidate()
-                  await router.navigate({ to: '/' })
+                  await router.navigate({ to: '/admin/login' })
                 },
               },
             })

@@ -140,7 +140,7 @@ export function AppShell({
             </span>
           </Link>
           <nav className="flex items-center gap-2">
-            <Link to="/login">
+            <Link to="/admin/login">
               <Button variant="ghost" size="sm">
                 Se connecter
               </Button>
