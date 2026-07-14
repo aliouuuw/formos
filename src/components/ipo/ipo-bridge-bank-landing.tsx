@@ -6,7 +6,6 @@ import {
   IPO_CAMPAIGN,
   IPO_FORM_SLUGS,
   IPO_GUIDE_PDF_PATH,
-  IPO_SUBSCRIPTION_STEPS,
   getIpoCampaignPhase,
   getIpoPhaseCopy,
   ipoFormSearchParams,
@@ -14,6 +13,15 @@ import {
 import { BRIDGE_BANK_IPO_CAMPAIGN_ID } from '#/lib/campaigns'
 import { useCampaignContact } from '#/hooks/use-campaign-contact'
 import { cn } from '#/lib/utils'
+
+const BBG_INVESTMENT_REASONS = [
+  'Banque rentable et en forte croissance',
+  'Dividende annuel versé aux actionnaires',
+  "Exposition directe à l'économie ivoirienne",
+  "Placement réglementé, encadré par l'AMF-UMOA (VISA N° AO/26-03)",
+  "Participation directe à la croissance de l'économie ivoirienne, 1ère puissance économique de l'UEMOA",
+  'Banque en pleine expansion digitale et régionale',
+] as const
 
 function EverestLogo({ className }: { className?: string }) {
   return (
@@ -304,7 +312,6 @@ export function IpoBridgeBankLanding() {
 
   const phase = getIpoCampaignPhase()
   const phaseCopy = getIpoPhaseCopy(phase)
-  const [featured, ...restSteps] = IPO_SUBSCRIPTION_STEPS
 
   return (
     <div ref={rootRef} className="ipo-campaign relative min-h-dvh overflow-x-hidden bg-(--summit-ivory)">
@@ -341,8 +348,8 @@ export function IpoBridgeBankLanding() {
           <div className="absolute inset-0 overflow-hidden">
             <div data-hero-media className="ipo-hero-media absolute inset-[-6%] will-change-transform">
               <img
-                src="/campaign/ipo-hero-summit.jpg"
-                alt="Sommet alpin au crépuscule, atmosphère Everest Finance"
+                src="/Hero.png"
+                alt="Vue sur Abidjan au crépuscule — Bridge Bank Group Côte d'Ivoire"
                 className="h-full w-full object-cover object-[center_38%]"
               />
             </div>
@@ -471,59 +478,28 @@ export function IpoBridgeBankLanding() {
           <div className="mx-auto max-w-[1400px] px-5 py-24 sm:px-10 lg:px-12 lg:py-36">
             <div className="ipo-reveal max-w-3xl" data-reveal>
               <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.24em] text-everest-green/50">
-                Parcours
+                Pourquoi investir
               </p>
               <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold tracking-[-0.04em] text-night-80 leading-[1.05]">
-                Souscrire, clairement et sans détour.
+                Pourquoi acheter des actions BBG CI ?
               </h2>
-              <p className="mt-6 max-w-xl text-base font-light leading-8 text-text-secondary">
-                Cinq décisions. Une notice. Un conseiller Everest Finance pour sécuriser chaque étape.
-              </p>
             </div>
 
-            <div className="mt-16 grid gap-10 lg:grid-cols-12 lg:gap-14 lg:items-start">
-              <article
-                data-reveal
-                className="ipo-reveal relative w-full overflow-hidden rounded-[2rem] border border-everest-green/10 bg-white p-8 sm:p-10 lg:sticky lg:top-28 lg:col-span-5 lg:min-h-[28rem]"
-              >
-                <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(203,152,36,0.16),transparent_70%)]" />
-                <span className="text-5xl font-extrabold tracking-[-0.06em] text-gold/90">
-                  {featured.step}
-                </span>
-                <h3 className="mt-8 text-3xl font-bold tracking-[-0.03em] text-night-80 leading-tight">
-                  {featured.title}
-                </h3>
-                <p className="mt-5 max-w-md text-base font-light leading-8 text-text-secondary">
-                  {featured.body}
-                </p>
-                <GuidePdfLink variant="gold" className="mt-10">
-                  Recevoir le guide
-                </GuidePdfLink>
-              </article>
-
-              <ol className="flex flex-col gap-0 lg:col-span-7">
-                {restSteps.map((item, index) => (
-                  <li
-                    key={item.step}
-                    data-reveal
-                    className="ipo-reveal group grid grid-cols-[auto_1fr] gap-5 border-t border-everest-green/10 py-7 first:border-t-0 sm:gap-8 sm:py-8"
-                    style={{ transitionDelay: `${index * 70}ms` }}
-                  >
-                    <span className="pt-1 text-sm font-semibold tracking-[0.18em] text-gold transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5">
-                      {item.step}
-                    </span>
-                    <div>
-                      <h3 className="text-xl font-semibold tracking-[-0.02em] text-night-80 sm:text-2xl">
-                        {item.title}
-                      </h3>
-                      <p className="mt-2 max-w-xl text-sm leading-7 text-text-secondary sm:text-[0.95rem]">
-                        {item.body}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </div>
+            <ul className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+              {BBG_INVESTMENT_REASONS.map((reason, index) => (
+                <li
+                  key={reason}
+                  data-reveal
+                  className="ipo-reveal rounded-2xl border border-everest-green/10 bg-white p-6 sm:p-7"
+                  style={{ transitionDelay: `${index * 60}ms` }}
+                >
+                  <span className="text-sm font-semibold tracking-[0.18em] text-gold">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <p className="mt-4 text-base font-medium leading-8 text-night-80">{reason}</p>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
@@ -580,27 +556,6 @@ export function IpoBridgeBankLanding() {
             </div>
           </div>
         </section>
-
-        <section className="relative overflow-hidden bg-everest-green text-white">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_20%,rgba(203,152,36,0.2),transparent_38%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_90%_80%,rgba(255,255,255,0.05),transparent_40%)]" />
-          <div className="relative mx-auto flex max-w-[1400px] flex-col gap-12 px-5 py-20 sm:px-10 lg:flex-row lg:items-end lg:justify-between lg:px-12 lg:py-28">
-            <div className="ipo-reveal max-w-2xl" data-reveal>
-              <h2 className="text-[clamp(2rem,4vw,3.25rem)] font-bold tracking-[-0.04em] text-white leading-[1.05]">
-                Parlez à un conseiller Everest Finance.
-              </h2>
-              <p className="mt-5 max-w-lg text-base font-light leading-8 text-white/65">
-                Indiquez vos coordonnées. Nous vous rappelons sur WhatsApp ou par téléphone, selon votre
-                préférence.
-              </p>
-            </div>
-            <div className="ipo-reveal" data-reveal>
-              <CampaignLink variant="gold" className="h-14 px-8 text-base">
-                Démarrer ma souscription
-              </CampaignLink>
-            </div>
-          </div>
-        </section>
       </main>
 
       <footer className="border-t border-white/10 bg-[#021f1d] text-white">
@@ -620,9 +575,8 @@ export function IpoBridgeBankLanding() {
             </div>
           </div>
           <p className="max-w-4xl text-xs leading-6 text-white/40">
-            Cette page est éditée par {IPO_CAMPAIGN.intermediary} à titre informatif pour faciliter la prise
-            de contact autour de l&apos;offre publique de {IPO_CAMPAIGN.bankName}. Elle ne constitue pas un
-            conseil en investissement. Consultez la notice d&apos;information avant toute décision.
+            EVEREST Finance vous accompagne dans votre souscription. Laissez vos coordonnées : un conseiller
+            vous recontacte pour finaliser votre dossier.
           </p>
         </div>
       </footer>
