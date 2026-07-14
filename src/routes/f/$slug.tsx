@@ -11,7 +11,11 @@ export const Route = createFileRoute('/f/$slug')({ component: PublicFormPage })
 
 function PublicFormPage() {
   const { slug } = Route.useParams()
-  const formQuery = useQuery(orpc.forms.getBySlug.queryOptions({ input: { slug } }))
+  const formQuery = useQuery({
+    ...orpc.forms.getBySlug.queryOptions({ input: { slug } }),
+    staleTime: 0,
+    refetchOnMount: 'always',
+  })
   const campaign = getCampaignByFormSlug(slug)
   const formBinding = getFormBinding(slug)
   const isCampaignForm = Boolean(campaign)
@@ -87,6 +91,7 @@ function PublicFormPage() {
           </div>
 
           <FormRenderer
+            key={`${formQuery.data.id}-v${formQuery.data.version}`}
             formId={formQuery.data.id}
             slug={formQuery.data.slug}
             title={formQuery.data.title}
@@ -109,6 +114,7 @@ function PublicFormPage() {
       </div>
       <div className="relative -mt-8 px-4 pb-16">
         <FormRenderer
+          key={`${formQuery.data.id}-v${formQuery.data.version}`}
           formId={formQuery.data.id}
           slug={formQuery.data.slug}
           title={formQuery.data.title}

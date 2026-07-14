@@ -146,15 +146,18 @@ export const IPO_FIELD_IDS = {
   name: 'ipo-field-name',
   phone: 'ipo-field-phone',
   email: 'ipo-field-email',
+  city: 'ipo-field-city',
+  profile: 'ipo-field-profile',
   amount: 'ipo-field-amount',
+  account: 'ipo-field-account',
   channel: 'ipo-field-channel',
 } as const
 
 const AMOUNT_OPTIONS = [
-  'Moins de 100 000 FCFA',
-  '100 000 – 500 000 FCFA',
-  '500 000 – 1 000 000 FCFA',
-  'Plus de 1 000 000 FCFA',
+  'Moins de 500 000 FCFA',
+  '500 000 – 2 000 000 FCFA',
+  '2 000 000 – 10 000 000 FCFA',
+  'Plus de 10 000 000 FCFA',
 ] as const
 
 function createIpoLeadFormDefinition(thankYouMessage: string): FormDefinition {
@@ -175,33 +178,67 @@ function createIpoLeadFormDefinition(thankYouMessage: string): FormDefinition {
           {
             id: IPO_FIELD_IDS.phone,
             type: 'phone',
-            label: 'Téléphone',
+            label: 'Téléphone / WhatsApp',
             required: true,
-            placeholder: '+225 07 00 00 00 00',
+            placeholder: '+221 77 000 00 00',
             leadRole: 'phone',
           },
           {
             id: IPO_FIELD_IDS.email,
             type: 'email',
             label: 'Email',
-            required: true,
+            required: false,
             placeholder: 'vous@exemple.com',
             leadRole: 'email',
+          },
+          {
+            id: IPO_FIELD_IDS.city,
+            type: 'short_text',
+            label: 'Ville / Pays de résidence',
+            required: true,
+            placeholder: 'Dakar, Sénégal',
+            leadRole: 'city',
+          },
+        ],
+      },
+      {
+        id: 'ipo-page-subscription',
+        title: 'Votre souscription',
+        fields: [
+          {
+            id: IPO_FIELD_IDS.profile,
+            type: 'select',
+            label: 'Vous êtes',
+            required: true,
+            placeholder: 'Sélectionner…',
+            options: ['Particulier', 'Institutionnel', 'Diaspora'],
+            leadRole: 'investor_profile',
           },
           {
             id: IPO_FIELD_IDS.amount,
             type: 'select',
             label: 'Montant envisagé',
             required: true,
+            placeholder: 'Choisir une tranche',
             options: [...AMOUNT_OPTIONS],
             leadRole: 'amount_range',
+          },
+          {
+            id: IPO_FIELD_IDS.account,
+            type: 'select',
+            label: 'Compte titres EVEREST Finance existant ?',
+            required: true,
+            placeholder: 'Sélectionner…',
+            options: ['Oui', 'Non', 'Je ne sais pas'],
+            leadRole: 'securities_account',
           },
           {
             id: IPO_FIELD_IDS.channel,
             type: 'select',
             label: 'Canal de rappel préféré',
             required: true,
-            options: ['WhatsApp', 'Téléphone'],
+            placeholder: 'Sélectionner…',
+            options: ['WhatsApp', 'Appel', 'Email'],
             leadRole: 'preferred_channel',
           },
         ],
@@ -216,7 +253,7 @@ function createIpoLeadFormDefinition(thankYouMessage: string): FormDefinition {
 
 export function createIpoSubscribeFormDefinition(): FormDefinition {
   return createIpoLeadFormDefinition(
-    'Votre demande est enregistrée. Un conseiller Everest Finance vous contacte sous 24 h ouvrées pour planifier la suite de votre souscription.',
+    "Un conseiller EVEREST Finance vous recontacte sous 24 h ouvrées pour finaliser votre souscription à l'IPO Bridge Bank Group CI.",
   )
 }
 

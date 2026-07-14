@@ -96,22 +96,38 @@ async function seedPublishedForm(
   })
 
   if (existing) {
+    const definitionChanged =
+      options.campaignId &&
+      JSON.stringify(existing.definition) !== JSON.stringify(options.definition)
+
     const patch: {
       campaignId?: string
       definition?: typeof options.definition
+      version?: number
       updatedAt: Date
     } = { updatedAt: new Date() }
 
     if (options.campaignId && existing.campaignId !== options.campaignId) {
       patch.campaignId = options.campaignId
     }
-    // Refresh definition so leadRole metadata lands on existing IPO forms
-    if (options.campaignId) {
+
+    if (definitionChanged) {
       patch.definition = options.definition
+      patch.version = existing.version + 1
     }
 
     if (Object.keys(patch).length > 1) {
       await db.update(forms).set(patch).where(eq(forms.id, existing.id))
+
+      if (definitionChanged && patch.definition && patch.version) {
+        await db.insert(formDefinitionSnapshots).values({
+          id: crypto.randomUUID(),
+          formId: existing.id,
+          version: patch.version,
+          definition: patch.definition,
+        })
+      }
+
       console.log(`[seed] Updated form: /f/${options.slug}`)
     } else {
       console.log(`[seed] Form already exists: /f/${options.slug}`)

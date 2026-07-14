@@ -315,6 +315,7 @@ export function FormRenderer({
   if (thankYouMessage) {
     const preferredChannel = answers[IPO_FIELD_IDS.channel]
     const isWhatsApp = preferredChannel === 'WhatsApp'
+    const isEmail = preferredChannel === 'Email'
 
     return (
       <Panel className={cn('mx-auto max-w-xl', panelClassName)}>
@@ -336,7 +337,9 @@ export function FormRenderer({
               Envoyé
             </Badge>
           )}
-          <h2 className="text-3xl font-bold tracking-[-0.03em] text-night-80">Merci</h2>
+          <h2 className="text-3xl font-bold tracking-[-0.03em] text-night-80">
+            {campaign ? 'Demande bien reçue' : 'Merci'}
+          </h2>
           <p className="mx-auto max-w-sm text-base leading-relaxed text-text-secondary">
             {thankYouMessage}
           </p>
@@ -346,7 +349,9 @@ export function FormRenderer({
               <p className="max-w-sm text-sm leading-7 text-text-secondary">
                 {isWhatsApp
                   ? 'Un conseiller vous écrira sur WhatsApp sous 24 h ouvrées.'
-                  : 'Un conseiller vous rappelle sous 24 h ouvrées pour planifier la suite.'}
+                  : isEmail
+                    ? 'Un conseiller vous écrira par email sous 24 h ouvrées.'
+                    : 'Un conseiller vous rappelle sous 24 h ouvrées pour planifier la suite.'}
               </p>
               {isWhatsApp ? (
                 <a
@@ -484,7 +489,9 @@ export function FormRenderer({
             {loading
               ? 'Envoi…'
               : isLastPage
-                ? 'Envoyer'
+                ? campaign
+                  ? 'Être rappelé(e) par un conseiller'
+                  : 'Envoyer'
                 : 'Continuer'}
           </Button>
         </div>

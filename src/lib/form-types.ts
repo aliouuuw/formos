@@ -20,6 +20,8 @@ export const leadRoleSchema = z.enum([
   'company',
   'city',
   'notes',
+  'investor_profile',
+  'securities_account',
 ])
 
 export const formFieldSchema = z.object({

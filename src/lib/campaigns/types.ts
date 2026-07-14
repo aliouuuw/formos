@@ -10,6 +10,8 @@ export const LEAD_ROLES = [
   'company',
   'city',
   'notes',
+  'investor_profile',
+  'securities_account',
 ] as const
 
 export type LeadRole = (typeof LEAD_ROLES)[number]
