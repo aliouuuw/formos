@@ -3,6 +3,20 @@ import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '#/lib/utils'
 
+/**
+ * Everest Summit button language (aligned with public / IPO pages)
+ *
+ * | Variant      | Role                         | Typical use                          |
+ * |--------------|------------------------------|--------------------------------------|
+ * | default      | Gold primary CTA             | Export CSV, Voir en ligne (public preview) |
+ * | everest      | Solid institutional action   | Enregistrer, Détail, Modifier, navigation  |
+ * | mauve        | Heritage compose action      | Créer, Publier, Paramètres, Restaurer      |
+ * | secondary    | Green outline (public twin)  | Pagination, back links, filter reset       |
+ * | outline      | Quiet bordered peer          | Toggle groups, rare low-priority nav       |
+ * | ghost        | Tertiary / chrome            | Icon menus, remove row actions             |
+ * | ghost-light  | On dark / green fields       | Public header on hero                |
+ * | destructive  | Irreversible                 | Supprimer                            |
+ */
 export const buttonVariants = cva(
   'group inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium tracking-wide no-underline transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none active:scale-[0.98]',
   {
@@ -15,11 +29,11 @@ export const buttonVariants = cva(
         mauve:
           'rounded-full bg-mauve text-white hover:-translate-y-px hover:bg-[#3a183f] hover:text-white focus-visible:text-white focus-visible:shadow-[0_0_0_3px_var(--mauve-10),0_0_0_1px_var(--mauve)]',
         secondary:
-          'rounded-full border border-everest-green/20 bg-white text-everest-green hover:border-everest-green hover:bg-everest-green-05 hover:text-everest-green focus-visible:text-everest-green',
+          'rounded-full border border-everest-green/25 bg-white text-everest-green hover:-translate-y-px hover:border-everest-green hover:bg-everest-green-05 hover:text-everest-green hover:shadow-[0_8px_20px_rgba(1,45,42,0.08)] focus-visible:text-everest-green focus-visible:shadow-[0_0_0_3px_var(--everest-green-10),0_0_0_1px_var(--everest-green)]',
         outline:
-          'rounded-full border border-everest-green/20 bg-white text-everest-green hover:border-everest-green hover:bg-everest-green-05 hover:text-everest-green focus-visible:text-everest-green',
+          'rounded-full border border-everest-green/15 bg-transparent text-everest-green/80 hover:border-everest-green/35 hover:bg-everest-green/[0.04] hover:text-everest-green focus-visible:text-everest-green focus-visible:shadow-[0_0_0_3px_var(--everest-green-10)]',
         ghost:
-          'rounded-full text-text-secondary hover:bg-everest-green-05 hover:text-everest-green focus-visible:text-everest-green',
+          'rounded-full text-everest-green/70 hover:bg-everest-green/5 hover:text-everest-green focus-visible:text-everest-green',
         'ghost-light':
           'rounded-full text-white hover:border-white/55 hover:bg-white/10 hover:text-white focus-visible:text-white',
         destructive:

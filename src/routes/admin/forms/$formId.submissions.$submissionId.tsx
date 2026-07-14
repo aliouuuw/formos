@@ -38,7 +38,7 @@ function SubmissionDetailPage() {
         description={`Reçue le ${new Date(submission.createdAt).toLocaleString()} · version ${submission.formVersion}`}
         actions={
           <Link to="/admin/forms/$formId/submissions" params={{ formId }}>
-            <Button variant="ghost" size="sm">
+            <Button variant="secondary" size="sm">
               ← Toutes les soumissions
             </Button>
           </Link>

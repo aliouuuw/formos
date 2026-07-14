@@ -48,12 +48,12 @@ function SubmissionsPage() {
         actions={
           <div className="flex items-center gap-2">
             <Link to="/admin/forms/$formId" params={{ formId }}>
-              <Button variant="ghost" size="sm">
+              <Button variant="secondary" size="sm">
                 ← Éditeur
               </Button>
             </Link>
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
               onClick={handleExport}
               disabled={submissions.length === 0 || exportQuery.isFetching}
@@ -123,7 +123,7 @@ function SubmissionsPage() {
                           to="/admin/forms/$formId/submissions/$submissionId"
                           params={{ formId, submissionId: sub.id }}
                         >
-                          <Button variant="ghost" size="sm">
+                          <Button variant="everest" size="sm">
                             Voir
                           </Button>
                         </Link>
