@@ -1,5 +1,5 @@
 import { ORPCError } from '@orpc/server'
-import { and, asc, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '#/db/index'
@@ -9,6 +9,12 @@ import { extractLeadFields, classifySubmission } from '#/lib/leads'
 import { MAX_JSON_BYTES, SUBMIT_RATE_LIMIT } from '#/lib/limits'
 import { checkRateLimit, getClientIp } from '#/lib/rate-limit'
 import { resolvePublishedFormBySlug } from '#/lib/resolve-form-slug'
+import {
+  isHoneypotTriggered,
+  normalizeLeadEmail,
+  phoneMatchKey,
+  type DuplicateLeadMatch,
+} from '#/lib/submission-hygiene'
 import {
   assertJsonPayloadSize,
   validateSubmissionAnswers,
@@ -25,6 +31,40 @@ const submissionMetadataSchema = z
   })
   .optional()
 
+async function findPriorDuplicateLead(input: {
+  campaignId?: string
+  formId: string
+  email: string | null
+  phoneKey: string | null
+}): Promise<DuplicateLeadMatch | null> {
+  const scope = input.campaignId
+    ? eq(leads.campaignId, input.campaignId)
+    : eq(leads.formId, input.formId)
+
+  if (input.email) {
+    const byEmail = await db.query.leads.findFirst({
+      where: and(scope, sql`lower(trim(${leads.email})) = ${input.email}`),
+      orderBy: [asc(leads.createdAt)],
+      columns: { id: true },
+    })
+    if (byEmail) return { id: byEmail.id, match: 'email' }
+  }
+
+  if (input.phoneKey) {
+    const byPhone = await db.query.leads.findFirst({
+      where: and(
+        scope,
+        sql`right(regexp_replace(coalesce(${leads.phone}, ''), '[^0-9]', '', 'g'), 9) = ${input.phoneKey}`,
+      ),
+      orderBy: [asc(leads.createdAt)],
+      columns: { id: true },
+    })
+    if (byPhone) return { id: byPhone.id, match: 'phone' }
+  }
+
+  return null
+}
+
 export const submitForm = publicContext
   .input(
     z.object({
@@ -32,6 +72,8 @@ export const submitForm = publicContext
       sessionId: z.string().min(1).max(64),
       answers: z.record(z.string(), z.unknown()),
       metadata: submissionMetadataSchema,
+      /** Bots fill this; humans never see it. Non-empty → silent fake success. */
+      honeypot: z.string().max(200).optional(),
     }),
   )
   .handler(async ({ input, context }) => {
@@ -63,6 +105,35 @@ export const submitForm = publicContext
       throw new ORPCError('NOT_FOUND', { message: 'Form not found' })
     }
 
+    const thankYouMessage =
+      form.definition.theme?.thankYouMessage ?? 'Thanks for your submission!'
+
+    // Spam honeypot: pretend success, do not persist.
+    if (isHoneypotTriggered(input.honeypot)) {
+      return {
+        submissionId: crypto.randomUUID(),
+        leadId: crypto.randomUUID(),
+        thankYouMessage,
+      }
+    }
+
+    // Idempotent retry / back-button: same browser session already completed.
+    const existingSubmission = await db.query.formSubmissions.findFirst({
+      where: and(
+        eq(formSubmissions.formId, form.id),
+        eq(formSubmissions.sessionId, input.sessionId),
+      ),
+      with: { lead: { columns: { id: true } } },
+      orderBy: [desc(formSubmissions.createdAt)],
+    })
+    if (existingSubmission) {
+      return {
+        submissionId: existingSubmission.id,
+        leadId: existingSubmission.lead?.id ?? existingSubmission.id,
+        thankYouMessage,
+      }
+    }
+
     const validation = validateSubmissionAnswers(form.definition, input.answers)
     if (!validation.ok) {
       throw new ORPCError('BAD_REQUEST', { message: validation.message })
@@ -75,10 +146,26 @@ export const submitForm = publicContext
       formSlug: form.slug,
       formCampaignId: form.campaignId,
     })
+
+    const email = normalizeLeadEmail(leadFields.email)
+    const phoneKey = phoneMatchKey(leadFields.phone)
+    const prior = await findPriorDuplicateLead({
+      campaignId: classification.campaignId,
+      formId: form.id,
+      email,
+      phoneKey,
+    })
+
     const insights = {
       ...leadFields.insights,
       campaignId: classification.campaignId,
       classifiedAt: new Date().toISOString(),
+      ...(prior
+        ? {
+            duplicateOfLeadId: prior.id,
+            duplicateMatch: prior.match,
+          }
+        : {}),
     }
 
     try {
@@ -93,19 +180,22 @@ export const submitForm = publicContext
           completedAt: new Date(),
         })
 
-        await tx.insert(formDefinitionSnapshots).values({
-          id: crypto.randomUUID(),
-          formId: form.id,
-          version: form.version,
-          definition: form.definition,
-        }).onConflictDoNothing()
+        await tx
+          .insert(formDefinitionSnapshots)
+          .values({
+            id: crypto.randomUUID(),
+            formId: form.id,
+            version: form.version,
+            definition: form.definition,
+          })
+          .onConflictDoNothing()
 
         await tx.insert(leads).values({
           id: leadId,
           formId: form.id,
           submissionId,
           campaignId: classification.campaignId,
-          email: leadFields.email,
+          email: email ?? leadFields.email ?? null,
           name: leadFields.name,
           phone: leadFields.phone,
           status: 'new',
@@ -119,6 +209,22 @@ export const submitForm = publicContext
         })
       })
     } catch (error) {
+      // Concurrent retry raced past the pre-check — return the winner.
+      const raced = await db.query.formSubmissions.findFirst({
+        where: and(
+          eq(formSubmissions.formId, form.id),
+          eq(formSubmissions.sessionId, input.sessionId),
+        ),
+        with: { lead: { columns: { id: true } } },
+      })
+      if (raced) {
+        return {
+          submissionId: raced.id,
+          leadId: raced.lead?.id ?? raced.id,
+          thankYouMessage,
+        }
+      }
+
       console.error('[submissions.submit] Database transaction failed', {
         slug: input.slug,
         formId: form.id,
@@ -136,7 +242,8 @@ export const submitForm = publicContext
           formId: form.id,
           submissionId,
           leadId,
-          email: leadFields.email,
+          email: email ?? leadFields.email,
+          duplicateOfLeadId: prior?.id,
         },
       })
     } catch (error) {
@@ -150,8 +257,7 @@ export const submitForm = publicContext
     return {
       submissionId,
       leadId,
-      thankYouMessage:
-        form.definition.theme?.thankYouMessage ?? 'Thanks for your submission!',
+      thankYouMessage,
     }
   })
 

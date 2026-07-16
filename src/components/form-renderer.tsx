@@ -21,6 +21,7 @@ import { BRIDGE_BANK_IPO_CAMPAIGN_ID } from '#/lib/campaigns'
 import { useCampaignContact } from '#/hooks/use-campaign-contact'
 import { IPO_FIELD_IDS } from '#/lib/ipo-campaign'
 import { getSessionId } from '#/lib/session-id'
+import { HONEYPOT_FIELD_ID } from '#/lib/submission-hygiene'
 import { cn } from '#/lib/utils'
 import { client } from '#/orpc/client'
 
@@ -148,6 +149,7 @@ export function FormRenderer({
   )
   const whatsappHref = campaignContact?.whatsappUrl ?? undefined
   const [internalPageIndex, setInternalPageIndex] = useState(0)
+  const [honeypot, setHoneypot] = useState('')
   const pageIndex = preview ? preview.pageIndex : internalPageIndex
   const setPageIndex = (index: number) => {
     if (preview?.onPageIndexChange) preview.onPageIndexChange(index)
@@ -282,6 +284,7 @@ export function FormRenderer({
           slug,
           sessionId,
           answers,
+          honeypot: honeypot || undefined,
           metadata: {
             utmSource: params.get('utm_source') ?? undefined,
             utmMedium: params.get('utm_medium') ?? undefined,
@@ -380,7 +383,7 @@ export function FormRenderer({
   if (!page) return null
 
   return (
-    <Panel className={cn('mx-auto max-w-xl', panelClassName)}>
+    <Panel className={cn('relative mx-auto max-w-xl', panelClassName)}>
       <PanelHeader className="space-y-5">
         <div className={cn('flex items-center gap-3', campaign ? 'justify-end' : 'justify-between')}>
           {!campaign ? (
@@ -413,6 +416,23 @@ export function FormRenderer({
       </PanelHeader>
 
       <PanelBody className={cn('space-y-6', campaign && 'space-y-7')}>
+        {/* Honeypot — hidden from humans, bots often autofill */}
+        <div
+          aria-hidden="true"
+          className="absolute -left-[9999px] top-0 h-0 w-0 overflow-hidden opacity-0"
+        >
+          <label htmlFor={HONEYPOT_FIELD_ID}>Company website</label>
+          <input
+            id={HONEYPOT_FIELD_ID}
+            name={HONEYPOT_FIELD_ID}
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+          />
+        </div>
+
         {page.fields.length === 0 ? (
           <div className="rounded-xl border-2 border-dashed border-everest-green-10 px-6 py-12 text-center">
             <p className="text-sm text-text-secondary">Cette étape n&apos;a pas encore de champs.</p>

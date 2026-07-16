@@ -22,6 +22,7 @@ import { getCampaignById } from '#/lib/campaigns'
 import {
   agingLabel,
   deadlinesForLead,
+  duplicateMatchLabel,
   getLeadAging,
   investorProfile,
   securitiesAccount,
@@ -101,7 +102,14 @@ export function LeadDetailPanel({
 
   const lead = detailQuery.data
   const insights = lead?.insights as
-    | { company?: string; city?: string; notes?: string; extras?: Record<string, string> }
+    | {
+        company?: string
+        city?: string
+        notes?: string
+        extras?: Record<string, string>
+        duplicateOfLeadId?: string
+        duplicateMatch?: 'email' | 'phone'
+      }
     | null
     | undefined
   const campaign = lead
@@ -111,6 +119,7 @@ export function LeadDetailPanel({
   const aging = lead && deadlines ? getLeadAging(lead, deadlines) : null
   const profile = investorProfile(insights)
   const account = securitiesAccount(insights)
+  const duplicateLabel = duplicateMatchLabel(insights)
 
   const statusOptions = LEAD_PIPELINE_STATUSES.map((status) => ({
     value: status,
@@ -138,12 +147,29 @@ export function LeadDetailPanel({
                     {agingLabel(aging, deadlines)}
                   </Badge>
                 ) : null}
+                {duplicateLabel ? (
+                  <Badge variant="outline" className="normal-case tracking-normal">
+                    {duplicateLabel}
+                  </Badge>
+                ) : null}
                 {profile ? (
                   <Badge variant="secondary" className="normal-case tracking-normal">
                     {profile}
                   </Badge>
                 ) : null}
               </div>
+              {insights?.duplicateOfLeadId ? (
+                <p className="text-xs text-muted-foreground">
+                  Même contact qu’un lead existant
+                  {insights.duplicateMatch === 'email'
+                    ? ' (email)'
+                    : insights.duplicateMatch === 'phone'
+                      ? ' (téléphone)'
+                      : ''}
+                  . Historique conservé — lead d’origine{' '}
+                  <span className="font-mono text-[11px]">{insights.duplicateOfLeadId.slice(0, 8)}…</span>
+                </p>
+              ) : null}
             </>
           ) : (
             <SheetDescription>Chargement…</SheetDescription>

@@ -72,6 +72,21 @@ export function securitiesAccount(insights: LeadInsights | null | undefined): st
   return leadExtras(insights).securities_account
 }
 
+export function duplicateOfLeadId(
+  insights: LeadInsights | null | undefined,
+): string | undefined {
+  return insights?.duplicateOfLeadId
+}
+
+export function duplicateMatchLabel(
+  insights: LeadInsights | null | undefined,
+): string | undefined {
+  if (!insights?.duplicateOfLeadId) return undefined
+  if (insights.duplicateMatch === 'email') return 'Doublon · email'
+  if (insights.duplicateMatch === 'phone') return 'Doublon · téléphone'
+  return 'Doublon'
+}
+
 export type LeadAgingKind = 'new_overdue' | 'contacted_overdue' | null
 
 /** Overdue when callback / follow-up promises are breached (see leadAgingRules). */

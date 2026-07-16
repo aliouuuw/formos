@@ -25,9 +25,9 @@ This document captures how Everest staff should manage IPO (and future campaign)
 | Lead detail / notes UI | Done — drawer with answers + notes |
 | Unassigned + SLA aging queue | Done — filters + badges (`new` >24h, `contacted` >72h) |
 | Click-to-contact | Done in detail panel (logging still open) |
+| Duplicate detection | Done — flag on new leads (`insights.duplicateOfLeadId`); merge UI later |
 | Bulk actions | Done — multi-select → status, assign, export selected |
 | Activity history / audit trail | Missing |
-| Duplicate detection | Missing |
 | Slack / CRM push on new lead | Missing (`crm-webhooks`) |
 | RBAC / “my leads” per agent user | Missing (`lead-rbac`) |
 
@@ -69,7 +69,7 @@ Operational basics so agents can work a live campaign without leaving Formos or 
 | Backlog ID | What |
 |---|---|
 | `lead-tags-priority` | Tags (`urgent`, `docs-incomplets`, `VIP`) + optional priority score |
-| `lead-duplicates` | Same phone/email → flag or merge, keep history |
+| `lead-duplicates` | Same phone/email → flag on new lead (`duplicateOfLeadId`); merge later |
 | `lead-saved-views` | Presets: Nouveaux WhatsApp, Institutionnels >10M, Sans agent, Fenêtre clôture |
 | `lead-bulk-actions` | Multi-select → assign, status, export selected (tags → `lead-tags-priority`) |
 | `lead-kanban` | Optional board by status (list remains primary) |

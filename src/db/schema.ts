@@ -125,6 +125,7 @@ export const formSubmissions = pgTable(
   (table) => [
     index('form_submissions_form_id_idx').on(table.formId),
     index('form_submissions_session_id_idx').on(table.sessionId),
+    uniqueIndex('form_submissions_form_session_uidx').on(table.formId, table.sessionId),
   ],
 )
 
@@ -135,6 +136,8 @@ export type LeadInsightsJson = {
   extras?: Record<string, string>
   classifiedAt?: string
   campaignId?: string
+  duplicateOfLeadId?: string
+  duplicateMatch?: 'email' | 'phone'
 }
 
 export const leads = pgTable(
@@ -169,6 +172,7 @@ export const leads = pgTable(
     index('leads_form_id_idx').on(table.formId),
     index('leads_status_idx').on(table.status),
     index('leads_email_idx').on(table.email),
+    index('leads_phone_idx').on(table.phone),
     index('leads_campaign_id_idx').on(table.campaignId),
   ],
 )

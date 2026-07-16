@@ -50,6 +50,13 @@
       "when": 1784044473291,
       "tag": "0006_easy_la_nuit",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1784216369378,
+      "tag": "0007_famous_madripoor",
+      "breakpoints": true
     }
   ]
 }

@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react'
 import type { LeadStatus } from '#/lib/form-types'
 import type { LeadListSort } from '#/lib/lead-admin'
-import { agingLabel, deadlinesForLead, getLeadAging, investorProfile, LEAD_LIST_SORTS, securitiesAccount } from '#/lib/lead-admin'
+import { agingLabel, deadlinesForLead, duplicateMatchLabel, getLeadAging, investorProfile, LEAD_LIST_SORTS, securitiesAccount } from '#/lib/lead-admin'
 import type { CampaignConfig } from '#/lib/campaigns/types'
 import { LEAD_PIPELINE_STATUSES, LEAD_STATUS_LABELS } from '#/lib/lead-status'
 import { adviserLabel, formatLeadSource } from '#/lib/leads'
@@ -611,11 +611,17 @@ export function LeadsTable({
         {leads.map((lead) => {
           const campaign = resolveCampaign(lead)
           const insightsJson = lead.insights as
-            | { city?: string; extras?: Record<string, string> }
+            | {
+                city?: string
+                extras?: Record<string, string>
+                duplicateOfLeadId?: string
+                duplicateMatch?: 'email' | 'phone'
+              }
             | null
             | undefined
           const profile = investorProfile(insightsJson)
           const account = securitiesAccount(insightsJson)
+          const duplicateLabel = duplicateMatchLabel(insightsJson)
           const deadlines = deadlinesForLead(lead, campaigns)
           const aging = getLeadAging(lead, deadlines)
           const intent = lead.intent ? (intentLabels.get(lead.intent) ?? lead.intent) : null
@@ -656,6 +662,11 @@ export function LeadsTable({
                     {aging ? (
                       <Badge variant="mauve" className="normal-case tracking-normal">
                         {agingLabel(aging, deadlines)}
+                      </Badge>
+                    ) : null}
+                    {duplicateLabel ? (
+                      <Badge variant="outline" className="normal-case tracking-normal">
+                        {duplicateLabel}
                       </Badge>
                     ) : null}
                     {intent ? (

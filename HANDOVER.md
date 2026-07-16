@@ -233,7 +233,8 @@ See `context/backlog.json` for the full list and [`docs/admin-leads-roadmap.md`]
 | `gdpr-consent` | Retention / export / delete | low | Public consent omitted on IPO form; retention still needed. |
 
 Shipped (2026-07-14): `lead-csv-export`, `lead-list-query`, `lead-detail-notes`, `lead-ipo-fields-ui`, `lead-work-queue`, `lead-click-to-contact`.  
-Shipped (2026-07-16): `lead-bulk-actions` (multi-select → status, assign, export selected).
+Shipped (2026-07-16): `lead-bulk-actions` (multi-select → status, assign, export selected).  
+Shipped (2026-07-16): `duplicate-submission-guard`, `spam-honeypot`, `lead-duplicates` (flag).
 
 ---
 

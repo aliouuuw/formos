@@ -1,22 +1,24 @@
 Formos — project progress log
 ==============================
 
-2026-07-16 (checkpoint + lead-bulk-actions)
-------------------------------------------
+2026-07-16 (checkpoint + lead-bulk-actions + hygiene)
+----------------------------------------------------
 - Shipped `lead-bulk-actions`: multi-select on `/admin/leads`, bulk status +
   assignee (campaign agent validation), export selected CSV; tags deferred.
 - API: `bulkUpdateStatus`, `bulkUpdateAssignee`; `exportCsv` accepts optional `ids`.
+- Hygiene: honeypot (silent reject), idempotent submit `(formId, sessionId)`,
+  lead duplicate flag (`insights.duplicateOfLeadId` by email/phone in campaign).
+- Migration `0007`: unique form+session index + phone index (dedupe first).
+- fix(dev): Nitro only on Vite build under Bun.
 - Docs: backlog, admin-leads-roadmap, HANDOVER updated.
-- Git was clean at morning checkpoint @ 810b9a9; this work is uncommitted.
 
 Next up (priority order)
 -------------------------
 1. Slack / email on new lead — `crm-webhooks` (IPO window ops).
-2. Duplicate submission guard + spam honeypot (`duplicate-submission-guard`,
-   `spam-honeypot`) and/or `lead-duplicates` for CRM hygiene.
-3. Embeddable forms (`embed-mode`) or conditional logic (`conditional-logic`)
+2. Embeddable forms (`embed-mode`) or conditional logic (`conditional-logic`)
    when marketing needs them.
-4. Lead tags (`lead-tags-priority`) — deferred from bulk actions.
+3. Lead tags (`lead-tags-priority`) — deferred from bulk actions.
+4. Lead merge UI (beyond flag) if ops need it after `lead-duplicates` flagging.
 
 2026-07-09 (checkpoint)
 -----------------------

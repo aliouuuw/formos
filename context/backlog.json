@@ -124,16 +124,16 @@
     {
       "id": "duplicate-submission-guard",
       "title": "Duplicate submission protection",
-      "status": "todo",
+      "status": "done",
       "priority": "medium",
-      "notes": "No uniqueness on (formId, sessionId); back-button or retry creates dupes."
+      "notes": "Done 2026-07-16 — idempotent submit by (formId, sessionId); unique index + race fallback."
     },
     {
       "id": "spam-honeypot",
       "title": "Spam protection (honeypot / captcha)",
-      "status": "todo",
+      "status": "done",
       "priority": "medium",
-      "notes": "Rate limit alone won't stop bots filling lead pipelines."
+      "notes": "Done 2026-07-16 — hidden company_website honeypot; filled → silent fake thank-you, no DB write. Captcha still optional later."
     },
     {
       "id": "partial-submissions",
@@ -201,9 +201,9 @@
     {
       "id": "lead-duplicates",
       "title": "Duplicate lead detection and merge",
-      "status": "todo",
+      "status": "done",
       "priority": "medium",
-      "notes": "Same phone/email across submissions → flag or merge, keep history."
+      "notes": "Done 2026-07-16 — flag via insights.duplicateOfLeadId (email/phone in campaign); admin badge. Merge UI deferred."
     },
     {
       "id": "lead-saved-views",

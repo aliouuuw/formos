@@ -62,4 +62,7 @@ export type LeadInsights = {
   /** Classification metadata */
   classifiedAt?: string
   campaignId?: string
+  /** Canonical prior lead when email/phone already exists in campaign */
+  duplicateOfLeadId?: string
+  duplicateMatch?: 'email' | 'phone'
 }
