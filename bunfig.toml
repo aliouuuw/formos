@@ -1,0 +1,3 @@
+[install]
+# Helps Bun resolve nitro-nightly when used as `"nitro": "npm:nitro-nightly@…"`.
+publicHoistPattern = ["nitro*"]
