@@ -226,14 +226,14 @@ See `context/backlog.json` for the full list and [`docs/admin-leads-roadmap.md`]
 | ID | Title | Priority | Notes |
 |----|-------|----------|-------|
 | `crm-webhooks` | Slack / email on new lead | high | Inngest notify; later CRM sync. |
-| `lead-bulk-actions` | Bulk assign / status | medium | Multi-select on leads list. |
 | `spam-honeypot` | Spam / bot protection | medium | Honeypot + rate-limit hardening. |
 | `partial-submissions` | Partial submissions | medium | Abandon → warm recovery queue. |
 | `embed-mode` | Embeddable forms | medium | iframe / script embed for landing pages. |
 | `conditional-logic` | Conditional field logic | medium | Show/hide fields based on answers. |
 | `gdpr-consent` | Retention / export / delete | low | Public consent omitted on IPO form; retention still needed. |
 
-Shipped (2026-07-14): `lead-csv-export`, `lead-list-query`, `lead-detail-notes`, `lead-ipo-fields-ui`, `lead-work-queue`, `lead-click-to-contact`.
+Shipped (2026-07-14): `lead-csv-export`, `lead-list-query`, `lead-detail-notes`, `lead-ipo-fields-ui`, `lead-work-queue`, `lead-click-to-contact`.  
+Shipped (2026-07-16): `lead-bulk-actions` (multi-select → status, assign, export selected).
 
 ---
 

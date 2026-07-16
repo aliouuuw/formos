@@ -1,6 +1,23 @@
 Formos — project progress log
 ==============================
 
+2026-07-16 (checkpoint + lead-bulk-actions)
+------------------------------------------
+- Shipped `lead-bulk-actions`: multi-select on `/admin/leads`, bulk status +
+  assignee (campaign agent validation), export selected CSV; tags deferred.
+- API: `bulkUpdateStatus`, `bulkUpdateAssignee`; `exportCsv` accepts optional `ids`.
+- Docs: backlog, admin-leads-roadmap, HANDOVER updated.
+- Git was clean at morning checkpoint @ 810b9a9; this work is uncommitted.
+
+Next up (priority order)
+-------------------------
+1. Slack / email on new lead — `crm-webhooks` (IPO window ops).
+2. Duplicate submission guard + spam honeypot (`duplicate-submission-guard`,
+   `spam-honeypot`) and/or `lead-duplicates` for CRM hygiene.
+3. Embeddable forms (`embed-mode`) or conditional logic (`conditional-logic`)
+   when marketing needs them.
+4. Lead tags (`lead-tags-priority`) — deferred from bulk actions.
+
 2026-07-09 (checkpoint)
 -----------------------
 - Since 2026-06-11: builder preview uses FormRenderer (UX-001); field picker / select / structure rail polish.
@@ -9,8 +26,8 @@ Formos — project progress log
 - Git: main @ eda2512, working tree clean.
 - Backlog: slug-change-redirect done; next focus is lead-pipeline hygiene (dupes + honeypot).
 
-Next up (priority order)
--------------------------
+Next up (priority order) — superseded 2026-07-16
+-------------------------------------------------
 1. Duplicate submission guard + spam honeypot (lead pipeline hygiene).
 2. Embeddable forms (backlog embed-mode).
 3. CRM/Slack webhooks via Inngest (backlog crm-webhooks).

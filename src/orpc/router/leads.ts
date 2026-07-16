@@ -468,93 +468,263 @@ export const updateLeadNotes = authedContext
     return updated
   })
 
+const bulkLeadIdsSchema = z
+  .array(z.string().min(1).max(64))
+  .min(1)
+  .max(100)
+
+async function ownedLeadsByIds(userId: string, ids: string[]) {
+  const unique = [...new Set(ids)]
+  const rows = await db.query.leads.findMany({
+    where: inArray(leads.id, unique),
+    with: {
+      form: {
+        columns: {
+          id: true,
+          createdBy: true,
+          slug: true,
+          campaignId: true,
+          title: true,
+        },
+      },
+    },
+  })
+  return rows.filter((row) => row.form.createdBy === userId)
+}
+
+export const bulkUpdateLeadStatus = authedContext
+  .input(
+    z.object({
+      ids: bulkLeadIdsSchema,
+      status: leadStatusSchema,
+    }),
+  )
+  .handler(async ({ context, input }) => {
+    const owned = await ownedLeadsByIds(context.user.id, input.ids)
+    if (owned.length === 0) {
+      return { updated: 0, skipped: input.ids.length }
+    }
+
+    const ownedIds = owned.map((row) => row.id)
+    await db
+      .update(leads)
+      .set({
+        status: input.status,
+        updatedAt: new Date(),
+      })
+      .where(inArray(leads.id, ownedIds))
+
+    return {
+      updated: ownedIds.length,
+      skipped: Math.max(0, new Set(input.ids).size - ownedIds.length),
+    }
+  })
+
+export const bulkUpdateLeadAssignee = authedContext
+  .input(
+    z.object({
+      ids: bulkLeadIdsSchema,
+      /** Empty string clears assignee */
+      assignee: z.string().max(64),
+    }),
+  )
+  .handler(async ({ context, input }) => {
+    const owned = await ownedLeadsByIds(context.user.id, input.ids)
+    if (owned.length === 0) {
+      return { updated: 0, skipped: input.ids.length }
+    }
+
+    const eligibleIds: string[] = []
+    let skipped = Math.max(0, new Set(input.ids).size - owned.length)
+
+    if (!input.assignee) {
+      eligibleIds.push(...owned.map((row) => row.id))
+    } else {
+      const allowedByKey = new Map<string, Set<string>>()
+      for (const lead of owned) {
+        const campaignId = lead.campaignId ?? lead.form.campaignId ?? ''
+        const formSlug = lead.form.slug
+        const cacheKey = `${campaignId}::${formSlug}`
+        let allowed = allowedByKey.get(cacheKey)
+        if (!allowed) {
+          const campaign = await resolveCampaignForLead({
+            campaignId: campaignId || null,
+            formSlug,
+          })
+          allowed = new Set(campaign?.agents.map((a) => a.id) ?? [])
+          allowedByKey.set(cacheKey, allowed)
+        }
+        if (allowed.has(input.assignee)) {
+          eligibleIds.push(lead.id)
+        } else {
+          skipped += 1
+        }
+      }
+    }
+
+    if (eligibleIds.length > 0) {
+      await db
+        .update(leads)
+        .set({
+          assignee: input.assignee || null,
+          updatedAt: new Date(),
+        })
+        .where(inArray(leads.id, eligibleIds))
+    }
+
+    return { updated: eligibleIds.length, skipped }
+  })
+
+const CSV_HEADER = [
+  'lead_id',
+  'created_at',
+  'updated_at',
+  'status',
+  'name',
+  'email',
+  'phone',
+  'amount_range',
+  'preferred_channel',
+  'investor_profile',
+  'securities_account',
+  'city',
+  'company',
+  'assignee',
+  'intent',
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'form_title',
+  'form_slug',
+  'campaign_id',
+  'notes',
+] as const
+
+function leadToCsvLine(row: {
+  id: string
+  createdAt: Date
+  updatedAt: Date
+  status: string
+  name: string | null
+  email: string | null
+  phone: string | null
+  amountRange: string | null
+  preferredChannel: string | null
+  assignee: string | null
+  intent: string | null
+  utmSource: string | null
+  utmMedium: string | null
+  utmCampaign: string | null
+  campaignId: string | null
+  insights: LeadInsightsJson | null
+  form?: {
+    title?: string | null
+    slug?: string | null
+    campaignId?: string | null
+  } | null
+}) {
+  const insights = row.insights
+  const campaign = getCampaignById(row.campaignId ?? row.form?.campaignId ?? '')
+  return [
+    escapeCsvCell(row.id),
+    escapeCsvCell(row.createdAt.toISOString()),
+    escapeCsvCell(row.updatedAt.toISOString()),
+    escapeCsvCell(LEAD_STATUS_LABELS[row.status as keyof typeof LEAD_STATUS_LABELS] ?? row.status),
+    escapeCsvCell(row.name ?? ''),
+    escapeCsvCell(row.email ?? ''),
+    escapeCsvCell(row.phone ?? ''),
+    escapeCsvCell(row.amountRange ?? ''),
+    escapeCsvCell(row.preferredChannel ?? ''),
+    escapeCsvCell(investorProfile(insights) ?? ''),
+    escapeCsvCell(securitiesAccount(insights) ?? ''),
+    escapeCsvCell(insights?.city ?? ''),
+    escapeCsvCell(insights?.company ?? ''),
+    escapeCsvCell(
+      adviserLabel(row.assignee, {
+        campaignId: row.campaignId ?? row.form?.campaignId,
+        formSlug: row.form?.slug ?? undefined,
+      }),
+    ),
+    escapeCsvCell(row.intent ?? ''),
+    escapeCsvCell(formatLeadSource(row.utmSource, campaign)),
+    escapeCsvCell(row.utmMedium ?? ''),
+    escapeCsvCell(row.utmCampaign ?? ''),
+    escapeCsvCell(row.form?.title ?? ''),
+    escapeCsvCell(row.form?.slug ?? ''),
+    escapeCsvCell(row.campaignId ?? row.form?.campaignId ?? ''),
+    escapeCsvCell(insights?.notes ?? ''),
+  ].join(',')
+}
+
 export const exportLeadsCsv = authedContext
   .input(
     leadListFiltersSchema.omit({ page: true, pageSize: true }).extend({
       /** Soft cap to avoid huge payloads */
       limit: z.number().int().min(1).max(5000).default(2000),
+      /** When set, export only these owned leads (ignores list filters) */
+      ids: z.array(z.string().min(1).max(64)).min(1).max(100).optional(),
     }),
   )
   .handler(async ({ context, input }) => {
-    const scopedFormIds = await resolveScopedFormIds(context.user.id, input)
-    if (scopedFormIds.length === 0) {
-      return { csv: '', count: 0 }
+    let rows: Array<{
+      id: string
+      createdAt: Date
+      updatedAt: Date
+      status: string
+      name: string | null
+      email: string | null
+      phone: string | null
+      amountRange: string | null
+      preferredChannel: string | null
+      assignee: string | null
+      intent: string | null
+      utmSource: string | null
+      utmMedium: string | null
+      utmCampaign: string | null
+      campaignId: string | null
+      insights: LeadInsightsJson | null
+      form?: {
+        title?: string | null
+        slug?: string | null
+        campaignId?: string | null
+      } | null
+    }>
+
+    if (input.ids?.length) {
+      const owned = await ownedLeadsByIds(context.user.id, input.ids)
+      rows = owned.map((row) => ({
+        ...row,
+        insights: row.insights as LeadInsightsJson | null,
+      }))
+    } else {
+      const scopedFormIds = await resolveScopedFormIds(context.user.id, input)
+      if (scopedFormIds.length === 0) {
+        return { csv: '', count: 0 }
+      }
+
+      const conditions = buildLeadConditions(scopedFormIds, {
+        ...input,
+        page: 1,
+        pageSize: input.limit,
+      })
+
+      rows = await db.query.leads.findMany({
+        where: and(...conditions),
+        orderBy: leadOrderBy(input.sort),
+        limit: input.limit,
+        with: leadWithForm,
+      })
     }
 
-    const conditions = buildLeadConditions(scopedFormIds, {
-      ...input,
-      page: 1,
-      pageSize: input.limit,
-    })
-
-    const rows = await db.query.leads.findMany({
-      where: and(...conditions),
-      orderBy: leadOrderBy(input.sort),
-      limit: input.limit,
-      with: leadWithForm,
-    })
-
-    const header = [
-      'lead_id',
-      'created_at',
-      'updated_at',
-      'status',
-      'name',
-      'email',
-      'phone',
-      'amount_range',
-      'preferred_channel',
-      'investor_profile',
-      'securities_account',
-      'city',
-      'company',
-      'assignee',
-      'intent',
-      'utm_source',
-      'utm_medium',
-      'utm_campaign',
-      'form_title',
-      'form_slug',
-      'campaign_id',
-      'notes',
-    ]
-
-    const lines = rows.map((row) => {
-      const insights = row.insights as LeadInsightsJson | null
-      const campaign = getCampaignById(row.campaignId ?? row.form?.campaignId ?? '')
-      return [
-        escapeCsvCell(row.id),
-        escapeCsvCell(row.createdAt.toISOString()),
-        escapeCsvCell(row.updatedAt.toISOString()),
-        escapeCsvCell(LEAD_STATUS_LABELS[row.status as keyof typeof LEAD_STATUS_LABELS] ?? row.status),
-        escapeCsvCell(row.name ?? ''),
-        escapeCsvCell(row.email ?? ''),
-        escapeCsvCell(row.phone ?? ''),
-        escapeCsvCell(row.amountRange ?? ''),
-        escapeCsvCell(row.preferredChannel ?? ''),
-        escapeCsvCell(investorProfile(insights) ?? ''),
-        escapeCsvCell(securitiesAccount(insights) ?? ''),
-        escapeCsvCell(insights?.city ?? ''),
-        escapeCsvCell(insights?.company ?? ''),
-        escapeCsvCell(
-          adviserLabel(row.assignee, {
-            campaignId: row.campaignId ?? row.form?.campaignId,
-            formSlug: row.form?.slug,
-          }),
-        ),
-        escapeCsvCell(row.intent ?? ''),
-        escapeCsvCell(formatLeadSource(row.utmSource, campaign)),
-        escapeCsvCell(row.utmMedium ?? ''),
-        escapeCsvCell(row.utmCampaign ?? ''),
-        escapeCsvCell(row.form?.title ?? ''),
-        escapeCsvCell(row.form?.slug ?? ''),
-        escapeCsvCell(row.campaignId ?? row.form?.campaignId ?? ''),
-        escapeCsvCell(insights?.notes ?? ''),
-      ].join(',')
-    })
+    const lines = rows.map((row) =>
+      leadToCsvLine({
+        ...row,
+        insights: row.insights as LeadInsightsJson | null,
+      }),
+    )
 
     return {
-      csv: [header.map(escapeCsvCell).join(','), ...lines].join('\n'),
+      csv: [CSV_HEADER.map(escapeCsvCell).join(','), ...lines].join('\n'),
       count: rows.length,
     }
   })

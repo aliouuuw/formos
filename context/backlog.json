@@ -187,9 +187,9 @@
     {
       "id": "lead-bulk-actions",
       "title": "Bulk assign / status / export",
-      "status": "todo",
+      "status": "done",
       "priority": "medium",
-      "notes": "Multi-select on leads list → assign agent, change status, export, tag."
+      "notes": "Done 2026-07-16 — multi-select on leads list; bulk status + assignee (campaign-validated); export selected CSV. Tags deferred to lead-tags-priority."
     },
     {
       "id": "lead-tags-priority",

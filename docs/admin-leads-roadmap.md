@@ -1,6 +1,7 @@
 # Admin leads roadmap
 
-Last updated: 2026-07-14  
+Last updated: 2026-07-16  
+
 Source of truth for ticket IDs: [`context/backlog.json`](../context/backlog.json)
 
 This document captures how Everest staff should manage IPO (and future campaign) leads in Formos admin, what exists today, and what to build next.
@@ -24,14 +25,14 @@ This document captures how Everest staff should manage IPO (and future campaign)
 | Lead detail / notes UI | Done — drawer with answers + notes |
 | Unassigned + SLA aging queue | Done — filters + badges (`new` >24h, `contacted` >72h) |
 | Click-to-contact | Done in detail panel (logging still open) |
+| Bulk actions | Done — multi-select → status, assign, export selected |
 | Activity history / audit trail | Missing |
 | Duplicate detection | Missing |
 | Slack / CRM push on new lead | Missing (`crm-webhooks`) |
-| Bulk actions | Missing |
 | RBAC / “my leads” per agent user | Missing (`lead-rbac`) |
 
 Primary UI: `/admin/leads`  
-API: `orpc.leads.list` · `get` · `stats` · `insights` · `updateStatus` · `updateAssignee` · `updateNotes` · `exportCsv`
+API: `orpc.leads.list` · `get` · `stats` · `insights` · `updateStatus` · `updateAssignee` · `updateNotes` · `bulkUpdateStatus` · `bulkUpdateAssignee` · `exportCsv`
 
 ---
 
@@ -45,7 +46,7 @@ API: `orpc.leads.list` · `get` · `stats` · `insights` · `updateStatus` · `u
 | 4 | Surface profil / compte titres in list — `lead-ipo-fields-ui` | **Done** |
 | 5 | Unassigned queue + aging (24h / 72h) — `lead-work-queue` | **Done** |
 | 6 | Slack / email on new lead — `crm-webhooks` | Todo |
-| 7 | Bulk assign + status — `lead-bulk-actions` | Todo |
+| 7 | Bulk assign + status — `lead-bulk-actions` | **Done** |
 
 ---
 
@@ -70,7 +71,7 @@ Operational basics so agents can work a live campaign without leaving Formos or 
 | `lead-tags-priority` | Tags (`urgent`, `docs-incomplets`, `VIP`) + optional priority score |
 | `lead-duplicates` | Same phone/email → flag or merge, keep history |
 | `lead-saved-views` | Presets: Nouveaux WhatsApp, Institutionnels >10M, Sans agent, Fenêtre clôture |
-| `lead-bulk-actions` | Multi-select → assign, status, export, tag |
+| `lead-bulk-actions` | Multi-select → assign, status, export selected (tags → `lead-tags-priority`) |
 | `lead-kanban` | Optional board by status (list remains primary) |
 
 ---
@@ -111,7 +112,7 @@ Until automation lands, treat `/admin/leads` as the system of record:
 2. **On contact** — move to `contacted`; note preferred channel and outcome in notes (when notes exist).
 3. **Qualification** — use amount + profil + compte titres to prioritize; set `rdv` / `qualified`.
 4. **Close** — `souscrit` / `won` / `lost` with a short reason in notes.
-5. **Reporting** — until CSV export exists, use insights panels + manual export from submissions if needed.
+5. **Reporting** — filtered lead CSV from `/admin/leads`, plus insights panels for quick totals.
 
 ---
 

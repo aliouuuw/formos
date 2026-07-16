@@ -35,6 +35,8 @@ export default {
     updateStatus: leads.updateLeadStatus,
     updateAssignee: leads.updateLeadAssignee,
     updateNotes: leads.updateLeadNotes,
+    bulkUpdateStatus: leads.bulkUpdateLeadStatus,
+    bulkUpdateAssignee: leads.bulkUpdateLeadAssignee,
     exportCsv: leads.exportLeadsCsv,
   },
   campaigns: {

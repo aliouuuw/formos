@@ -438,12 +438,117 @@ function FilterField({
   )
 }
 
+export function LeadsBulkBar({
+  selectedCount,
+  pageCount,
+  allPageSelected,
+  statusOptions,
+  agentOptions,
+  busy,
+  onTogglePage,
+  onClear,
+  onBulkStatus,
+  onBulkAssignee,
+  onExportSelected,
+}: {
+  selectedCount: number
+  pageCount: number
+  allPageSelected: boolean
+  statusOptions: Array<{ value: string; label: string }>
+  agentOptions: Array<{ value: string; label: string }>
+  busy: boolean
+  onTogglePage: () => void
+  onClear: () => void
+  onBulkStatus: (status: LeadStatus) => void
+  onBulkAssignee: (assignee: string) => void
+  onExportSelected: () => void
+}) {
+  if (selectedCount === 0) return null
+
+  return (
+    <div
+      className="flex flex-col gap-3 border-b border-everest-green/15 bg-everest-green/[0.06] px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6"
+      role="toolbar"
+      aria-label="Actions groupées"
+    >
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-everest-green">
+          <input
+            type="checkbox"
+            checked={allPageSelected}
+            ref={(el) => {
+              if (el) el.indeterminate = selectedCount > 0 && !allPageSelected
+            }}
+            onChange={onTogglePage}
+            className="size-3.5 accent-[var(--everest-green)]"
+            aria-label={
+              allPageSelected
+                ? 'Désélectionner la page'
+                : 'Sélectionner toute la page'
+            }
+          />
+          <span>
+            {selectedCount} sélectionné{selectedCount > 1 ? 's' : ''}
+            {pageCount > 0 ? (
+              <span className="font-normal text-everest-green/55">
+                {' '}
+                · page {pageCount}
+              </span>
+            ) : null}
+          </span>
+        </label>
+        <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={onClear}>
+          Tout désélectionner
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <AdminSelect
+          value=""
+          placeholder="Statut…"
+          onValueChange={(status) => {
+            if (status) onBulkStatus(status as LeadStatus)
+          }}
+          options={[{ value: '', label: 'Changer le statut…' }, ...statusOptions]}
+          triggerClassName="min-w-[10rem]"
+        />
+        <AdminSelect
+          value=""
+          placeholder="Agent…"
+          onValueChange={(assignee) => {
+            if (assignee === '__unassign__') onBulkAssignee('')
+            else if (assignee) onBulkAssignee(assignee)
+          }}
+          options={[
+            { value: '', label: 'Assigner un agent…' },
+            ...agentOptions.filter((o) => o.value),
+            { value: '__unassign__', label: 'Retirer l’agent' },
+          ]}
+          triggerClassName="min-w-[10rem]"
+        />
+        <Button
+          type="button"
+          size="sm"
+          variant="default"
+          disabled={busy}
+          onClick={onExportSelected}
+        >
+          Exporter la sélection
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 export function LeadsTable({
   leads,
   intentLabels,
   resolveCampaign,
   agentOptions,
   campaigns,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
   onOpen,
   onStatusChange,
   onAssigneeChange,
@@ -459,6 +564,9 @@ export function LeadsTable({
     newLeadDeadlineHours?: number
     contactedLeadDeadlineHours?: number
   }>
+  selectedIds: Set<string>
+  onToggleSelect: (id: string) => void
+  onToggleSelectAll: () => void
   onOpen: (id: string) => void
   onStatusChange: (id: string, status: LeadStatus) => void
   onAssigneeChange: (id: string, assignee: string) => void
@@ -468,11 +576,26 @@ export function LeadsTable({
     label: LEAD_STATUS_LABELS[status],
   }))
 
+  const allSelected = leads.length > 0 && leads.every((l) => selectedIds.has(l.id))
+  const someSelected = leads.some((l) => selectedIds.has(l.id))
+
   return (
-    <Table className="min-w-[1080px]">
+    <Table className="min-w-[1120px]">
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead className="px-4 sm:px-6">Lead</TableHead>
+          <TableHead className="w-10 px-3 sm:px-4">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              ref={(el) => {
+                if (el) el.indeterminate = someSelected && !allSelected
+              }}
+              onChange={onToggleSelectAll}
+              className="size-3.5 accent-[var(--everest-green)]"
+              aria-label="Sélectionner toute la page"
+            />
+          </TableHead>
+          <TableHead className="px-2 sm:px-4">Lead</TableHead>
           <TableHead>Contact</TableHead>
           <TableHead>Montant</TableHead>
           <TableHead>Profil</TableHead>
@@ -497,10 +620,25 @@ export function LeadsTable({
           const aging = getLeadAging(lead, deadlines)
           const intent = lead.intent ? (intentLabels.get(lead.intent) ?? lead.intent) : null
           const options = agentOptionsForLead(lead, agentOptions, campaigns)
+          const isSelected = selectedIds.has(lead.id)
 
           return (
-            <TableRow key={lead.id}>
-              <TableCell className="px-4 align-top sm:px-6">
+            <TableRow
+              key={lead.id}
+              className={cn(isSelected && 'bg-everest-green/[0.04]')}
+              data-state={isSelected ? 'selected' : undefined}
+            >
+              <TableCell className="px-3 align-top sm:px-4">
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => onToggleSelect(lead.id)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="mt-1 size-3.5 accent-[var(--everest-green)]"
+                  aria-label={`Sélectionner ${lead.name ?? lead.email ?? 'lead'}`}
+                />
+              </TableCell>
+              <TableCell className="px-2 align-top sm:px-4">
                 <button type="button" className="group text-left" onClick={() => onOpen(lead.id)}>
                   <p className="font-medium text-foreground group-hover:text-everest-green">
                     {lead.name ?? lead.email ?? 'Lead anonyme'}

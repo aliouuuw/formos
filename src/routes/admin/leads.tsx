@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useDeferredValue, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { LeadDetailPanel } from '#/components/admin/lead-detail-panel'
 import {
   agentOptionsForLead,
   CampaignSegment,
+  LeadsBulkBar,
   LeadsInsightsCollapsible,
   LeadsPagination,
   LeadsSummaryBar,
@@ -20,9 +21,20 @@ import { Panel, PanelBody } from '#/components/ui/panel'
 import type { LeadStatus } from '#/lib/form-types'
 import { getCampaignById, listCampaigns } from '#/lib/campaigns'
 import { LEAD_UNASSIGNED, type LeadListSort } from '#/lib/lead-admin'
+import { LEAD_PIPELINE_STATUSES, LEAD_STATUS_LABELS } from '#/lib/lead-status'
 import { client, orpc } from '#/orpc/client'
 
 export const Route = createFileRoute('/admin/leads')({ component: LeadsPage })
+
+function downloadCsv(csv: string, filename: string) {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 function LeadsPage() {
   const queryClient = useQueryClient()
@@ -37,6 +49,7 @@ function LeadsPage() {
   const [agedOnly, setAgedOnly] = useState(false)
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
 
   const pageSize = 50
 
@@ -111,12 +124,25 @@ function LeadsPage() {
     return map
   }, [campaigns])
 
+  const statusOptions = useMemo(
+    () =>
+      LEAD_PIPELINE_STATUSES.map((status) => ({
+        value: status,
+        label: LEAD_STATUS_LABELS[status],
+      })),
+    [],
+  )
+
+  const invalidateLeadQueries = async () => {
+    await queryClient.invalidateQueries({ queryKey: orpc.leads.list.key() })
+    await queryClient.invalidateQueries({ queryKey: orpc.leads.stats.key() })
+    await queryClient.invalidateQueries({ queryKey: orpc.leads.insights.key() })
+  }
+
   const updateStatusMutation = useMutation(
     orpc.leads.updateStatus.mutationOptions({
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: orpc.leads.list.key() })
-        await queryClient.invalidateQueries({ queryKey: orpc.leads.stats.key() })
-        await queryClient.invalidateQueries({ queryKey: orpc.leads.insights.key() })
+        await invalidateLeadQueries()
         toast.success('Statut mis à jour')
       },
       onError: (err) => {
@@ -128,12 +154,53 @@ function LeadsPage() {
   const updateAssigneeMutation = useMutation(
     orpc.leads.updateAssignee.mutationOptions({
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: orpc.leads.list.key() })
-        await queryClient.invalidateQueries({ queryKey: orpc.leads.insights.key() })
+        await invalidateLeadQueries()
         toast.success('Agent assigné')
       },
       onError: (err) => {
         toast.error(err instanceof Error ? err.message : "Impossible d'assigner l'agent")
+      },
+    }),
+  )
+
+  const bulkStatusMutation = useMutation(
+    orpc.leads.bulkUpdateStatus.mutationOptions({
+      onSuccess: async (result) => {
+        await invalidateLeadQueries()
+        setSelectedIds(new Set())
+        if (result.skipped > 0) {
+          toast.success(
+            `${result.updated} statut(s) mis à jour · ${result.skipped} ignoré(s)`,
+          )
+        } else {
+          toast.success(`${result.updated} statut(s) mis à jour`)
+        }
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : 'Impossible de mettre à jour les statuts')
+      },
+    }),
+  )
+
+  const bulkAssigneeMutation = useMutation(
+    orpc.leads.bulkUpdateAssignee.mutationOptions({
+      onSuccess: async (result) => {
+        await invalidateLeadQueries()
+        setSelectedIds(new Set())
+        if (result.skipped > 0) {
+          toast.success(
+            `${result.updated} lead(s) assigné(s) · ${result.skipped} ignoré(s)`,
+          )
+        } else {
+          toast.success(
+            result.updated > 0
+              ? `${result.updated} lead(s) mis à jour`
+              : 'Aucun lead mis à jour',
+          )
+        }
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : "Impossible d'assigner les agents")
       },
     }),
   )
@@ -144,7 +211,60 @@ function LeadsPage() {
   const stats = statsQuery.data
   const insights = insightsQuery.data
 
+  const filterKey = useMemo(
+    () =>
+      JSON.stringify({
+        campaignId: listInput.campaignId,
+        status: listInput.status,
+        assignee: listInput.assignee,
+        q: listInput.q,
+        sort: listInput.sort,
+        agedOnly: listInput.agedOnly,
+      }),
+    [
+      listInput.campaignId,
+      listInput.status,
+      listInput.assignee,
+      listInput.q,
+      listInput.sort,
+      listInput.agedOnly,
+    ],
+  )
+
+  useEffect(() => {
+    setSelectedIds(new Set())
+  }, [filterKey])
+
   const resetPage = () => setPage(1)
+
+  const pageIds = leads.map((l) => l.id)
+  const allPageSelected =
+    pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id))
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAllPage = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (allPageSelected) {
+        for (const id of pageIds) next.delete(id)
+      } else {
+        for (const id of pageIds) next.add(id)
+      }
+      return next
+    })
+  }
+
+  const selectedIdList = useMemo(() => [...selectedIds], [selectedIds])
+  const bulkBusy =
+    bulkStatusMutation.isPending || bulkAssigneeMutation.isPending || exporting
 
   const handleExport = async () => {
     setExporting(true)
@@ -161,13 +281,28 @@ function LeadsPage() {
         toast.message('Aucun lead à exporter pour ces filtres')
         return
       }
-      const blob = new Blob([result.csv], { type: 'text/csv;charset=utf-8' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `leads-${campaignId}-${new Date().toISOString().slice(0, 10)}.csv`
-      a.click()
-      URL.revokeObjectURL(url)
+      downloadCsv(result.csv, `leads-${campaignId}-${new Date().toISOString().slice(0, 10)}.csv`)
+      toast.success(`${result.count} lead(s) exporté(s)`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Échec de l'export")
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleExportSelected = async () => {
+    if (selectedIdList.length === 0) return
+    setExporting(true)
+    try {
+      const result = await client.leads.exportCsv({ ids: selectedIdList })
+      if (!result.csv) {
+        toast.message('Aucun lead à exporter')
+        return
+      }
+      downloadCsv(
+        result.csv,
+        `leads-selection-${new Date().toISOString().slice(0, 10)}.csv`,
+      )
       toast.success(`${result.count} lead(s) exporté(s)`)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Échec de l'export")
@@ -286,12 +421,32 @@ function LeadsPage() {
               resetPage()
             }}
           />
+          <LeadsBulkBar
+            selectedCount={selectedIds.size}
+            pageCount={pageIds.length}
+            allPageSelected={allPageSelected}
+            statusOptions={statusOptions}
+            agentOptions={agentOptions}
+            busy={bulkBusy}
+            onTogglePage={toggleSelectAllPage}
+            onClear={() => setSelectedIds(new Set())}
+            onBulkStatus={(status) =>
+              bulkStatusMutation.mutate({ ids: selectedIdList, status })
+            }
+            onBulkAssignee={(assignee) =>
+              bulkAssigneeMutation.mutate({ ids: selectedIdList, assignee })
+            }
+            onExportSelected={() => void handleExportSelected()}
+          />
           <LeadsTable
             leads={leads}
             intentLabels={intentLabels}
             resolveCampaign={resolveLeadCampaign}
             agentOptions={agentOptions}
             campaigns={campaignsQuery.data}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
+            onToggleSelectAll={toggleSelectAllPage}
             onOpen={setSelectedLeadId}
             onStatusChange={(id, status) => updateStatusMutation.mutate({ id, status })}
             onAssigneeChange={(id, assignee) =>
