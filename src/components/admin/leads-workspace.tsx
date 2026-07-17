@@ -1,15 +1,49 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import {
+  Archive,
+  ChevronDown,
+  Download,
+  Eye,
+  FileDown,
+  ListChecks,
+  MoreHorizontal,
+  RotateCcw,
+  Trash2,
+  UserRoundCog,
+  X,
+} from 'lucide-react'
+
 import type { LeadStatus } from '#/lib/form-types'
 import type { LeadListSort } from '#/lib/lead-admin'
-import { agingLabel, deadlinesForLead, duplicateMatchLabel, getLeadAging, investorProfile, LEAD_LIST_SORTS, securitiesAccount } from '#/lib/lead-admin'
+import {
+  agingLabel,
+  deadlinesForLead,
+  duplicateMatchLabel,
+  getLeadAging,
+  investorProfile,
+  LEAD_LIST_SORTS,
+  securitiesAccount,
+} from '#/lib/lead-admin'
 import type { CampaignConfig } from '#/lib/campaigns/types'
+import { isBulletinFormSlug } from '#/lib/ipo-bulletin'
 import { LEAD_PIPELINE_STATUSES, LEAD_STATUS_LABELS } from '#/lib/lead-status'
 import { adviserLabel, formatLeadSource } from '#/lib/leads'
 import { AdminSelect } from '#/components/admin/admin-select'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '#/components/ui/dropdown-menu'
 import { Input } from '#/components/ui/input'
 import {
   Table,
@@ -24,6 +58,8 @@ import { cn } from '#/lib/utils'
 
 type LeadRow = {
   id: string
+  formId: string
+  submissionId: string
   name: string | null
   email: string | null
   phone: string | null
@@ -38,6 +74,7 @@ type LeadRow = {
   updatedAt: Date | string
   insights: unknown
   form?: {
+    id?: string
     title?: string
     slug?: string
     campaignId?: string | null
@@ -254,11 +291,12 @@ export function LeadsToolbar({
   onAgedOnlyChange: (value: boolean) => void
 }) {
   const statusOptions = [
-    { value: 'all', label: 'Tous' },
+    { value: 'all', label: 'Actifs' },
     ...LEAD_PIPELINE_STATUSES.map((status) => ({
       value: status,
       label: LEAD_STATUS_LABELS[status],
     })),
+    { value: 'archived', label: LEAD_STATUS_LABELS.archived },
   ]
 
   const sortOptions = LEAD_LIST_SORTS.map((value) => ({
@@ -444,34 +482,42 @@ export function LeadsBulkBar({
   allPageSelected,
   statusOptions,
   agentOptions,
+  archivedView,
   busy,
   onTogglePage,
   onClear,
   onBulkStatus,
   onBulkAssignee,
   onExportSelected,
+  onArchiveSelected,
+  onRestoreSelected,
+  onDeleteSelected,
 }: {
   selectedCount: number
   pageCount: number
   allPageSelected: boolean
   statusOptions: Array<{ value: string; label: string }>
   agentOptions: Array<{ value: string; label: string }>
+  archivedView: boolean
   busy: boolean
   onTogglePage: () => void
   onClear: () => void
   onBulkStatus: (status: LeadStatus) => void
   onBulkAssignee: (assignee: string) => void
   onExportSelected: () => void
+  onArchiveSelected: () => void
+  onRestoreSelected: () => void
+  onDeleteSelected: () => void
 }) {
   if (selectedCount === 0) return null
 
   return (
     <div
-      className="flex flex-col gap-3 border-b border-everest-green/15 bg-everest-green/[0.06] px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6"
+      className="flex min-h-14 flex-wrap items-center justify-between gap-3 border-b border-everest-green/15 bg-everest-green/6 px-4 py-2.5 sm:px-6"
       role="toolbar"
       aria-label="Actions groupées"
     >
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex min-w-0 items-center gap-3">
         <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-everest-green">
           <input
             type="checkbox"
@@ -480,7 +526,7 @@ export function LeadsBulkBar({
               if (el) el.indeterminate = selectedCount > 0 && !allPageSelected
             }}
             onChange={onTogglePage}
-            className="size-3.5 accent-[var(--everest-green)]"
+            className="size-3.5 accent-everest-green"
             aria-label={
               allPageSelected
                 ? 'Désélectionner la page'
@@ -488,54 +534,100 @@ export function LeadsBulkBar({
             }
           />
           <span>
-            {selectedCount} sélectionné{selectedCount > 1 ? 's' : ''}
+            <strong className="font-semibold tabular-nums">{selectedCount}</strong>{' '}
+            sélectionné{selectedCount > 1 ? 's' : ''}
             {pageCount > 0 ? (
-              <span className="font-normal text-everest-green/55">
-                {' '}
-                · page {pageCount}
+              <span className="hidden font-normal text-everest-green/55 sm:inline">
+                {' '}sur {pageCount} dans cette page
               </span>
             ) : null}
           </span>
         </label>
-        <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={onClear}>
-          Tout désélectionner
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          disabled={busy}
+          onClick={onClear}
+          className="size-8 text-everest-green/60 hover:text-everest-green"
+          aria-label="Tout désélectionner"
+          title="Tout désélectionner"
+        >
+          <X className="size-4" />
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <AdminSelect
-          value=""
-          placeholder="Statut…"
-          onValueChange={(status) => {
-            if (status) onBulkStatus(status as LeadStatus)
-          }}
-          options={[{ value: '', label: 'Changer le statut…' }, ...statusOptions]}
-          triggerClassName="min-w-[10rem]"
-        />
-        <AdminSelect
-          value=""
-          placeholder="Agent…"
-          onValueChange={(assignee) => {
-            if (assignee === '__unassign__') onBulkAssignee('')
-            else if (assignee) onBulkAssignee(assignee)
-          }}
-          options={[
-            { value: '', label: 'Assigner un agent…' },
-            ...agentOptions.filter((o) => o.value),
-            { value: '__unassign__', label: 'Retirer l’agent' },
-          ]}
-          triggerClassName="min-w-[10rem]"
-        />
-        <Button
-          type="button"
-          size="sm"
-          variant="default"
-          disabled={busy}
-          onClick={onExportSelected}
-        >
-          Exporter la sélection
-        </Button>
-      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button type="button" size="sm" variant="everest" disabled={busy}>
+            {busy ? 'Traitement…' : 'Actions groupées'}
+            <ChevronDown className="size-3.5 opacity-70" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-60">
+          <DropdownMenuLabel>
+            Appliquer à {selectedCount} lead{selectedCount > 1 ? 's' : ''}
+          </DropdownMenuLabel>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <ListChecks className="size-4" />
+              Changer le statut
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="min-w-48">
+              {statusOptions.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  onClick={() => onBulkStatus(option.value as LeadStatus)}
+                >
+                  {option.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <UserRoundCog className="size-4" />
+              Assigner un agent
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="min-w-52">
+              {agentOptions
+                .filter((option) => option.value)
+                .map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => onBulkAssignee(option.value)}
+                  >
+                    {option.label}
+                  </DropdownMenuItem>
+                ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onBulkAssignee('')}>
+                Retirer l’agent
+              </DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+          <DropdownMenuItem onClick={onExportSelected}>
+            <Download className="size-4" />
+            Exporter la sélection en CSV
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          {archivedView ? (
+            <DropdownMenuItem onClick={onRestoreSelected}>
+              <RotateCcw className="size-4" />
+              Restaurer la sélection
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem onClick={onArchiveSelected}>
+              <Archive className="size-4" />
+              Archiver la sélection
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem variant="destructive" onClick={onDeleteSelected}>
+            <Trash2 className="size-4" />
+            Supprimer la sélection
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }
@@ -552,6 +644,11 @@ export function LeadsTable({
   onOpen,
   onStatusChange,
   onAssigneeChange,
+  onExportCsv,
+  onDownloadPdf,
+  onArchive,
+  onRestore,
+  onDelete,
 }: {
   leads: LeadRow[]
   intentLabels: Map<string, string>
@@ -570,6 +667,11 @@ export function LeadsTable({
   onOpen: (id: string) => void
   onStatusChange: (id: string, status: LeadStatus) => void
   onAssigneeChange: (id: string, assignee: string) => void
+  onExportCsv: (id: string) => void
+  onDownloadPdf: (lead: LeadRow) => void
+  onArchive: (id: string) => void
+  onRestore: (id: string) => void
+  onDelete: (id: string) => void
 }) {
   const statusOptions = LEAD_PIPELINE_STATUSES.map((status) => ({
     value: status,
@@ -604,7 +706,7 @@ export function LeadsTable({
           <TableHead>Agent</TableHead>
           <TableHead>Statut</TableHead>
           <TableHead>Assigner</TableHead>
-          <TableHead className="px-4 sm:px-6" />
+          <TableHead className="px-4 text-right sm:px-6">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -627,6 +729,8 @@ export function LeadsTable({
           const intent = lead.intent ? (intentLabels.get(lead.intent) ?? lead.intent) : null
           const options = agentOptionsForLead(lead, agentOptions, campaigns)
           const isSelected = selectedIds.has(lead.id)
+          const isArchived = lead.status === 'archived'
+          const canDownloadPdf = isBulletinFormSlug(lead.form?.slug ?? '')
 
           return (
             <TableRow
@@ -659,7 +763,12 @@ export function LeadsTable({
                     {insightsJson?.city ? ` · ${insightsJson.city}` : ''}
                   </p>
                   <div className="mt-1.5 flex flex-wrap gap-1">
-                    {aging ? (
+                    {isArchived ? (
+                      <Badge variant="secondary" className="normal-case tracking-normal">
+                        Archivé
+                      </Badge>
+                    ) : null}
+                    {aging && !isArchived ? (
                       <Badge variant="mauve" className="normal-case tracking-normal">
                         {agingLabel(aging, deadlines)}
                       </Badge>
@@ -709,11 +818,15 @@ export function LeadsTable({
                 })}
               </TableCell>
               <TableCell className="align-top">
-                <AdminSelect
-                  value={lead.status}
-                  onValueChange={(status) => onStatusChange(lead.id, status as LeadStatus)}
-                  options={statusOptions}
-                />
+                {isArchived ? (
+                  <span className="text-sm text-muted-foreground">Archivé</span>
+                ) : (
+                  <AdminSelect
+                    value={lead.status}
+                    onValueChange={(status) => onStatusChange(lead.id, status as LeadStatus)}
+                    options={statusOptions}
+                  />
+                )}
               </TableCell>
               <TableCell className="align-top">
                 <AdminSelect
@@ -723,15 +836,85 @@ export function LeadsTable({
                 />
               </TableCell>
               <TableCell className="px-4 text-right align-top sm:px-6">
-                <Button type="button" size="sm" variant="everest" onClick={() => onOpen(lead.id)}>
-                  Détail
-                </Button>
+                <LeadActionsMenu
+                  canDownloadPdf={canDownloadPdf}
+                  isArchived={isArchived}
+                  onOpen={() => onOpen(lead.id)}
+                  onDownloadPdf={() => onDownloadPdf(lead)}
+                  onExportCsv={() => onExportCsv(lead.id)}
+                  onArchive={() => onArchive(lead.id)}
+                  onRestore={() => onRestore(lead.id)}
+                  onDelete={() => onDelete(lead.id)}
+                />
               </TableCell>
             </TableRow>
           )
         })}
       </TableBody>
     </Table>
+  )
+}
+
+function LeadActionsMenu({
+  canDownloadPdf,
+  isArchived,
+  onOpen,
+  onDownloadPdf,
+  onExportCsv,
+  onArchive,
+  onRestore,
+  onDelete,
+}: {
+  canDownloadPdf: boolean
+  isArchived: boolean
+  onOpen: () => void
+  onDownloadPdf: () => void
+  onExportCsv: () => void
+  onArchive: () => void
+  onRestore: () => void
+  onDelete: () => void
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="h-9 gap-1.5 px-3">
+          Actions
+          <MoreHorizontal className="size-3.5 opacity-70" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-52">
+        <DropdownMenuItem onClick={onOpen}>
+          <Eye className="size-4" />
+          Voir le détail
+        </DropdownMenuItem>
+        {canDownloadPdf ? (
+          <DropdownMenuItem onClick={onDownloadPdf}>
+            <FileDown className="size-4" />
+            Télécharger le PDF
+          </DropdownMenuItem>
+        ) : null}
+        <DropdownMenuItem onClick={onExportCsv}>
+          <Download className="size-4" />
+          Exporter CSV
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        {isArchived ? (
+          <DropdownMenuItem onClick={onRestore}>
+            <RotateCcw className="size-4" />
+            Restaurer
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onClick={onArchive}>
+            <Archive className="size-4" />
+            Archiver
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem variant="destructive" onClick={onDelete}>
+          <Trash2 className="size-4" />
+          Supprimer
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
@@ -842,5 +1025,54 @@ export function CampaignSegment({
         Tous
       </ToggleGroupItem>
     </ToggleGroup>
+  )
+}
+
+export function LeadViewSegment({
+  archived,
+  archivedCount = 0,
+  onChange,
+}: {
+  archived: boolean
+  archivedCount?: number
+  onChange: (archived: boolean) => void
+}) {
+  return (
+    <div className="inline-flex items-center rounded-xl border border-everest-green/10 bg-card p-1 shadow-sm">
+      <button
+        type="button"
+        onClick={() => onChange(false)}
+        className={cn(
+          'rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors',
+          archived
+            ? 'text-everest-green/55 hover:bg-everest-green/5 hover:text-everest-green'
+            : 'bg-everest-green text-white',
+        )}
+      >
+        Leads actifs
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange(true)}
+        className={cn(
+          'inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors',
+          archived
+            ? 'bg-everest-green text-white'
+            : 'text-everest-green/55 hover:bg-everest-green/5 hover:text-everest-green',
+        )}
+      >
+        Archivés
+        {archivedCount > 0 ? (
+          <span
+            className={cn(
+              'rounded-full px-1.5 py-0.5 text-[10px] tabular-nums',
+              archived ? 'bg-white/15 text-white' : 'bg-everest-green/8 text-everest-green',
+            )}
+          >
+            {archivedCount}
+          </span>
+        ) : null}
+      </button>
+    </div>
   )
 }

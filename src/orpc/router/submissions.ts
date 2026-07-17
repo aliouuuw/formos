@@ -5,8 +5,15 @@ import { z } from 'zod'
 import { db } from '#/db/index'
 import { formDefinitionSnapshots, formSubmissions, forms, leads } from '#/db/schema'
 import { inngest } from '#/inngest/client'
+import {
+  BULLETIN_FIELD_IDS,
+  bulletinDisplayName,
+  isBulletinFormSlug,
+  parseSignature,
+} from '#/lib/ipo-bulletin'
 import { extractLeadFields, classifySubmission } from '#/lib/leads'
 import { MAX_JSON_BYTES, SUBMIT_RATE_LIMIT } from '#/lib/limits'
+import { fillBulletinPdf, bulletinPdfFilename } from '#/lib/pdf/fill-bulletin'
 import { checkRateLimit, getClientIp } from '#/lib/rate-limit'
 import { resolvePublishedFormBySlug } from '#/lib/resolve-form-slug'
 import {
@@ -117,7 +124,9 @@ export const submitForm = publicContext
       }
     }
 
-    // Idempotent retry / back-button: same browser session already completed.
+    // Idempotent retry / double-click: one submission per browser session.
+    // The client rotates the session id after a successful submit so a new
+    // bulletin fill creates a new lead.
     const existingSubmission = await db.query.formSubmissions.findFirst({
       where: and(
         eq(formSubmissions.formId, form.id),
@@ -138,10 +147,24 @@ export const submitForm = publicContext
     if (!validation.ok) {
       throw new ORPCError('BAD_REQUEST', { message: validation.message })
     }
+    if (
+      isBulletinFormSlug(form.slug) &&
+      !parseSignature(validation.answers[BULLETIN_FIELD_IDS.signature])
+    ) {
+      throw new ORPCError('BAD_REQUEST', { message: 'Signature du souscripteur invalide' })
+    }
 
     const submissionId = crypto.randomUUID()
     const leadId = crypto.randomUUID()
     const leadFields = extractLeadFields(form.definition, validation.answers)
+    if (isBulletinFormSlug(form.slug)) {
+      const fullName = bulletinDisplayName(validation.answers)
+      if (fullName) leadFields.name = fullName
+      const total = validation.answers[BULLETIN_FIELD_IDS.totalFcfa]
+      if (total) {
+        leadFields.amountRange = `${Number(total).toLocaleString('fr-FR')} FCFA`
+      }
+    }
     const classification = classifySubmission({
       formSlug: form.slug,
       formCampaignId: form.campaignId,
@@ -352,4 +375,43 @@ export const exportSubmissionsCsv = authedContext
     })
 
     return { csv: [header.map(escape).join(','), ...lines].join('\n') }
+  })
+
+export const generateBulletinPdf = authedContext
+  .input(z.object({ formId: z.string(), submissionId: z.string() }))
+  .handler(async ({ context, input }) => {
+    const form = await db.query.forms.findFirst({
+      where: and(eq(forms.id, input.formId), eq(forms.createdBy, context.user.id)),
+    })
+
+    if (!form) {
+      throw new ORPCError('NOT_FOUND', { message: 'Form not found' })
+    }
+
+    if (!isBulletinFormSlug(form.slug)) {
+      throw new ORPCError('BAD_REQUEST', {
+        message: 'This form does not support bulletin PDF generation',
+      })
+    }
+
+    const submission = await db.query.formSubmissions.findFirst({
+      where: and(
+        eq(formSubmissions.id, input.submissionId),
+        eq(formSubmissions.formId, input.formId),
+      ),
+    })
+
+    if (!submission) {
+      throw new ORPCError('NOT_FOUND', { message: 'Submission not found' })
+    }
+
+    const answers = submission.answers as Record<string, string>
+    const pdfBytes = await fillBulletinPdf(answers)
+    const base64 = Buffer.from(pdfBytes).toString('base64')
+
+    return {
+      base64,
+      filename: bulletinPdfFilename(answers),
+      contentType: 'application/pdf' as const,
+    }
   })

@@ -13,9 +13,20 @@ import {
   LeadsSummaryBar,
   LeadsTable,
   LeadsToolbar,
+  LeadViewSegment,
 } from '#/components/admin/leads-workspace'
 import { EmptyState } from '#/components/empty-state'
 import { PageHeader } from '#/components/page-header'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '#/components/ui/alert-dialog'
 import { Button } from '#/components/ui/button'
 import { Panel, PanelBody } from '#/components/ui/panel'
 import type { LeadStatus } from '#/lib/form-types'
@@ -36,6 +47,22 @@ function downloadCsv(csv: string, filename: string) {
   URL.revokeObjectURL(url)
 }
 
+function downloadBase64Pdf(base64: string, filename: string, contentType: string) {
+  const binary = atob(base64)
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0))
+  const url = URL.createObjectURL(new Blob([bytes], { type: contentType }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+type PendingLeadAction =
+  | { type: 'archive'; ids: string[]; name: string }
+  | { type: 'restore'; ids: string[]; name: string }
+  | { type: 'delete'; ids: string[]; name: string }
+
 function LeadsPage() {
   const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all')
@@ -50,6 +77,7 @@ function LeadsPage() {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
+  const [pendingAction, setPendingAction] = useState<PendingLeadAction | null>(null)
 
   const pageSize = 50
 
@@ -205,6 +233,34 @@ function LeadsPage() {
     }),
   )
 
+  const deleteLeadMutation = useMutation(
+    orpc.leads.delete.mutationOptions({
+      onSuccess: async () => {
+        await invalidateLeadQueries()
+        setSelectedLeadId(null)
+        setPendingAction(null)
+        toast.success('Lead supprimé')
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : 'Impossible de supprimer le lead')
+      },
+    }),
+  )
+
+  const bulkDeleteMutation = useMutation(
+    orpc.leads.bulkDelete.mutationOptions({
+      onSuccess: async (result) => {
+        await invalidateLeadQueries()
+        setSelectedIds(new Set())
+        setPendingAction(null)
+        toast.success(`${result.deleted} lead(s) supprimé(s)`)
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : 'Impossible de supprimer les leads')
+      },
+    }),
+  )
+
   const leads = leadsQuery.data?.items ?? []
   const total = leadsQuery.data?.total ?? 0
   const hasMore = leadsQuery.data?.hasMore ?? false
@@ -264,7 +320,10 @@ function LeadsPage() {
 
   const selectedIdList = useMemo(() => [...selectedIds], [selectedIds])
   const bulkBusy =
-    bulkStatusMutation.isPending || bulkAssigneeMutation.isPending || exporting
+    bulkStatusMutation.isPending ||
+    bulkAssigneeMutation.isPending ||
+    bulkDeleteMutation.isPending ||
+    exporting
 
   const handleExport = async () => {
     setExporting(true)
@@ -310,6 +369,69 @@ function LeadsPage() {
       setExporting(false)
     }
   }
+
+  const handleExportOne = async (id: string) => {
+    setExporting(true)
+    try {
+      const result = await client.leads.exportCsv({ ids: [id] })
+      if (!result.csv) {
+        toast.message('Aucun lead à exporter')
+        return
+      }
+      downloadCsv(result.csv, `lead-${id.slice(0, 8)}-${new Date().toISOString().slice(0, 10)}.csv`)
+      toast.success('CSV téléchargé')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Échec de l'export")
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleDownloadPdf = async (lead: {
+    id: string
+    formId: string
+    submissionId: string
+    form?: { id?: string } | null
+  }) => {
+    const formId = lead.form?.id ?? lead.formId
+    try {
+      const data = await client.submissions.generateBulletinPdf({
+        formId,
+        submissionId: lead.submissionId,
+      })
+      downloadBase64Pdf(data.base64, data.filename, data.contentType)
+      toast.success('Bulletin PDF téléchargé')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Échec de la génération PDF')
+    }
+  }
+
+  const confirmPendingAction = () => {
+    if (!pendingAction) return
+    if (pendingAction.type === 'delete') {
+      if (pendingAction.ids.length === 1) {
+        deleteLeadMutation.mutate({ id: pendingAction.ids[0]! })
+      } else {
+        bulkDeleteMutation.mutate({ ids: pendingAction.ids })
+      }
+      return
+    }
+    const status = pendingAction.type === 'archive' ? 'archived' : 'new'
+    if (pendingAction.ids.length === 1) {
+      updateStatusMutation.mutate(
+        { id: pendingAction.ids[0]!, status },
+        { onSuccess: () => setPendingAction(null) },
+      )
+    } else {
+      bulkStatusMutation.mutate(
+        { ids: pendingAction.ids, status },
+        { onSuccess: () => setPendingAction(null) },
+      )
+    }
+  }
+
+  const leadLabel = (lead: { id: string; name?: string | null; email?: string | null }) =>
+    lead.name ?? lead.email ?? `Lead ${lead.id.slice(0, 8)}`
 
   const resolveLeadCampaign = (lead: {
     campaignId?: string | null
@@ -376,15 +498,28 @@ function LeadsPage() {
         <LeadsInsightsCollapsible insights={insights} campaignId={campaignId} />
       ) : null}
 
+      <LeadViewSegment
+        archived={statusFilter === 'archived'}
+        archivedCount={stats?.archived}
+        onChange={(archived) => {
+          setStatusFilter(archived ? 'archived' : 'all')
+          setAgedOnly(false)
+          setSelectedIds(new Set())
+          resetPage()
+        }}
+      />
+
       {leadsQuery.isLoading ? (
         <Panel>
           <PanelBody className="py-12 text-sm text-night-60">Chargement des leads…</PanelBody>
         </Panel>
       ) : leads.length === 0 ? (
         <EmptyState
-          title="Aucun lead dans cette vue"
+          title={statusFilter === 'archived' ? 'Aucun lead archivé' : 'Aucun lead dans cette vue'}
           description={
-            selectedCampaign
+            statusFilter === 'archived'
+              ? 'Les leads archivés depuis le menu Actions apparaîtront ici.'
+              : selectedCampaign
               ? `Publiez les formulaires de « ${selectedCampaign.shortName ?? selectedCampaign.name} » et partagez la landing avec des UTMs.`
               : 'Créez ou publiez des formulaires, puis partagez-les avec des liens UTM.'
           }
@@ -427,6 +562,7 @@ function LeadsPage() {
             allPageSelected={allPageSelected}
             statusOptions={statusOptions}
             agentOptions={agentOptions}
+            archivedView={statusFilter === 'archived'}
             busy={bulkBusy}
             onTogglePage={toggleSelectAllPage}
             onClear={() => setSelectedIds(new Set())}
@@ -437,6 +573,27 @@ function LeadsPage() {
               bulkAssigneeMutation.mutate({ ids: selectedIdList, assignee })
             }
             onExportSelected={() => void handleExportSelected()}
+            onArchiveSelected={() =>
+              setPendingAction({
+                type: 'archive',
+                ids: selectedIdList,
+                name: `${selectedIdList.length} leads sélectionnés`,
+              })
+            }
+            onRestoreSelected={() =>
+              setPendingAction({
+                type: 'restore',
+                ids: selectedIdList,
+                name: `${selectedIdList.length} leads sélectionnés`,
+              })
+            }
+            onDeleteSelected={() =>
+              setPendingAction({
+                type: 'delete',
+                ids: selectedIdList,
+                name: `${selectedIdList.length} leads sélectionnés`,
+              })
+            }
           />
           <LeadsTable
             leads={leads}
@@ -452,6 +609,23 @@ function LeadsPage() {
             onAssigneeChange={(id, assignee) =>
               updateAssigneeMutation.mutate({ id, assignee })
             }
+            onExportCsv={(id) => void handleExportOne(id)}
+            onDownloadPdf={(lead) => void handleDownloadPdf(lead)}
+            onArchive={(id) => {
+              const lead = leads.find((item) => item.id === id)
+              if (!lead) return
+              setPendingAction({ type: 'archive', ids: [id], name: leadLabel(lead) })
+            }}
+            onRestore={(id) => {
+              const lead = leads.find((item) => item.id === id)
+              if (!lead) return
+              setPendingAction({ type: 'restore', ids: [id], name: leadLabel(lead) })
+            }}
+            onDelete={(id) => {
+              const lead = leads.find((item) => item.id === id)
+              if (!lead) return
+              setPendingAction({ type: 'delete', ids: [id], name: leadLabel(lead) })
+            }}
           />
           <LeadsPagination
             page={page}
@@ -478,6 +652,78 @@ function LeadsPage() {
           onClose={() => setSelectedLeadId(null)}
         />
       ) : null}
+
+      <AlertDialog
+        open={Boolean(pendingAction)}
+        onOpenChange={(open) => !open && setPendingAction(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingAction?.type === 'delete'
+                ? pendingAction.ids.length > 1
+                  ? `Supprimer ${pendingAction.ids.length} leads ?`
+                  : 'Supprimer ce lead ?'
+                : pendingAction?.type === 'archive'
+                  ? pendingAction.ids.length > 1
+                    ? `Archiver ${pendingAction.ids.length} leads ?`
+                    : 'Archiver ce lead ?'
+                  : pendingAction && pendingAction.ids.length > 1
+                    ? `Restaurer ${pendingAction.ids.length} leads ?`
+                    : 'Restaurer ce lead ?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingAction?.type === 'delete' ? (
+                <>
+                  {pendingAction.ids.length > 1
+                    ? `${pendingAction.ids.length} leads et leurs soumissions associées seront définitivement supprimés.`
+                    : `« ${pendingAction.name} » sera définitivement supprimé avec sa soumission associée.`}{' '}
+                  Cette action est irréversible.
+                </>
+              ) : pendingAction?.type === 'archive' ? (
+                <>
+                  {pendingAction.ids.length > 1
+                    ? `${pendingAction.ids.length} leads seront retirés de la vue active.`
+                    : `« ${pendingAction.name} » sera retiré de la vue active.`}{' '}
+                  Vous pourrez les restaurer depuis le filtre « Archivé ».
+                </>
+              ) : pendingAction ? (
+                <>
+                  {pendingAction.ids.length > 1
+                    ? `${pendingAction.ids.length} leads seront remis dans le pipeline avec le statut Nouveau.`
+                    : `« ${pendingAction.name} » sera remis dans le pipeline avec le statut Nouveau.`}
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault()
+                confirmPendingAction()
+              }}
+              disabled={
+                deleteLeadMutation.isPending ||
+                bulkDeleteMutation.isPending ||
+                updateStatusMutation.isPending ||
+                bulkStatusMutation.isPending
+              }
+              className={
+                pendingAction?.type === 'delete'
+                  ? 'bg-destructive hover:bg-destructive/90 focus-visible:shadow-[0_0_0_3px_rgba(220,38,38,0.2)]'
+                  : undefined
+              }
+            >
+              {pendingAction?.type === 'delete'
+                ? 'Supprimer'
+                : pendingAction?.type === 'archive'
+                  ? 'Archiver'
+                  : 'Restaurer'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

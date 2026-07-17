@@ -8,6 +8,7 @@ export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
   qualified: 'Qualifié',
   won: 'Gagné',
   lost: 'Perdu',
+  archived: 'Archivé',
 }
 
 /** Campaign pipeline order shown in admin filters and status dropdowns. */
@@ -32,4 +33,5 @@ export const LEAD_STATUS_VARIANT: Record<
   qualified: 'default',
   won: 'everest',
   lost: 'outline',
+  archived: 'secondary',
 }

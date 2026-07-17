@@ -22,11 +22,18 @@ export const bridgeBankIpoCampaign: CampaignConfig = {
       intent: 'subscribe',
       intentLabel: 'Souscription',
     },
+    {
+      slug: 'ipo-bulletin',
+      intent: 'bulletin',
+      intentLabel: 'Bulletin de souscription',
+    },
   ],
   agents: parseAgentNames(undefined, DEFAULT_CAMPAIGN_AGENTS.map((a) => a.label)),
   conversionStatuses: ['souscrit', 'won'],
   sourceLabels: {
     'landing-souscrire': 'Landing · Souscrire',
+    'landing-bulletin': 'Landing · Bulletin',
+    bulletin: 'Bulletin de souscription',
     linkedin: 'LinkedIn',
     whatsapp: 'WhatsApp',
     email: 'Email clients',

@@ -19,6 +19,7 @@ export const IPO_CAMPAIGN = {
 
 export const IPO_FORM_SLUGS = {
   subscribe: 'ipo-souscrire',
+  bulletin: 'ipo-bulletin',
 } as const
 
 export const IPO_GUIDE_PATH = '/ipo-bridge-bank/guide' as const

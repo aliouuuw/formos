@@ -22,6 +22,7 @@ export default {
     list: submissions.listSubmissions,
     get: submissions.getSubmission,
     exportCsv: submissions.exportSubmissionsCsv,
+    generateBulletinPdf: submissions.generateBulletinPdf,
   },
   analytics: {
     track: analytics.trackEvent,
@@ -35,6 +36,8 @@ export default {
     updateStatus: leads.updateLeadStatus,
     updateAssignee: leads.updateLeadAssignee,
     updateNotes: leads.updateLeadNotes,
+    delete: leads.deleteLead,
+    bulkDelete: leads.bulkDeleteLeads,
     bulkUpdateStatus: leads.bulkUpdateLeadStatus,
     bulkUpdateAssignee: leads.bulkUpdateLeadAssignee,
     exportCsv: leads.exportLeadsCsv,

@@ -8,6 +8,7 @@ import {
   ilike,
   inArray,
   isNull,
+  ne,
   or,
   sql,
   type SQL,
@@ -15,7 +16,13 @@ import {
 import { z } from 'zod'
 
 import { db } from '#/db/index'
-import { formDefinitionSnapshots, forms, leads, type LeadInsightsJson } from '#/db/schema'
+import {
+  formDefinitionSnapshots,
+  formSubmissions,
+  forms,
+  leads,
+  type LeadInsightsJson,
+} from '#/db/schema'
 import { getCampaignById, listCampaigns } from '#/lib/campaigns'
 import { resolveCampaignConfig, resolveCampaignForLead } from '#/lib/campaigns/settings'
 import { leadStatusSchema } from '#/lib/form-types'
@@ -133,6 +140,9 @@ function buildLeadConditions(
 
   if (input.status) {
     conditions.push(eq(leads.status, input.status))
+  } else {
+    // Default list hides archived leads; filter by status=archived to see them.
+    conditions.push(ne(leads.status, 'archived'))
   }
 
   if (input.assignee === LEAD_UNASSIGNED) {
@@ -307,8 +317,11 @@ export const getLeadStats = authedContext
         subscribed: 0,
         unassigned: 0,
         aged: 0,
+        archived: 0,
       }
     }
+
+    const activeScope = and(inArray(leads.formId, formIds), ne(leads.status, 'archived'))
 
     const rows = await db
       .select({
@@ -318,7 +331,7 @@ export const getLeadStats = authedContext
         count: sql<number>`count(*)::int`,
       })
       .from(leads)
-      .where(inArray(leads.formId, formIds))
+      .where(activeScope)
       .groupBy(leads.status, leads.intent, leads.utmSource)
 
     const byStatus: Record<string, number> = {}
@@ -344,10 +357,14 @@ export const getLeadStats = authedContext
     const [unassignedRow] = await db
       .select({ value: count() })
       .from(leads)
-      .where(and(inArray(leads.formId, formIds), isNull(leads.assignee)))
+      .where(and(activeScope, isNull(leads.assignee)))
 
-    const agedWhere = and(inArray(leads.formId, formIds), buildAgedOnlyCondition())
+    const agedWhere = and(activeScope, buildAgedOnlyCondition())
     const [agedRow] = await db.select({ value: count() }).from(leads).where(agedWhere)
+    const [archivedRow] = await db
+      .select({ value: count() })
+      .from(leads)
+      .where(and(inArray(leads.formId, formIds), eq(leads.status, 'archived')))
 
     return {
       total,
@@ -359,6 +376,7 @@ export const getLeadStats = authedContext
       subscribed: converted,
       unassigned: unassignedRow?.value ?? 0,
       aged: agedRow?.value ?? 0,
+      archived: archivedRow?.value ?? 0,
     }
   })
 
@@ -432,6 +450,24 @@ export const updateLeadAssignee = authedContext
       .returning()
 
     return updated
+  })
+
+export const deleteLead = authedContext
+  .input(z.object({ id: z.string() }))
+  .handler(async ({ context, input }) => {
+    const lead = await db.query.leads.findFirst({
+      where: eq(leads.id, input.id),
+      with: { form: true },
+    })
+
+    if (!lead || lead.form.createdBy !== context.user.id) {
+      throw new ORPCError('NOT_FOUND', { message: 'Lead not found' })
+    }
+
+    // Deleting the submission cascades to the lead (FK onDelete cascade).
+    await db.delete(formSubmissions).where(eq(formSubmissions.id, lead.submissionId))
+
+    return { ok: true as const, id: input.id }
   })
 
 export const updateLeadNotes = authedContext
@@ -517,6 +553,24 @@ export const bulkUpdateLeadStatus = authedContext
     return {
       updated: ownedIds.length,
       skipped: Math.max(0, new Set(input.ids).size - ownedIds.length),
+    }
+  })
+
+export const bulkDeleteLeads = authedContext
+  .input(z.object({ ids: bulkLeadIdsSchema }))
+  .handler(async ({ context, input }) => {
+    const owned = await ownedLeadsByIds(context.user.id, input.ids)
+    if (owned.length === 0) {
+      return { deleted: 0, skipped: input.ids.length }
+    }
+
+    const submissionIds = owned.map((row) => row.submissionId)
+    // Deleting submissions cascades to their leads.
+    await db.delete(formSubmissions).where(inArray(formSubmissions.id, submissionIds))
+
+    return {
+      deleted: submissionIds.length,
+      skipped: Math.max(0, new Set(input.ids).size - submissionIds.length),
     }
   })
 
@@ -742,7 +796,7 @@ export const getLeadInsightsSummary = authedContext
     }
 
     const rows = await db.query.leads.findMany({
-      where: inArray(leads.formId, formIds),
+      where: and(inArray(leads.formId, formIds), ne(leads.status, 'archived')),
       columns: {
         amountRange: true,
         preferredChannel: true,

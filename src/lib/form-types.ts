@@ -74,6 +74,7 @@ export const leadStatusSchema = z.enum([
   'qualified',
   'won',
   'lost',
+  'archived',
 ])
 
 export type FieldType = z.infer<typeof fieldTypeSchema>

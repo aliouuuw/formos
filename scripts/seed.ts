@@ -11,6 +11,7 @@ const {
   createIpoSubscribeFormDefinition,
   IPO_FORM_SLUGS,
 } = await import('#/lib/ipo-campaign')
+const { createIpoBulletinFormDefinition } = await import('#/lib/ipo-bulletin')
 const { BRIDGE_BANK_IPO_CAMPAIGN_ID } = await import('#/lib/campaigns')
 
 const adminEmail = process.env.SEED_ADMIN_EMAIL ?? 'admin@everestfinance.com'
@@ -175,6 +176,13 @@ async function seedIpoCampaignForms(adminUserId: string) {
     campaignId: BRIDGE_BANK_IPO_CAMPAIGN_ID,
   })
 
+  await seedPublishedForm(adminUserId, {
+    slug: IPO_FORM_SLUGS.bulletin,
+    title: 'IPO Bridge Bank — Bulletin de souscription',
+    definition: createIpoBulletinFormDefinition(),
+    campaignId: BRIDGE_BANK_IPO_CAMPAIGN_ID,
+  })
+
   // Backfill campaignId on existing leads for this campaign's forms
   const ipoForms = await db.query.forms.findMany({
     where: eq(forms.campaignId, BRIDGE_BANK_IPO_CAMPAIGN_ID),
@@ -191,6 +199,7 @@ async function seedIpoCampaignForms(adminUserId: string) {
   }
 
   console.log(`[seed] IPO campaign landing: /ipo-bridge-bank (${BRIDGE_BANK_IPO_CAMPAIGN_ID})`)
+  console.log(`[seed] Bulletin form: /f/${IPO_FORM_SLUGS.bulletin}`)
 }
 
 async function seedCampaignSettings() {

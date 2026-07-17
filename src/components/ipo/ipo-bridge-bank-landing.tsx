@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type Ref, type RefObject } from 'react'
 
+import { BulletinForm } from '#/components/ipo/bulletin-form'
 import { buttonVariants } from '#/components/ui/button'
 import {
   IPO_CAMPAIGN,
@@ -142,12 +143,13 @@ function CampaignLink({
   const magneticRef = useMagnetic(7)
 
   return (
-    <Link
+    <a
       ref={magneticRef}
       data-ui="button"
-      to="/f/$slug"
-      params={{ slug: IPO_FORM_SLUGS.subscribe }}
-      search={ipoFormSearchParams()}
+      href="#bulletin"
+      onClick={() => {
+        window.dispatchEvent(new Event('ipo:start-bulletin'))
+      }}
       className={cn(
         buttonVariants({ variant: buttonVariant, size: 'lg' }),
         'transition-transform duration-150 ease-out',
@@ -166,7 +168,7 @@ function CampaignLink({
               : 'bg-everest-green/10 text-everest-green'
         }
       />
-    </Link>
+    </a>
   )
 }
 
@@ -465,7 +467,10 @@ export function IpoBridgeBankLanding() {
   const subscribeFormQuery = useQuery(
     orpc.forms.getBySlug.queryOptions({ input: { slug: IPO_FORM_SLUGS.subscribe } }),
   )
-  const campaignFormId = subscribeFormQuery.data?.id
+  const bulletinFormQuery = useQuery(
+    orpc.forms.getBySlug.queryOptions({ input: { slug: IPO_FORM_SLUGS.bulletin } }),
+  )
+  const campaignFormId = bulletinFormQuery.data?.id ?? subscribeFormQuery.data?.id
 
   const trackWhatsAppClick = (placement: string) => {
     trackCampaignEvent(campaignFormId, 'whatsapp_click', {
@@ -485,7 +490,11 @@ export function IpoBridgeBankLanding() {
   const phaseCopy = getIpoPhaseCopy(phase)
 
   return (
-    <div ref={rootRef as unknown as Ref<HTMLDivElement>} className="ipo-campaign relative min-h-dvh overflow-x-hidden bg-(--summit-ivory)">
+    <div
+      ref={rootRef as unknown as Ref<HTMLDivElement>}
+      id="top"
+      className="ipo-campaign relative min-h-dvh overflow-x-hidden bg-(--summit-ivory)"
+    >
       <div className="ipo-campaign-grain pointer-events-none fixed inset-0 z-1" aria-hidden />
 
       {phase !== 'launch' ? (
@@ -669,8 +678,71 @@ export function IpoBridgeBankLanding() {
                 </li>
               ))}
             </ul>
+
           </div>
         </section>
+
+        {phase !== 'closed' ? (
+          <section id="bulletin" className="scroll-mt-24 bg-white">
+            <div className="mx-auto max-w-[1400px] px-5 py-14 sm:px-10 sm:py-24 lg:px-12 lg:py-28">
+              <div className="ipo-reveal mx-auto max-w-3xl text-center" data-reveal>
+                <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.24em] text-everest-green/50 sm:mb-4">
+                  Dossier officiel
+                </p>
+                <h2 className="text-[clamp(1.65rem,7vw,3rem)] font-bold tracking-[-0.04em] text-everest-green leading-[1.1]">
+                  Bulletin de souscription
+                </h2>
+                <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-text-secondary sm:text-base sm:leading-8">
+                  Saisissez vos informations et signez en ligne : le bulletin officiel signé sera
+                  prêt pour le règlement avec votre conseiller.
+                </p>
+              </div>
+
+              <div className="ipo-reveal mx-auto mt-10 max-w-2xl sm:mt-14" data-reveal>
+                {bulletinFormQuery.data ? (
+                  <BulletinForm
+                    key={`${bulletinFormQuery.data.id}-v${bulletinFormQuery.data.version}`}
+                    formId={bulletinFormQuery.data.id}
+                    slug={bulletinFormQuery.data.slug}
+                    defaultUtmSource="landing-bulletin"
+                  />
+                ) : bulletinFormQuery.isError ? (
+                  <div className="rounded-[1.5rem] border border-everest-green/10 bg-(--summit-ivory) px-6 py-10 text-center">
+                    <p className="text-sm text-text-secondary">
+                      Le bulletin n&apos;est pas disponible pour le moment.
+                    </p>
+                    <Link
+                      to="/f/$slug"
+                      params={{ slug: IPO_FORM_SLUGS.bulletin }}
+                      search={ipoFormSearchParams('bulletin')}
+                      data-ui="button"
+                      className={cn(buttonVariants({ variant: 'everest', size: 'lg' }), 'mt-5')}
+                    >
+                      Réessayer sur la page dédiée
+                      <ArrowDisc className="bg-everest-green/10 text-everest-green" />
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="rounded-[1.5rem] border border-everest-green/10 bg-(--summit-ivory) px-6 py-14 text-center text-sm text-text-secondary">
+                    Chargement du bulletin…
+                  </div>
+                )}
+
+                <p className="mt-8 text-center text-sm text-text-secondary">
+                  Vous préférez être rappelé ?{' '}
+                  <Link
+                    to="/f/$slug"
+                    params={{ slug: IPO_FORM_SLUGS.subscribe }}
+                    search={ipoFormSearchParams()}
+                    className="font-medium text-everest-green underline-offset-4 hover:underline"
+                  >
+                    Laissez vos coordonnées
+                  </Link>
+                </p>
+              </div>
+            </div>
+          </section>
+        ) : null}
       </main>
 
       <footer className="border-t border-white/10 bg-everest-green text-white">

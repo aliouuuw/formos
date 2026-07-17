@@ -1,10 +1,13 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
 import { PageHeader } from '#/components/page-header'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Panel, PanelBody, PanelHeader } from '#/components/ui/panel'
+import { BULLETIN_FIELD_IDS, isBulletinFormSlug } from '#/lib/ipo-bulletin'
 import { orpc } from '#/orpc/client'
 
 export const Route = createFileRoute('/admin/forms/$formId/submissions/$submissionId')({
@@ -15,6 +18,30 @@ function SubmissionDetailPage() {
   const { formId, submissionId } = Route.useParams()
   const query = useQuery(
     orpc.submissions.get.queryOptions({ input: { formId, submissionId } }),
+  )
+  const formQuery = useQuery(orpc.forms.getById.queryOptions({ input: { id: formId } }))
+  const [pdfLoading, setPdfLoading] = useState(false)
+
+  const generatePdf = useMutation(
+    orpc.submissions.generateBulletinPdf.mutationOptions({
+      onSuccess: (data) => {
+        const binary = atob(data.base64)
+        const bytes = new Uint8Array(binary.length)
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+        const blob = new Blob([bytes], { type: data.contentType })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = data.filename
+        a.click()
+        URL.revokeObjectURL(url)
+        toast.success('Bulletin PDF téléchargé')
+      },
+      onError: (error) => {
+        toast.error(error instanceof Error ? error.message : 'Échec de la génération PDF')
+      },
+      onSettled: () => setPdfLoading(false),
+    }),
   )
 
   if (query.isLoading) {
@@ -29,6 +56,7 @@ function SubmissionDetailPage() {
   const answers = submission.answers as Record<string, string>
   const fields = definition.pages.flatMap((p) => p.fields)
   const lead = submission.lead as { email?: string; name?: string; phone?: string; status?: string } | null
+  const canGenerateBulletin = isBulletinFormSlug(formQuery.data?.slug ?? '')
 
   return (
     <div className="space-y-10">
@@ -37,11 +65,28 @@ function SubmissionDetailPage() {
         title={`#${submission.id.slice(0, 8)}`}
         description={`Reçue le ${new Date(submission.createdAt).toLocaleString()} · version ${submission.formVersion}`}
         actions={
-          <Link to="/admin/forms/$formId/submissions" params={{ formId }}>
-            <Button variant="secondary" size="sm">
-              ← Toutes les soumissions
-            </Button>
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            {canGenerateBulletin ? (
+              <Button
+                variant="everest"
+                size="sm"
+                disabled={pdfLoading || generatePdf.isPending}
+                onClick={() => {
+                  setPdfLoading(true)
+                  generatePdf.mutate({ formId, submissionId })
+                }}
+              >
+                {pdfLoading || generatePdf.isPending
+                  ? 'Génération…'
+                  : 'Télécharger le bulletin PDF'}
+              </Button>
+            ) : null}
+            <Link to="/admin/forms/$formId/submissions" params={{ formId }}>
+              <Button variant="secondary" size="sm">
+                ← Toutes les soumissions
+              </Button>
+            </Link>
+          </div>
         }
       />
 
@@ -55,7 +100,11 @@ function SubmissionDetailPage() {
           </PanelHeader>
           <PanelBody className="divide-y divide-mauve/10 p-0">
             {fields.map((field) => {
-              const value = answers[field.id]
+              const rawValue = answers[field.id]
+              const value =
+                field.id === BULLETIN_FIELD_IDS.signature && rawValue
+                  ? 'Signature enregistrée'
+                  : rawValue
               return (
                 <div
                   key={field.id}

@@ -49,6 +49,17 @@ export function IpoSubscriptionGuide() {
             >
               Je veux souscrire
             </Link>
+            <Link
+              to="/f/$slug"
+              params={{ slug: 'ipo-bulletin' }}
+              data-ui="button"
+              className={cn(
+                buttonVariants({ variant: 'outline', size: 'sm' }),
+                'border-white/30 bg-white/5 text-white hover:border-white/50 hover:bg-white/10 hover:text-white',
+              )}
+            >
+              Remplir le bulletin
+            </Link>
           </div>
         </div>
       </div>

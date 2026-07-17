@@ -2,8 +2,10 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 
 import { FormRenderer } from '#/components/form-renderer'
+import { BulletinForm } from '#/components/ipo/bulletin-form'
 import { Badge } from '#/components/ui/badge'
 import { getCampaignByFormSlug, getFormBinding } from '#/lib/campaigns'
+import { isBulletinFormSlug } from '#/lib/ipo-bulletin'
 import { orpc } from '#/orpc/client'
 import { cn } from '#/lib/utils'
 
@@ -86,19 +88,29 @@ function PublicFormPage() {
                 .replace(/^IPO Bridge Bank - /, '')}
             </h1>
             <p className="mt-4 max-w-md text-base font-light leading-8 text-white/62">
-              Laissez vos coordonnées : un conseiller vous rappelle sous 24 h ouvrées pour finaliser votre souscription.
+              {isBulletinFormSlug(slug)
+                ? 'Remplissez et signez le bulletin officiel en ligne. Le PDF signé sera généré pour finaliser le règlement avec votre conseiller.'
+                : 'Laissez vos coordonnées : un conseiller vous rappelle sous 24 h ouvrées pour finaliser votre souscription.'}
             </p>
           </div>
 
-          <FormRenderer
-            key={`${formQuery.data.id}-v${formQuery.data.version}`}
-            formId={formQuery.data.id}
-            slug={formQuery.data.slug}
-            title={formQuery.data.title}
-            definition={formQuery.data.definition}
-            panelClassName="ipo-form-panel w-full max-w-none rounded-[2rem]"
-            campaign
-          />
+          {isBulletinFormSlug(slug) ? (
+            <BulletinForm
+              key={`${formQuery.data.id}-v${formQuery.data.version}`}
+              formId={formQuery.data.id}
+              slug={formQuery.data.slug}
+            />
+          ) : (
+            <FormRenderer
+              key={`${formQuery.data.id}-v${formQuery.data.version}`}
+              formId={formQuery.data.id}
+              slug={formQuery.data.slug}
+              title={formQuery.data.title}
+              definition={formQuery.data.definition}
+              panelClassName="ipo-form-panel w-full max-w-none rounded-[2rem]"
+              campaign
+            />
+          )}
         </div>
       </div>
     )

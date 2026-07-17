@@ -19,6 +19,7 @@ import {
 import { Textarea } from '#/components/ui/textarea'
 import type { LeadStatus } from '#/lib/form-types'
 import { getCampaignById } from '#/lib/campaigns'
+import { BULLETIN_FIELD_IDS, isBulletinFormSlug } from '#/lib/ipo-bulletin'
 import {
   agingLabel,
   deadlinesForLead,
@@ -100,6 +101,25 @@ export function LeadDetailPanel({
     }),
   )
 
+  const generateBulletinPdf = useMutation(
+    orpc.submissions.generateBulletinPdf.mutationOptions({
+      onSuccess: (data) => {
+        const binary = atob(data.base64)
+        const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0))
+        const url = URL.createObjectURL(new Blob([bytes], { type: data.contentType }))
+        const anchor = document.createElement('a')
+        anchor.href = url
+        anchor.download = data.filename
+        anchor.click()
+        URL.revokeObjectURL(url)
+        toast.success('Bulletin PDF téléchargé')
+      },
+      onError: (error) => {
+        toast.error(error instanceof Error ? error.message : 'Échec de la génération PDF')
+      },
+    }),
+  )
+
   const lead = detailQuery.data
   const insights = lead?.insights as
     | {
@@ -169,6 +189,25 @@ export function LeadDetailPanel({
                   . Historique conservé — lead d’origine{' '}
                   <span className="font-mono text-[11px]">{insights.duplicateOfLeadId.slice(0, 8)}…</span>
                 </p>
+              ) : null}
+              {isBulletinFormSlug(lead.form.slug) ? (
+                <Button
+                  type="button"
+                  variant="everest"
+                  size="sm"
+                  className="self-start"
+                  disabled={generateBulletinPdf.isPending}
+                  onClick={() =>
+                    generateBulletinPdf.mutate({
+                      formId: lead.form.id,
+                      submissionId: lead.submission.id,
+                    })
+                  }
+                >
+                  {generateBulletinPdf.isPending
+                    ? 'Génération du PDF…'
+                    : 'Télécharger le bulletin PDF'}
+                </Button>
               ) : null}
             </>
           ) : (
@@ -280,7 +319,12 @@ export function LeadDetailPanel({
                 <dl className="divide-y divide-border rounded-xl border border-border">
                   {lead.fields.map((field) => {
                     const raw = lead.answers[field.id]
-                    const value = typeof raw === 'string' && raw.length > 0 ? raw : '—'
+                    const value =
+                      field.id === BULLETIN_FIELD_IDS.signature && raw
+                        ? 'Signature enregistrée'
+                        : typeof raw === 'string' && raw.length > 0
+                          ? raw
+                          : '—'
                     return (
                       <div key={field.id} className="px-4 py-3">
                         <dt className="text-xs text-muted-foreground">{field.label}</dt>
