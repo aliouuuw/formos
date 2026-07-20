@@ -97,7 +97,7 @@ export function getIpoPhaseCopy(phase: IpoCampaignPhase = getIpoCampaignPhase())
         secondaryCta: "J'ai besoin d'infos",
         heroSupport: [
           "20 % du capital de Bridge Bank Group Côte d'Ivoire s'ouvre au public.",
-          'Everest Finance accompagne votre souscription, du premier échange au dépôt.',
+          'EVEREST Finance accompagne votre souscription.',
         ],
         emphasizeInfos: false,
       }

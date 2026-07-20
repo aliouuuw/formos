@@ -167,39 +167,6 @@ function SignaturePad({
   )
 }
 
-function ChoiceCards({
-  options,
-  value,
-  onChange,
-}: {
-  options: readonly string[]
-  value: string
-  onChange: (v: string) => void
-}) {
-  return (
-    <div className="grid gap-2 sm:grid-cols-2">
-      {options.map((option) => {
-        const selected = value === option
-        return (
-          <button
-            key={option}
-            type="button"
-            onClick={() => onChange(option)}
-            className={cn(
-              'rounded-xl border px-4 py-3 text-left text-sm transition-colors',
-              selected
-                ? 'border-everest-green bg-everest-green-05 text-everest-green'
-                : 'border-everest-green/15 bg-white text-night-80 hover:border-everest-green/40',
-            )}
-          >
-            {option}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
 function Field({
   label,
   required,
@@ -318,6 +285,12 @@ export function BulletinForm({
 
   function set(fieldId: string, value: string) {
     setAnswers((prev) => ({ ...prev, [fieldId]: value }))
+  }
+
+  function selectSubscriberType(type: SubscriberType) {
+    setAnswers((prev) => ({ ...prev, [ID.subscriberType]: type }))
+    setError(null)
+    setStepIndex(1)
   }
 
   const shareCount = Number(answers[ID.shareCount] || 0)
@@ -482,13 +455,28 @@ export function BulletinForm({
         </div>
 
         {step.id === 'type' ? (
-          <Field label="Vous souscrivez en tant que" required>
-            <ChoiceCards
-              options={SUBSCRIBER_TYPES}
-              value={answers[ID.subscriberType] ?? ''}
-              onChange={(v) => set(ID.subscriberType, v)}
-            />
-          </Field>
+          <div className="space-y-3">
+            <p className="text-sm text-text-secondary">
+              Vous souscrivez en tant que <span className="text-gold">*</span>
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {SUBSCRIBER_TYPES.map((type) => (
+                <Button
+                  key={type}
+                  type="button"
+                  variant={type === 'Personne physique' ? 'default' : 'everest'}
+                  size="lg"
+                  className={cn(
+                    'h-auto w-full justify-center px-5 py-4 text-base',
+                    type === 'Personne physique' && 'ipo-cta-gold',
+                  )}
+                  onClick={() => selectSubscriberType(type)}
+                >
+                  {type}
+                </Button>
+              ))}
+            </div>
+          </div>
         ) : null}
 
         {step.id === 'identity' ? (
@@ -855,30 +843,32 @@ export function BulletinForm({
           </p>
         ) : null}
 
-        <div className="flex items-center justify-between gap-3 border-t border-everest-green/8 pt-6">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={stepIndex === 0 || loading}
-            onClick={() => {
-              setError(null)
-              setStepIndex((i) => Math.max(0, i - 1))
-            }}
-            className="border-everest-green/25 text-everest-green"
-          >
-            Retour
-          </Button>
-          <Button
-            variant={isLast ? 'default' : 'everest'}
-            showArrow={isLast}
-            disabled={loading}
-            onClick={() => void goNext()}
-            className={cn(isLast && 'ipo-cta-gold')}
-          >
-            {loading ? 'Envoi…' : isLast ? 'Enregistrer mon bulletin' : 'Continuer'}
-          </Button>
-        </div>
+        {step.id !== 'type' ? (
+          <div className="flex items-center justify-between gap-3 border-t border-everest-green/8 pt-6">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={loading}
+              onClick={() => {
+                setError(null)
+                setStepIndex((i) => Math.max(0, i - 1))
+              }}
+              className="border-everest-green/25 text-everest-green"
+            >
+              Retour
+            </Button>
+            <Button
+              variant={isLast ? 'default' : 'everest'}
+              showArrow={isLast}
+              disabled={loading}
+              onClick={() => void goNext()}
+              className={cn(isLast && 'ipo-cta-gold')}
+            >
+              {loading ? 'Envoi…' : isLast ? 'Enregistrer mon bulletin' : 'Continuer'}
+            </Button>
+          </div>
+        ) : null}
       </PanelBody>
     </Panel>
   )

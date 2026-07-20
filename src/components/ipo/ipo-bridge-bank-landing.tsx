@@ -560,7 +560,7 @@ export function IpoBridgeBankLanding() {
                 style={{ transitionDelay: '70ms' }}
               >
                 Investissez dans la prochaine étape de{' '}
-                <span className="text-gold">Bridge Bank</span>
+                <span className="text-gold">Bridge Bank Côte d&apos;Ivoire</span>
               </h1>
               <p
                 className="ipo-reveal mx-auto mt-5 max-w-[34ch] text-base font-light leading-7 text-white/74 sm:mx-0 sm:mt-8 sm:max-w-4xl sm:text-lg sm:leading-8"
@@ -654,7 +654,7 @@ export function IpoBridgeBankLanding() {
               <h2 className="text-[clamp(1.65rem,7vw,3.5rem)] font-bold tracking-[-0.04em] text-everest-green leading-[1.1] sm:leading-[1.05]">
                 Pourquoi acheter des actions{' '}
                 <br className="hidden sm:block" />
-                <strong>BBG CI</strong> ?
+                <strong>Bridge Bank Côte d&apos;Ivoire</strong> ?
               </h2>
             </div>
 
@@ -746,7 +746,7 @@ export function IpoBridgeBankLanding() {
       </main>
 
       <footer className="border-t border-white/10 bg-everest-green text-white">
-        <div className="mx-auto flex max-w-[1400px] flex-col items-center gap-5 px-5 py-6 md:pb-24 text-center sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-10 sm:py-7 sm:pb-7 sm:text-left lg:px-12">
+        <div className="mx-auto flex max-w-[1400px] flex-col items-center gap-5 px-5 py-6 text-center sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-10 sm:py-7 sm:text-left lg:px-12">
           <p className="max-w-4xl text-xs leading-5 text-white/40 sm:leading-6">
             EVEREST Finance, Société agréée et régulée par l&apos;AMF-UMOA <br /> n° SGI/2016-01
           </p>
