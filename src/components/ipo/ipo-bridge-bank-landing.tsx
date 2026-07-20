@@ -555,12 +555,12 @@ export function IpoBridgeBankLanding() {
           >
             <div className="mx-auto w-full max-w-6xl text-center sm:mx-0 sm:text-left">
               <h1
-                className="ipo-reveal mx-auto max-w-[14ch] text-[clamp(2.35rem,9.5vw,3.75rem)] font-extrabold leading-[1.08] tracking-[-0.05em] text-white sm:mx-0 sm:max-w-[16ch] sm:leading-[1.2]"
+                className="ipo-reveal mx-auto max-w-[22ch] text-[clamp(2.35rem,9.5vw,3.75rem)] font-extrabold leading-[1.08] tracking-[-0.05em] text-white sm:mx-0 sm:max-w-[24ch] sm:leading-[1.2]"
                 data-reveal
                 style={{ transitionDelay: '70ms' }}
               >
                 Investissez dans la prochaine étape de{' '}
-                <span className="text-gold">Bridge Bank Côte d&apos;Ivoire</span>
+                <span className="whitespace-nowrap text-gold">Bridge Bank Groupe CI</span>
               </h1>
               <p
                 className="ipo-reveal mx-auto mt-5 max-w-[34ch] text-base font-light leading-7 text-white/74 sm:mx-0 sm:mt-8 sm:max-w-4xl sm:text-lg sm:leading-8"
@@ -653,8 +653,7 @@ export function IpoBridgeBankLanding() {
               </p>
               <h2 className="text-[clamp(1.65rem,7vw,3.5rem)] font-bold tracking-[-0.04em] text-everest-green leading-[1.1] sm:leading-[1.05]">
                 Pourquoi acheter des actions{' '}
-                <br className="hidden sm:block" />
-                <strong>Bridge Bank Côte d&apos;Ivoire</strong> ?
+                <strong className="whitespace-nowrap">Bridge Bank Groupe CI</strong> ?
               </h2>
             </div>
 
