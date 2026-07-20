@@ -691,10 +691,6 @@ export function IpoBridgeBankLanding() {
                 <h2 className="text-[clamp(1.65rem,7vw,3rem)] font-bold tracking-[-0.04em] text-everest-green leading-[1.1]">
                   Bulletin de souscription
                 </h2>
-                <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-text-secondary sm:text-base sm:leading-8">
-                  Saisissez vos informations et signez en ligne : le bulletin officiel signé sera
-                  prêt pour le règlement avec votre conseiller.
-                </p>
               </div>
 
               <div className="ipo-reveal mx-auto mt-10 max-w-2xl sm:mt-14" data-reveal>
