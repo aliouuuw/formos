@@ -37,6 +37,15 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     ],
     links: [
       {
+        rel: 'icon',
+        href: '/logo-everest.png',
+        type: 'image/png',
+      },
+      {
+        rel: 'apple-touch-icon',
+        href: '/logo-everest.png',
+      },
+      {
         rel: 'stylesheet',
         href: appCss,
       },

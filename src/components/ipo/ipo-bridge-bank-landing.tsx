@@ -560,7 +560,7 @@ export function IpoBridgeBankLanding() {
                 style={{ transitionDelay: '70ms' }}
               >
                 Investissez dans la prochaine étape de{' '}
-                <span className="whitespace-nowrap text-gold">Bridge Bank Groupe CI</span>
+                <span className="whitespace-nowrap text-gold">Bridge Bank Group CI</span>
               </h1>
               <p
                 className="ipo-reveal mx-auto mt-5 max-w-[34ch] text-base font-light leading-7 text-white/74 sm:mx-0 sm:mt-8 sm:max-w-4xl sm:text-lg sm:leading-8"
@@ -653,7 +653,7 @@ export function IpoBridgeBankLanding() {
               </p>
               <h2 className="text-[clamp(1.65rem,7vw,3.5rem)] font-bold tracking-[-0.04em] text-everest-green leading-[1.1] sm:leading-[1.05]">
                 Pourquoi acheter des actions{' '}
-                <strong className="whitespace-nowrap">Bridge Bank Groupe CI</strong> ?
+                <strong className="whitespace-nowrap">Bridge Bank Group CI</strong> ?
               </h2>
             </div>
 
