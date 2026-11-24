@@ -1,13 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "tanstack-start",
-  "rewrites": [
-    {
-      "source": "/",
-      "has": [
-        { "type": "host", "value": "ipo-bridge.everestfin.sn" }
-      ],
-      "destination": "/ipo-bridge-bank"
-    }
-  ]
+  "framework": "tanstack-start"
 }

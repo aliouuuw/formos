@@ -14,7 +14,7 @@ export const bridgeBankIpoCampaign: CampaignConfig = {
   shortName: 'IPO Bridge Bank',
   description:
     "Offre publique via Everest Finance — souscription et demandes d'information.",
-  landingPath: '/ipo-bridge-bank',
+  landingPath: '/',
   utmCampaign: 'ipo-bridge-juillet-2026',
   forms: [
     {
