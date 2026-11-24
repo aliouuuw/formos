@@ -17,7 +17,6 @@ import {
 import { Textarea } from '#/components/ui/textarea'
 import { formProgressPercent } from '#/lib/form-progress'
 import type { FormDefinition, FormField } from '#/lib/form-types'
-import { BRIDGE_BANK_IPO_CAMPAIGN_ID } from '#/lib/campaigns'
 import { useCampaignContact } from '#/hooks/use-campaign-contact'
 import { IPO_FIELD_IDS } from '#/lib/ipo-campaign'
 import { getSessionId } from '#/lib/session-id'
@@ -132,6 +131,7 @@ export function FormRenderer({
   preview,
   panelClassName,
   campaign = false,
+  campaignId,
 }: {
   formId: string
   slug: string
@@ -141,12 +141,12 @@ export function FormRenderer({
   panelClassName?: string
   /** IPO campaign surfaces: stronger hierarchy, gold focus, success delight */
   campaign?: boolean
+  /** Campaign whose WhatsApp contact shows on the success screen */
+  campaignId?: string
 }) {
   const isPreview = Boolean(preview)
   const sessionId = useMemo(() => (isPreview ? 'preview' : getSessionId()), [isPreview])
-  const { data: campaignContact } = useCampaignContact(
-    campaign ? BRIDGE_BANK_IPO_CAMPAIGN_ID : '',
-  )
+  const { data: campaignContact } = useCampaignContact(campaign ? (campaignId ?? '') : '')
   const whatsappHref = campaignContact?.whatsappUrl ?? undefined
   const [internalPageIndex, setInternalPageIndex] = useState(0)
   const [honeypot, setHoneypot] = useState('')

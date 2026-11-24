@@ -58,9 +58,9 @@ function PublicFormPage() {
       <div className="ipo-form-shell min-h-dvh">
         <div className="mx-auto flex max-w-3xl flex-col px-4 pb-20 pt-8 sm:px-6 sm:pt-12">
           <div className="mb-10 flex items-center justify-between gap-4">
-            {campaign.landingPath === '/ipo-bridge-bank' ? (
+            {campaign.landingPath === '/' ? (
               <Link
-                to="/ipo-bridge-bank"
+                to="/"
                 className="ipo-text-link text-sm font-medium no-underline transition-colors"
               >
                 ← Retour à la campagne
@@ -90,7 +90,9 @@ function PublicFormPage() {
             <p className="mt-4 max-w-md text-base font-light leading-8 text-white/62">
               {isBulletinFormSlug(slug)
                 ? 'Remplissez et signez le bulletin officiel en ligne. Le PDF signé sera généré pour finaliser le règlement avec votre conseiller.'
-                : 'Laissez vos coordonnées : un conseiller vous rappelle sous 24 h ouvrées pour finaliser votre souscription.'}
+                : formBinding.intent === 'account'
+                  ? 'Laissez vos coordonnées : un conseiller EVEREST Finance vous contacte pour ouvrir votre compte-titres avant la souscription.'
+                  : 'Laissez vos coordonnées : un conseiller vous rappelle sous 24 h ouvrées pour finaliser votre souscription.'}
             </p>
           </div>
 
@@ -109,6 +111,7 @@ function PublicFormPage() {
               definition={formQuery.data.definition}
               panelClassName="ipo-form-panel w-full max-w-none rounded-[2rem]"
               campaign
+              campaignId={campaign.id}
             />
           )}
         </div>

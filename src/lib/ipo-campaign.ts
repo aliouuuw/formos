@@ -3,27 +3,31 @@ import { bridgeBankIpoCampaign } from '#/lib/campaigns/bridge-bank-ipo'
 import type { FormDefinition } from '#/lib/form-types'
 
 export const IPO_CAMPAIGN = {
-  bankName: "Bridge Bank Group Côte d'Ivoire",
-  bankShort: 'Bridge Bank',
+  bankName: "Coris Bank International Côte d'Ivoire",
+  bankShort: 'Coris Bank',
   intermediary: 'Everest Finance',
-  sharePriceFcfa: 6_750,
+  sharePriceFcfa: 7_720,
+  /** AMF-UMOA visa of the note d'information */
+  visa: 'OA/26-05',
   /** ISO dates (UTC midnight) — single source for UI phases & copy */
-  subscriptionStartIso: '2026-07-20',
-  subscriptionEndIso: '2026-08-06',
-  finalStretchStartIso: '2026-08-03',
-  subscriptionStart: '20 juillet 2026',
-  subscriptionEnd: '6 août 2026',
-  listingExpected: 'septembre 2026',
-  utmCampaign: 'ipo-bridge-juillet-2026',
+  subscriptionStartIso: '2026-11-30',
+  subscriptionEndIso: '2026-12-04',
+  finalStretchStartIso: '2026-12-03',
+  subscriptionStart: '30 novembre 2026',
+  subscriptionEnd: '4 décembre 2026',
+  settlementBy: '28/12/2026',
+  listingExpected: '15/01/2027',
+  utmCampaign: 'ipo-coris-decembre-2026',
 } as const
 
 export const IPO_FORM_SLUGS = {
+  /** Bridge Bank forms (archived), kept for admin history */
   subscribe: 'ipo-souscrire',
   bulletin: 'ipo-bulletin',
+  accountOpening: 'formulaire-d-ouverture-de-compte',
 } as const
 
-export const IPO_GUIDE_PATH = '/ipo-bridge-bank/guide' as const
-export const IPO_GUIDE_PDF_PATH = '/campaign/guide-souscription-ipo-bridge-bank.pdf' as const
+export const IPO_GUIDE_PDF_PATH = '/campaign/teaser-ipo-coris-bank-ci.pdf' as const
 
 /** @deprecated Use campaigns.getPublicContact — settings are stored in DB */
 export function ipoWhatsAppUrl(prefill?: string, number?: string) {
@@ -76,69 +80,43 @@ export function getIpoCampaignPhase(now: Date = new Date()): IpoCampaignPhase {
 }
 
 export function getIpoPhaseCopy(phase: IpoCampaignPhase = getIpoCampaignPhase()) {
+  const heroSupport = [
+    "20 % du capital de Coris Bank International Côte d'Ivoire s'ouvre au public.",
+    'EVEREST Finance, membre du syndicat de placement, accompagne votre souscription.',
+  ] as const
   switch (phase) {
     case 'teasing':
       return {
-        banner:
-          "Bientôt · Ouverture le 20 juillet 2026",
-        primaryCta: 'Démarrer ma souscription',
-        secondaryCta: "Recevoir le guide d'infos",
-        heroSupport: [
-          'EVEREST Finance vous accompagne dans votre souscription.',
-          'Laissez vos coordonnées : un conseiller vous recontacte pour finaliser votre dossier.',
-        ],
-        emphasizeInfos: true,
+        banner: `Ouverture le ${IPO_CAMPAIGN.subscriptionStart} · Ouvrez votre compte-titres dès maintenant`,
+        primaryCta: 'Ouvrir mon compte-titres',
+        secondaryCta: 'Télécharger le teaser',
+        heroSupport,
       }
     case 'launch':
-      return {
-        kicker: 'Ouvert · Souscription en cours',
-        banner: `Souscription ouverte jusqu'au ${IPO_CAMPAIGN.subscriptionEnd}. Un conseiller Everest vous accompagne.`,
-        primaryCta: 'Je veux souscrire',
-        secondaryCta: "J'ai besoin d'infos",
-        heroSupport: [
-          "20 % du capital de Bridge Bank Group Côte d'Ivoire s'ouvre au public.",
-          'EVEREST Finance accompagne votre souscription.',
-        ],
-        emphasizeInfos: false,
-      }
     case 'mid':
       return {
-        kicker: 'Mi-période · Relance',
-        banner:
-          'Fenêtre encore ouverte. Si vous avez déjà un dossier en cours, finalisez-le avec votre conseiller.',
-        primaryCta: 'Finaliser ma souscription',
-        secondaryCta: 'Relire le guide',
-        heroSupport: [
-          'La période avance. Everest Finance relance les dossiers incomplets',
-          'et reste disponible pour une souscription jusqu’à la clôture.',
-        ],
-        emphasizeInfos: false,
+        banner: `Souscription ouverte jusqu'au ${IPO_CAMPAIGN.subscriptionEnd}.`,
+        primaryCta: 'Ouvrir mon compte-titres',
+        secondaryCta: 'Télécharger le teaser',
+        heroSupport,
       }
     case 'final':
       return {
-        kicker: 'Dernière ligne droite · Clôture le 6 août',
-        banner:
-          'Clôture le 6 août 2026 (date réelle de l’offre). Après cette date, les nouvelles souscriptions ne seront plus possibles via cette campagne.',
-        primaryCta: 'Souscrire avant clôture',
-        secondaryCta: "J'ai besoin d'infos",
-        heroSupport: [
-          'Derniers jours pour souscrire via Everest Finance.',
-          'Préparez bulletin et règlement sans attendre la dernière heure.',
-        ],
-        emphasizeInfos: false,
+        banner: `Clôture le ${IPO_CAMPAIGN.subscriptionEnd}. Transmettez votre ordre d'achat sans attendre.`,
+        primaryCta: 'Ouvrir mon compte-titres',
+        secondaryCta: 'Télécharger le teaser',
+        heroSupport,
       }
     case 'closed':
       return {
-        kicker: 'Fenêtre close',
         banner:
-          'La période de souscription est terminée. Contactez Everest Finance pour toute question sur le suivi d’allocation.',
+          'La période de souscription est terminée. Contactez Everest Finance pour le suivi de votre allocation.',
         primaryCta: 'Contacter un conseiller',
-        secondaryCta: 'Lire le guide',
+        secondaryCta: 'Télécharger le teaser',
         heroSupport: [
           'La souscription publique est close.',
-          'Notre équipe reste disponible pour le suivi post-clôture et la cotation prévue.',
-        ],
-        emphasizeInfos: true,
+          `Première cotation prévue le ${IPO_CAMPAIGN.listingExpected}.`,
+        ] as const,
       }
   }
 }
@@ -260,7 +238,7 @@ export function createIpoSubscribeFormDefinition(): FormDefinition {
 
 export function ipoFormSearchParams(channel?: string) {
   return {
-    utm_source: channel ?? 'landing-souscrire',
+    utm_source: channel ?? 'landing-compte',
     utm_medium: 'web',
     utm_campaign: IPO_CAMPAIGN.utmCampaign,
   }
@@ -276,37 +254,17 @@ export const IPO_CHANNEL_UTM = {
 
 export function ipoLandingUrl(baseUrl: string, channel: keyof typeof IPO_CHANNEL_UTM) {
   const utm = IPO_CHANNEL_UTM[channel]
-  const url = new URL('/ipo-bridge-bank', baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`)
+  const url = new URL('/', baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`)
   url.searchParams.set('utm_source', utm.utm_source)
   url.searchParams.set('utm_medium', utm.utm_medium)
   url.searchParams.set('utm_campaign', IPO_CAMPAIGN.utmCampaign)
   return url.toString()
 }
 
+/** « Comment souscrire ? » from the EVEREST Finance teaser (note d'information visa OA/26-05). */
 export const IPO_SUBSCRIPTION_STEPS = [
-  {
-    step: '01',
-    title: 'Choisissez votre intermédiaire',
-    body: 'Souscrivez via Everest Finance, intermédiaire agréé pour accompagner les investisseurs particuliers et professionnels.',
-  },
-  {
-    step: '02',
-    title: 'Rassemblez vos pièces',
-    body: "Pièce d'identité, RIB et justificatif de domicile. Notre équipe vous confirme la liste exacte selon votre profil.",
-  },
-  {
-    step: '03',
-    title: 'Définissez votre montant',
-    body: "Actions proposées à 6 750 FCFA l'unité. Indiquez la tranche envisagée pour que le conseiller prépare votre dossier.",
-  },
-  {
-    step: '04',
-    title: 'Signez et réglez',
-    body: 'Bulletin de souscription et règlement dans la fenêtre du 20 juillet au 6 août 2026. Everest vous guide à chaque étape.',
-  },
-  {
-    step: '05',
-    title: 'Suivez votre allocation',
-    body: 'Après clôture, règlement-livraison prévu le 21 août. Cotation attendue en septembre 2026 sur la BRVM.',
-  },
+  'Ouvrir ou utiliser un compte-titres auprès de EVEREST Finance, membre du syndicat de placement.',
+  "Transmettre à EVEREST Finance un seul ordre d'achat par investisseur pendant la période.",
+  "Provisionner l'ordre ; les fonds restent bloqués jusqu'à l'allocation définitive.",
+  `Règlement-livraison au plus tard le ${IPO_CAMPAIGN.settlementBy} ; première cotation prévue le ${IPO_CAMPAIGN.listingExpected}.`,
 ] as const
