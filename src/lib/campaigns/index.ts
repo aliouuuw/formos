@@ -1,7 +1,8 @@
 import { bridgeBankIpoCampaign } from '#/lib/campaigns/bridge-bank-ipo'
+import { corisBankIpoCampaign } from '#/lib/campaigns/coris-bank-ipo'
 import type { CampaignConfig, CampaignFormBinding } from '#/lib/campaigns/types'
 
-const CAMPAIGNS: CampaignConfig[] = [bridgeBankIpoCampaign]
+const CAMPAIGNS: CampaignConfig[] = [corisBankIpoCampaign, bridgeBankIpoCampaign]
 
 const byId = new Map(CAMPAIGNS.map((c) => [c.id, c]))
 const byFormSlug = new Map<string, { campaign: CampaignConfig; form: CampaignFormBinding }>()
@@ -49,3 +50,4 @@ export type { CampaignConfig, CampaignFormBinding, CampaignAgent, LeadInsights, 
 export { LEAD_ROLES } from '#/lib/campaigns/types'
 export { agentLabel, agentOptions, parseAgentNames, slugifyAgent } from '#/lib/campaigns/agents'
 export { BRIDGE_BANK_IPO_CAMPAIGN_ID, bridgeBankIpoCampaign } from '#/lib/campaigns/bridge-bank-ipo'
+export { CORIS_BANK_IPO_CAMPAIGN_ID, corisBankIpoCampaign } from '#/lib/campaigns/coris-bank-ipo'

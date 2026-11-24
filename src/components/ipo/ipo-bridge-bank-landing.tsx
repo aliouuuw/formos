@@ -2,47 +2,21 @@ import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type Ref, type RefObject } from 'react'
 
-import { BulletinForm } from '#/components/ipo/bulletin-form'
 import { buttonVariants } from '#/components/ui/button'
 import {
   IPO_CAMPAIGN,
   IPO_FORM_SLUGS,
   IPO_GUIDE_PDF_PATH,
+  IPO_SUBSCRIPTION_STEPS,
   getIpoCampaignPhase,
   getIpoPhaseCopy,
   ipoFormSearchParams,
 } from '#/lib/ipo-campaign'
-import { BRIDGE_BANK_IPO_CAMPAIGN_ID } from '#/lib/campaigns'
+import { CORIS_BANK_IPO_CAMPAIGN_ID } from '#/lib/campaigns'
 import { trackCampaignEvent } from '#/lib/campaign-analytics'
 import { useCampaignContact } from '#/hooks/use-campaign-contact'
 import { cn } from '#/lib/utils'
 import { orpc } from '#/orpc/client'
-
-const BBG_INVESTMENT_REASONS = [
-  'Banque rentable et en forte croissance',
-  'Dividende annuel versé aux actionnaires',
-  "Exposition directe à l'économie ivoirienne",
-  "Placement réglementé, encadré par l'AMF-UMOA (VISA N° AO/26-03)",
-  "Participation directe à la croissance de l'économie ivoirienne, 1ère puissance économique de l'UEMOA",
-  'Banque en pleine expansion digitale et régionale',
-] as const
-
-/** Keep trailing parentheticals (e.g. visa refs) on one line; force break before them on mobile. */
-function formatReasonLabel(reason: string) {
-  const visaMatch = reason.match(/^(.*?)(\s*)(\([^)]+\))$/)
-  if (!visaMatch) return reason
-  const [, lead, space, visa] = visaMatch
-  // Non-breaking hyphen so "AMF-UMOA" never splits mid-acronym.
-  const leadProtected = lead.replaceAll('AMF-UMOA', 'AMF\u2011UMOA')
-  return (
-    <>
-      {leadProtected}
-      <br className="sm:hidden" />
-      <span className="hidden sm:inline">{space}</span>
-      <span className="whitespace-nowrap">{visa}</span>
-    </>
-  )
-}
 
 function EverestLogo({ className }: { className?: string }) {
   return (
@@ -143,13 +117,12 @@ function CampaignLink({
   const magneticRef = useMagnetic(7)
 
   return (
-    <a
+    <Link
       ref={magneticRef}
       data-ui="button"
-      href="#bulletin"
-      onClick={() => {
-        window.dispatchEvent(new Event('ipo:start-bulletin'))
-      }}
+      to="/f/$slug"
+      params={{ slug: IPO_FORM_SLUGS.accountOpening }}
+      search={ipoFormSearchParams()}
       className={cn(
         buttonVariants({ variant: buttonVariant, size: 'lg' }),
         'transition-transform duration-150 ease-out',
@@ -168,7 +141,7 @@ function CampaignLink({
               : 'bg-everest-green/10 text-everest-green'
         }
       />
-    </a>
+    </Link>
   )
 }
 
@@ -192,7 +165,7 @@ function GuidePdfLink({
       ref={magneticRef}
       data-ui="button"
       href={IPO_GUIDE_PDF_PATH}
-      download="guide-souscription-ipo-bridge-bank.pdf"
+      download="teaser-ipo-coris-bank-ci.pdf"
       onClick={onTrackClick}
       className={cn(
         buttonVariants({ variant: buttonVariant, size: 'lg' }),
@@ -462,27 +435,24 @@ export function IpoBridgeBankLanding() {
   const whatsappRef = useRef<HTMLAnchorElement>(null)
   const footerNavClearance = useFooterNavWhatsAppClearance(footerNavRef, whatsappRef)
   useHeroKinetic(heroRef)
-  const { data: contact } = useCampaignContact(BRIDGE_BANK_IPO_CAMPAIGN_ID)
+  const { data: contact } = useCampaignContact(CORIS_BANK_IPO_CAMPAIGN_ID)
   const whatsappHref = contact?.whatsappUrl ?? undefined
-  const subscribeFormQuery = useQuery(
-    orpc.forms.getBySlug.queryOptions({ input: { slug: IPO_FORM_SLUGS.subscribe } }),
+  const accountFormQuery = useQuery(
+    orpc.forms.getBySlug.queryOptions({ input: { slug: IPO_FORM_SLUGS.accountOpening } }),
   )
-  const bulletinFormQuery = useQuery(
-    orpc.forms.getBySlug.queryOptions({ input: { slug: IPO_FORM_SLUGS.bulletin } }),
-  )
-  const campaignFormId = bulletinFormQuery.data?.id ?? subscribeFormQuery.data?.id
+  const campaignFormId = accountFormQuery.data?.id
 
   const trackWhatsAppClick = (placement: string) => {
     trackCampaignEvent(campaignFormId, 'whatsapp_click', {
       placement,
-      campaignId: BRIDGE_BANK_IPO_CAMPAIGN_ID,
+      campaignId: CORIS_BANK_IPO_CAMPAIGN_ID,
     })
   }
 
   const trackGuideDownload = (placement: string) => {
     trackCampaignEvent(campaignFormId, 'guide_download', {
       placement,
-      campaignId: BRIDGE_BANK_IPO_CAMPAIGN_ID,
+      campaignId: CORIS_BANK_IPO_CAMPAIGN_ID,
     })
   }
 
@@ -537,9 +507,9 @@ export function IpoBridgeBankLanding() {
           <div className="absolute inset-0 overflow-hidden">
             <div data-hero-media className="ipo-hero-media absolute inset-[-6%] will-change-transform">
               <img
-                src="/Hero.png"
-                alt="Vue sur Abidjan au crépuscule — Bridge Bank Group Côte d'Ivoire"
-                className="h-full w-full object-cover object-[center_38%]"
+                src="/campaign/ipo-coris-cover.webp"
+                alt="Mains tissant une vue d'Abidjan sur un métier traditionnel, cauris posés sur la trame"
+                className="h-full w-full object-cover object-center"
               />
             </div>
             {/* <div className="absolute inset-0 bg-[linear-gradient(108deg,rgba(1,45,42,0.96)_0%,rgba(1,45,42,0.82)_38%,rgba(1,45,42,0.45)_68%,rgba(1,45,42,0.62)_100%)]" /> */}
@@ -560,7 +530,7 @@ export function IpoBridgeBankLanding() {
                 style={{ transitionDelay: '70ms' }}
               >
                 Investissez dans la prochaine étape de{' '}
-                <span className="whitespace-nowrap text-gold">Bridge Bank Group CI</span>
+                <span className="text-gold">Coris Bank International Côte d&apos;Ivoire</span>
               </h1>
               <p
                 className="ipo-reveal mx-auto mt-5 max-w-[34ch] text-base font-light leading-7 text-white/74 sm:mx-0 sm:mt-8 sm:max-w-4xl sm:text-lg sm:leading-8"
@@ -624,7 +594,7 @@ export function IpoBridgeBankLanding() {
                 Fenêtre de souscription
               </dt>
               <dd className="mt-1.5 text-[0.8rem] font-bold leading-snug tracking-[-0.04em] text-everest-green sm:mt-3 sm:text-3xl sm:leading-none">
-                20 juil. <span className="text-gold">→</span> 6 août
+                30 nov. <span className="text-gold">→</span> 4 déc.
               </dd>
             </div>
             <div
@@ -633,13 +603,13 @@ export function IpoBridgeBankLanding() {
               style={{ transitionDelay: '100ms' }}
             >
               <dt className="text-[8px] font-medium uppercase leading-tight tracking-[0.14em] text-everest-green/55 sm:text-[10px] sm:tracking-[0.2em]">
-                Cotation visée
+                Première cotation
               </dt>
               <dd className="mt-1.5 sm:mt-3">
                 <span className="text-[0.95rem] font-bold tracking-[-0.04em] text-everest-green sm:text-3xl">
-                  Septembre
+                  15 janv.
                 </span>
-                <span className="ml-1 text-[10px] font-medium text-gold sm:ml-2 sm:text-sm">2026</span>
+                <span className="ml-1 text-[10px] font-medium text-gold sm:ml-2 sm:text-sm">2027</span>
               </dd>
             </div>
           </dl>
@@ -649,18 +619,21 @@ export function IpoBridgeBankLanding() {
           <div className="mx-auto max-w-[1400px] px-5 py-14 sm:px-10 sm:py-24 lg:px-12 lg:py-36">
             <div className="ipo-reveal max-w-3xl" data-reveal>
               <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.24em] text-everest-green/50 sm:mb-4">
-                Pourquoi investir
+                Souscription du {IPO_CAMPAIGN.subscriptionStart.replace(' 2026', '')} au {IPO_CAMPAIGN.subscriptionEnd}
               </p>
               <h2 className="text-[clamp(1.65rem,7vw,3.5rem)] font-bold tracking-[-0.04em] text-everest-green leading-[1.1] sm:leading-[1.05]">
-                Pourquoi acheter des actions{' '}
-                <strong className="whitespace-nowrap">Bridge Bank Group CI</strong> ?
+                Comment souscrire ?
               </h2>
+              <p className="mt-4 text-base font-medium text-gold sm:text-lg">
+                Prix unique de {new Intl.NumberFormat('fr-FR').format(IPO_CAMPAIGN.sharePriceFcfa)} FCFA par
+                action · droit au dividende 2026
+              </p>
             </div>
 
-            <ul className="mt-8 grid gap-px overflow-hidden rounded-3xl sm:mt-16 sm:rounded-[2rem] sm:grid-cols-2">
-              {BBG_INVESTMENT_REASONS.map((reason, index) => (
+            <ol className="mt-8 grid gap-px overflow-hidden rounded-3xl sm:mt-16 sm:rounded-[2rem] sm:grid-cols-2">
+              {IPO_SUBSCRIPTION_STEPS.map((step, index) => (
                 <li
-                  key={reason}
+                  key={step}
                   data-reveal
                   className="ipo-reveal group flex gap-4 bg-white px-5 py-5 transition-colors duration-300 sm:gap-6 sm:p-8 lg:hover:bg-[#faf8f4]"
                   style={{ transitionDelay: `${index * 60}ms` }}
@@ -672,78 +645,27 @@ export function IpoBridgeBankLanding() {
                     {String(index + 1).padStart(2, '0')}
                   </span>
                   <p className="pt-1.5 text-[0.9375rem] font-medium leading-6 text-night-80 sm:pt-2 sm:text-base">
-                    {formatReasonLabel(reason)}
+                    {step}
                   </p>
                 </li>
               ))}
-            </ul>
+            </ol>
 
+            {phase !== 'closed' ? (
+              <div className="ipo-reveal mt-10 flex justify-center sm:mt-14 sm:justify-start" data-reveal>
+                <CampaignLink variant="gold">{phaseCopy.primaryCta}</CampaignLink>
+              </div>
+            ) : null}
           </div>
         </section>
-
-        {phase !== 'closed' ? (
-          <section id="bulletin" className="scroll-mt-24 bg-white">
-            <div className="mx-auto max-w-[1400px] px-5 py-14 sm:px-10 sm:py-24 lg:px-12 lg:py-28">
-              <div className="ipo-reveal mx-auto max-w-3xl text-center" data-reveal>
-                <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.24em] text-everest-green/50 sm:mb-4">
-                  Dossier officiel
-                </p>
-                <h2 className="text-[clamp(1.65rem,7vw,3rem)] font-bold tracking-[-0.04em] text-everest-green leading-[1.1]">
-                  Bulletin de souscription
-                </h2>
-              </div>
-
-              <div className="ipo-reveal mx-auto mt-10 max-w-2xl sm:mt-14" data-reveal>
-                {bulletinFormQuery.data ? (
-                  <BulletinForm
-                    key={`${bulletinFormQuery.data.id}-v${bulletinFormQuery.data.version}`}
-                    formId={bulletinFormQuery.data.id}
-                    slug={bulletinFormQuery.data.slug}
-                    defaultUtmSource="landing-bulletin"
-                  />
-                ) : bulletinFormQuery.isError ? (
-                  <div className="rounded-[1.5rem] border border-everest-green/10 bg-(--summit-ivory) px-6 py-10 text-center">
-                    <p className="text-sm text-text-secondary">
-                      Le bulletin n&apos;est pas disponible pour le moment.
-                    </p>
-                    <Link
-                      to="/f/$slug"
-                      params={{ slug: IPO_FORM_SLUGS.bulletin }}
-                      search={ipoFormSearchParams('bulletin')}
-                      data-ui="button"
-                      className={cn(buttonVariants({ variant: 'everest', size: 'lg' }), 'mt-5')}
-                    >
-                      Réessayer sur la page dédiée
-                      <ArrowDisc className="bg-everest-green/10 text-everest-green" />
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="rounded-[1.5rem] border border-everest-green/10 bg-(--summit-ivory) px-6 py-14 text-center text-sm text-text-secondary">
-                    Chargement du bulletin…
-                  </div>
-                )}
-
-                <p className="mt-8 text-center text-sm text-text-secondary">
-                  Vous préférez être rappelé ?{' '}
-                  <Link
-                    to="/f/$slug"
-                    params={{ slug: IPO_FORM_SLUGS.subscribe }}
-                    search={ipoFormSearchParams()}
-                    className="font-medium text-everest-green underline-offset-4 hover:underline"
-                  >
-                    Laissez vos coordonnées
-                  </Link>
-                </p>
-              </div>
-            </div>
-          </section>
-        ) : null}
       </main>
 
       <footer className="border-t border-white/10 bg-everest-green text-white">
         <div className="mx-auto flex max-w-[1400px] flex-col items-center gap-5 px-5 py-6 text-center sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-10 sm:py-7 sm:text-left lg:px-12">
           <p className="max-w-4xl text-xs leading-5 text-white/40 sm:leading-6">
             EVEREST Finance, Société agréée et régulée par l&apos;AMF-UMOA <br /> n° SGI/2016-01
+            <br />
+            Note d&apos;information visée par l&apos;AMF-UMOA (n° {IPO_CAMPAIGN.visa})
           </p>
           <nav
             ref={footerNavRef}

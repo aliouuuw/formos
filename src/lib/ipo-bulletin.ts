@@ -1,5 +1,4 @@
 import type { FormDefinition, FormField } from '#/lib/form-types'
-import { IPO_CAMPAIGN } from '#/lib/ipo-campaign'
 
 /** Public form slug for the full Bulletin de souscription flow. */
 export const IPO_BULLETIN_SLUG = 'ipo-bulletin' as const
@@ -7,7 +6,8 @@ export const IPO_BULLETIN_SLUG = 'ipo-bulletin' as const
 export const IPO_BULLETIN_PDF_PATH =
   '/campaign/bulletin-souscription-ipo-bridge-bank-template.pdf' as const
 
-export const SHARE_PRICE_FCFA = IPO_CAMPAIGN.sharePriceFcfa
+/** Bridge Bank offer price. This bulletin belongs to the closed Bridge Bank campaign. */
+export const SHARE_PRICE_FCFA = 6_750
 
 export const BULLETIN_FIELD_IDS = {
   subscriberType: 'bb-subscriber-type',
