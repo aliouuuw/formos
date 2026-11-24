@@ -10,7 +10,7 @@ export const Route = createFileRoute('/')({
       { title: `IPO ${IPO_CAMPAIGN.bankShort} · ${IPO_CAMPAIGN.intermediary}` },
       {
         name: 'description',
-        content: `Souscrivez à l'IPO ${IPO_CAMPAIGN.bankName} à ${IPO_CAMPAIGN.sharePriceFcfa.toLocaleString('fr-FR')} FCFA. Période : ${IPO_CAMPAIGN.subscriptionStart} – ${IPO_CAMPAIGN.subscriptionEnd}.`,
+        content: `Souscrivez à l'IPO ${IPO_CAMPAIGN.bankName} à ${IPO_CAMPAIGN.sharePriceFcfa.toLocaleString('fr-FR')} FCFA. Période : ${IPO_CAMPAIGN.subscriptionStart} au ${IPO_CAMPAIGN.subscriptionEnd}.`,
       },
       { name: 'theme-color', content: '#012d2a' },
     ],

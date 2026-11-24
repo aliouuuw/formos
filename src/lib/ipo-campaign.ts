@@ -21,7 +21,7 @@ export const IPO_CAMPAIGN = {
 } as const
 
 export const IPO_FORM_SLUGS = {
-  /** Bridge Bank forms (archived) — kept for admin history */
+  /** Bridge Bank forms (archived), kept for admin history */
   subscribe: 'ipo-souscrire',
   bulletin: 'ipo-bulletin',
   accountOpening: 'formulaire-d-ouverture-de-compte',
@@ -261,7 +261,7 @@ export function ipoLandingUrl(baseUrl: string, channel: keyof typeof IPO_CHANNEL
   return url.toString()
 }
 
-/** « Comment souscrire ? » — from the EVEREST Finance teaser (note d'information visa OA/26-05). */
+/** « Comment souscrire ? » from the EVEREST Finance teaser (note d'information visa OA/26-05). */
 export const IPO_SUBSCRIPTION_STEPS = [
   'Ouvrir ou utiliser un compte-titres auprès de EVEREST Finance, membre du syndicat de placement.',
   "Transmettre à EVEREST Finance un seul ordre d'achat par investisseur pendant la période.",

@@ -12,7 +12,7 @@ export const corisBankIpoCampaign: CampaignConfig = {
   id: CORIS_BANK_IPO_CAMPAIGN_ID,
   name: "IPO Coris Bank International Côte d'Ivoire",
   shortName: 'IPO Coris Bank',
-  description: "Offre publique de vente via Everest Finance — ouverture de compte-titres et ordres d'achat.",
+  description: "Offre publique de vente via Everest Finance: ouverture de compte-titres et ordres d'achat.",
   landingPath: '/',
   utmCampaign: 'ipo-coris-decembre-2026',
   forms: [
