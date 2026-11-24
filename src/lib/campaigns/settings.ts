@@ -127,13 +127,6 @@ export async function saveCampaignSettings(input: {
   return resolveCampaignConfig(input.campaignId)
 }
 
-export function campaignWhatsAppUrl(number: string | undefined, prefill?: string) {
-  if (!number) return null
-  const text =
-    prefill ??
-    "Bonjour, je souhaite recevoir des informations sur l'IPO Bridge Bank via Everest Finance."
-  return `https://wa.me/${number.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`
-}
 
 /** Seed DB settings from env on first deploy (optional). */
 export async function seedCampaignSettingsFromEnv() {

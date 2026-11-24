@@ -6,8 +6,8 @@ import {
   getCampaignById,
   listCampaigns,
 } from '#/lib/campaigns'
+import { campaignWhatsAppUrl } from '#/lib/campaigns/whatsapp'
 import {
-  campaignWhatsAppUrl,
   getStoredCampaignSettings,
   listResolvedCampaigns,
   normalizeAgentsFromLabels,
@@ -52,7 +52,7 @@ function toApiCampaign(campaign: NonNullable<Awaited<ReturnType<typeof resolveCa
     sourceLabels: campaign.sourceLabels,
     whatsappNumber: campaign.whatsappNumber ?? null,
     whatsappConfigured: Boolean(campaign.whatsappNumber),
-    whatsappUrl: campaignWhatsAppUrl(campaign.whatsappNumber),
+    whatsappUrl: campaignWhatsAppUrl(campaign.whatsappNumber, campaign.shortName),
     newLeadDeadlineHours: campaign.newLeadDeadlineHours,
     contactedLeadDeadlineHours: campaign.contactedLeadDeadlineHours,
   }
@@ -138,7 +138,7 @@ export const getPublicContact = publicContext
     return {
       campaignId: campaign.id,
       whatsappNumber: campaign.whatsappNumber ?? null,
-      whatsappUrl: campaignWhatsAppUrl(campaign.whatsappNumber),
+      whatsappUrl: campaignWhatsAppUrl(campaign.whatsappNumber, campaign.shortName),
     }
   })
 
