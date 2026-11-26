@@ -89,6 +89,21 @@ export function extractLeadFields(
     }
   }
 
+  // Separate "Prénom" and "Nom" fields: keep both, not only the first match.
+  let firstName: string | undefined
+  let lastName: string | undefined
+  for (const field of fields) {
+    const value = answers[field.id]
+    if (typeof value !== 'string' || value.length === 0) continue
+    const label = field.label.toLowerCase()
+    if (/entreprise|société|company/.test(label)) continue
+    const hasFirst = /pr[ée]noms?|first.?name/.test(label)
+    const hasLast = /\bnoms?\b|last.?name|surname/.test(label.replace(/pr[ée]noms?/g, ''))
+    if (hasFirst && !hasLast) firstName ??= value
+    if (hasLast && !hasFirst) lastName ??= value
+  }
+  if (firstName && lastName) name = `${firstName} ${lastName}`
+
   const insights: LeadInsights = {}
   if (company) insights.company = company
   if (city) insights.city = city

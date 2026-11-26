@@ -19,7 +19,7 @@ import { formProgressPercent } from '#/lib/form-progress'
 import type { FormDefinition, FormField } from '#/lib/form-types'
 import { useCampaignContact } from '#/hooks/use-campaign-contact'
 import { IPO_FIELD_IDS } from '#/lib/ipo-campaign'
-import { getSessionId } from '#/lib/session-id'
+import { getSessionId, rotateSessionId } from '#/lib/session-id'
 import { HONEYPOT_FIELD_ID } from '#/lib/submission-hygiene'
 import { cn } from '#/lib/utils'
 import { client } from '#/orpc/client'
@@ -280,9 +280,11 @@ export function FormRenderer({
     try {
       if (isLastPage) {
         const params = new URLSearchParams(window.location.search)
+        // Read at submit time: another tab may have rotated the id since mount.
+        const submitSessionId = getSessionId()
         const result = await client.submissions.submit({
           slug,
-          sessionId,
+          sessionId: submitSessionId,
           answers,
           honeypot: honeypot || undefined,
           metadata: {
@@ -293,11 +295,11 @@ export function FormRenderer({
             userAgent: navigator.userAgent,
           },
         })
-        await client.analytics.track({
-          formId,
-          sessionId,
-          eventType: 'form_completed',
-        })
+        rotateSessionId()
+        // Never await: an analytics failure must not report a saved lead as failed.
+        void client.analytics
+          .track({ formId, sessionId: submitSessionId, eventType: 'form_completed' })
+          .catch(() => {})
         setSubmitted(result.thankYouMessage)
       } else {
         setPageIndex(pageIndex + 1)
@@ -421,13 +423,15 @@ export function FormRenderer({
           aria-hidden="true"
           className="absolute -left-[9999px] top-0 h-0 w-0 overflow-hidden opacity-0"
         >
-          <label htmlFor={HONEYPOT_FIELD_ID}>Company website</label>
+          <label htmlFor={HONEYPOT_FIELD_ID}>Ne pas remplir</label>
           <input
             id={HONEYPOT_FIELD_ID}
             name={HONEYPOT_FIELD_ID}
             type="text"
             tabIndex={-1}
             autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
             value={honeypot}
             onChange={(e) => setHoneypot(e.target.value)}
           />

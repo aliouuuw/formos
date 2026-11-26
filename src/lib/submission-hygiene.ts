@@ -1,6 +1,6 @@
 /** Public form / lead hygiene helpers (honeypot, idempotent submit, duplicate leads). */
 
-export const HONEYPOT_FIELD_ID = 'company_website'
+export const HONEYPOT_FIELD_ID = 'fx_hp_check'
 
 export function isHoneypotTriggered(value: string | null | undefined): boolean {
   return typeof value === 'string' && value.trim().length > 0

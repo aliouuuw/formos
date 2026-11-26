@@ -117,6 +117,9 @@ export const submitForm = publicContext
 
     // Spam honeypot: pretend success, do not persist.
     if (isHoneypotTriggered(input.honeypot)) {
+      console.warn('[submissions.submit] Honeypot triggered, submission dropped', {
+        slug: input.slug,
+      })
       return {
         submissionId: crypto.randomUUID(),
         leadId: crypto.randomUUID(),

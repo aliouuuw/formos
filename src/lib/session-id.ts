@@ -1,4 +1,6 @@
-const SESSION_KEY = 'formos_session_id'
+// v2: ids stored under the old key may already own a submission (never rotated),
+// which made the server drop every later submit from that browser.
+const SESSION_KEY = 'formos_session_id_v2'
 
 export function getSessionId() {
   const existing = localStorage.getItem(SESSION_KEY)
