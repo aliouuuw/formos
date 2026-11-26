@@ -78,11 +78,15 @@ export const getFormAnalytics = authedContext
     const funnel = await db
       .select({
         eventType: analyticsEvents.eventType,
-        count: sql<number>`count(*)::int`,
+        // People (browser sessions), not raw events: reloads and re-blurs inflate events.
+        count: sql<number>`count(distinct ${analyticsEvents.sessionId})::int`,
       })
       .from(analyticsEvents)
       .where(eq(analyticsEvents.formId, input.formId))
       .groupBy(analyticsEvents.eventType)
+
+    const order = analyticsEventTypeSchema.options as readonly string[]
+    funnel.sort((a, b) => order.indexOf(a.eventType) - order.indexOf(b.eventType))
 
     const fieldDropoff = await db
       .select({

@@ -319,7 +319,7 @@ export const getFormStats = authedContext
       db
         .select({
           eventType: analyticsEvents.eventType,
-          count: sql<number>`count(*)::int`,
+          count: sql<number>`count(distinct ${analyticsEvents.sessionId})::int`,
         })
         .from(analyticsEvents)
         .where(eq(analyticsEvents.formId, input.id))
