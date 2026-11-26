@@ -19,6 +19,7 @@ import {
 import { Textarea } from '#/components/ui/textarea'
 import type { LeadStatus } from '#/lib/form-types'
 import { getCampaignById } from '#/lib/campaigns'
+import { whatsAppDigits } from '#/lib/campaigns/whatsapp'
 import { BULLETIN_FIELD_IDS, isBulletinFormSlug } from '#/lib/ipo-bulletin'
 import {
   agingLabel,
@@ -222,18 +223,20 @@ export function LeadDetailPanel({
 
           {lead ? (
             <>
-              {lead.preferredChannel === 'WhatsApp' && lead.phone ? (
-                <ContactAction
-                  href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`}
-                  label="Ouvrir WhatsApp"
-                  external
-                />
-              ) : null}
-              {lead.preferredChannel === 'Appel' && lead.phone ? (
-                <ContactAction href={`tel:${lead.phone}`} label="Appeler" />
-              ) : null}
-              {lead.preferredChannel === 'Email' && lead.email ? (
-                <ContactAction href={`mailto:${lead.email}`} label="Envoyer un email" />
+              {lead.phone || lead.email ? (
+                <div className="flex flex-wrap gap-2">
+                  {lead.phone ? (
+                    <ContactAction
+                      href={`https://wa.me/${whatsAppDigits(lead.phone)}`}
+                      label="Ouvrir WhatsApp"
+                      external
+                    />
+                  ) : null}
+                  {lead.phone ? <ContactAction href={`tel:${lead.phone}`} label="Appeler" /> : null}
+                  {lead.email ? (
+                    <ContactAction href={`mailto:${lead.email}`} label="Envoyer un email" />
+                  ) : null}
+                </div>
               ) : null}
 
               <section className="space-y-3">

@@ -13,3 +13,7 @@ test('prefill names the campaign', () => {
   expect(campaignWhatsAppUrl('770993382', 'IPO Coris Bank')).toContain('IPO%20Coris%20Bank')
   expect(campaignWhatsAppUrl(undefined)).toBeNull()
 })
+
+test('international 00 prefix is dropped', () => {
+  expect(whatsAppDigits('0033769033921')).toBe('33769033921')
+})

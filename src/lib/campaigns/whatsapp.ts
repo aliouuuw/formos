@@ -1,6 +1,6 @@
 /** wa.me needs the country code; a local Senegal mobile (9 digits, starts with 7) gets 221. */
 export function whatsAppDigits(number: string): string {
-  const digits = number.replace(/\D/g, '')
+  const digits = number.replace(/\D/g, '').replace(/^00/, '')
   return /^7\d{8}$/.test(digits) ? `221${digits}` : digits
 }
 
