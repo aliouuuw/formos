@@ -7,35 +7,43 @@ type ValidationResult =
   | { ok: true; answers: ValidatedAnswers }
   | { ok: false; message: string }
 
-function validateFieldValue(field: FormField, value: string): string | null {
+/** Shared by the public form (per page) and the server (whole submission). */
+export function validateFieldValue(field: FormField, value: string): string | null {
   if (value.length > MAX_ANSWER_VALUE_LENGTH) {
-    return `${field.label} is too long`
+    return `${field.label}: réponse trop longue`
   }
 
   switch (field.type) {
     case 'email':
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-        return `${field.label} must be a valid email`
+        return `${field.label}: adresse email invalide`
       }
       break
     case 'number':
       if (Number.isNaN(Number(value))) {
-        return `${field.label} must be a number`
+        return `${field.label}: nombre attendu`
       }
       break
     case 'date':
       if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-        return `${field.label} must be a valid date`
+        return `${field.label}: date invalide`
       }
       break
+    case 'phone': {
+      const digits = value.replace(/\D/g, '').length
+      if (!/^\+?[\d\s().-]+$/.test(value) || digits < 8 || digits > 15) {
+        return `${field.label}: numéro invalide, exemple +221 77 000 00 00`
+      }
+      break
+    }
     case 'select':
       if (field.options && !field.options.includes(value)) {
-        return `${field.label} has an invalid option`
+        return `${field.label}: choix invalide`
       }
       break
     case 'checkbox':
       if (value !== 'true' && value !== 'false') {
-        return `${field.label} must be checked or unchecked`
+        return `${field.label}: valeur invalide`
       }
       break
     default:
@@ -70,18 +78,18 @@ export function validateSubmissionAnswers(
 
     if (raw === undefined || raw === null || raw === '') {
       if (field.required) {
-        return { ok: false, message: `${field.label} is required` }
+        return { ok: false, message: `${field.label}: champ obligatoire` }
       }
       continue
     }
 
     if (typeof raw !== 'string') {
-      return { ok: false, message: `${field.label} must be text` }
+      return { ok: false, message: `${field.label}: texte attendu` }
     }
 
     const value = raw.trim()
     if (field.required && value.length === 0) {
-      return { ok: false, message: `${field.label} is required` }
+      return { ok: false, message: `${field.label}: champ obligatoire` }
     }
 
     if (value.length === 0) continue

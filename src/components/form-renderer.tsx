@@ -22,6 +22,7 @@ import { IPO_FIELD_IDS } from '#/lib/ipo-campaign'
 import { getSessionId, rotateSessionId } from '#/lib/session-id'
 import { HONEYPOT_FIELD_ID } from '#/lib/submission-hygiene'
 import { cn } from '#/lib/utils'
+import { validateFieldValue } from '#/lib/validate-answers'
 import { client } from '#/orpc/client'
 
 function FieldInput({
@@ -55,7 +56,9 @@ function FieldInput({
   if (field.type === 'select') {
     return (
       <Select
-        value={value || undefined}
+        // "" (not undefined) keeps it controlled: uncontrolled Radix reports the
+        // value only after closing, so close-time tracking saw an empty answer.
+        value={value}
         onValueChange={onChange}
         onOpenChange={(open) => {
           if (!open) onBlur?.()
@@ -156,6 +159,10 @@ export function FormRenderer({
     else setInternalPageIndex(index)
   }
   const [answers, setAnswers] = useState<Record<string, string>>({})
+  // A select closes (blur) in the same event that sets its value, so the
+  // `answers` closure is stale there; read the latest value from this ref.
+  const answersRef = useRef(answers)
+  answersRef.current = answers
   const [submitted, setSubmitted] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -222,29 +229,11 @@ export function FormRenderer({
 
     for (const field of page.fields) {
       const value = answers[field.id]?.trim() ?? ''
-
-      if (field.required) {
-        if (field.type === 'checkbox' && value !== 'true') {
-          return `${field.label} is required`
-        }
-        if (field.type !== 'checkbox' && !value) {
-          return `${field.label} is required`
-        }
-      }
+      const missing = field.type === 'checkbox' ? value !== 'true' : !value
+      if (field.required && missing) return `${field.label}: champ obligatoire`
       if (!value) continue
-
-      if (field.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-        return `${field.label} must be a valid email`
-      }
-      if (field.type === 'number' && Number.isNaN(Number(value))) {
-        return `${field.label} must be a number`
-      }
-      if (field.type === 'date' && !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-        return `${field.label} must be a valid date (YYYY-MM-DD)`
-      }
-      if (field.type === 'select' && field.options && !field.options.includes(value)) {
-        return `${field.label} has an invalid option`
-      }
+      const fieldError = validateFieldValue(field, value)
+      if (fieldError) return fieldError
     }
 
     return null
@@ -464,6 +453,7 @@ export function FormRenderer({
                 field={field}
                 value={answers[field.id] ?? ''}
                 onChange={(value) => {
+                  answersRef.current = { ...answersRef.current, [field.id]: value }
                   setAnswers((prev) => ({ ...prev, [field.id]: value }))
                 }}
                 onFocus={() => {
@@ -475,7 +465,7 @@ export function FormRenderer({
                 }}
                 onBlur={() => {
                   if (!preview && page.id) {
-                    trackFieldAnswered(field.id, page.id, answers[field.id] ?? '')
+                    trackFieldAnswered(field.id, page.id, answersRef.current[field.id] ?? '')
                   }
                 }}
               />
